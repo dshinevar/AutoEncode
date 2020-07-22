@@ -16,7 +16,7 @@ import plex_interactor
 ffmpeg_proc = None
 timezone = None
 
-config_name = 'automated_ffmpeg_config.ini'
+config_name = '/usr/local/bin/automated_ffmpeg_config.ini'
 log_file = ''
 current_working_movie = None
 working_movie_path = '/tmp/automated_ffmpeg/working_movie.txt' 
@@ -90,7 +90,7 @@ def main():
 					os.remove(file_to_delete)
 			os.remove(working_movie_path)
 	except Exception as error:
-		msg = ['Error deleting previous working movie or working_movie file.', error]
+		msg = ['Error deleting previous working movie or working_movie file.', str(error)]
 		log(Severity.ERROR, msg)
 
 	# Config - Directory Info
@@ -101,8 +101,8 @@ def main():
 		plex_dirs = directories['plex'].split(',')
 		plex_sections = directories['plex_section'].split(',')
 	except Exception as error:
-		msg = ['Error getting directory info from config file. Exiting.', error]
-		log(Severity.ERROR. msg)
+		msg = ['Error getting directory info from config file. Exiting.', str(error)]
+		log(Severity.ERROR, msg)
 		sys.exit(1)
 
 	# Config - Plex Info
@@ -111,7 +111,7 @@ def main():
 		plex_password = config['Plex']['password']
 		plex_servername = config['Plex']['server']
 	except Exception as error:
-		msg = ['Error getting Plex info from config file. Exiting.', error]
+		msg = ['Error getting Plex info from config file. Exiting.', str(error)]
 		log(Severity.Error, msg)
 		sys.exit(1)
 
@@ -215,7 +215,7 @@ def main():
 							try:
 								os.remove(working_movie_path)
 							except Exception as error:
-								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', error]
+								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', str(error)]
 								log(Severity.ERROR, msg)
 						else:
 							msg = ['COMPLETED ENCODING FOR %s' % movie, 'Time Elapsed: %s' % str(stop_time - start_time)]
@@ -225,7 +225,7 @@ def main():
 							try:
 								os.remove(working_movie_path)
 							except Exception as error:
-								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', error]
+								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', str(error)]
 								log(Severity.ERROR, msg)
 
 							# COPY FILE OVER TO PLEX MEDIA DIRECTORIES
@@ -234,7 +234,7 @@ def main():
 							try:
 								shutil.copy2(encoded_movie_path, plex_dirs[i])
 							except IOError as error:
-								msg = ['Error copying %s to %s (Details below). Will not attempt to update plex server.' % (encoded_movie_path, plex_dirs[i]), error]
+								msg = ['Error copying %s to %s (Details below). Will not attempt to update plex server.' % (encoded_movie_path, plex_dirs[i]), str(error)]
 								log(Severity.ERROR, msg)
 								continue
 							else:
