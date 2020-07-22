@@ -66,6 +66,9 @@ def main():
 	
 	timezone = pytz.timezone(tz)
 
+	if os.path.exists('/tmp/automated_ffmpeg') == False:
+			os.makedirs('/tmp/automated_ffmpeg')
+
 	if os.access('/var/log/', os.W_OK) == True:
 		if os.path.exists('/var/log/automated_ffmpeg') == False:
 			os.makedirs('/var/log/automated_ffmpeg')
@@ -73,9 +76,6 @@ def main():
 		log_file = '/var/log/automated_ffmpeg/automated_ffmpeg_log.txt'
 
 	else:
-		if os.path.exists('/tmp/automated_ffmpeg') == False:
-			os.makedirs('/tmp/automated_ffmpeg')
-
 		log_file = '/tmp/automated_ffmpeg/automated_ffmpeg_log.txt'
 
 	# Set cleanup function for potential termination
