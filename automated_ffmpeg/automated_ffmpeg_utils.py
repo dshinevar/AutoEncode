@@ -185,7 +185,7 @@ def check_file_ready(video_full_path):
 # Returns: Tuple(the path of the xml file which is based on the name of the video file (None if error), msg)
 def create_video_data_xml(video_full_path):
 	xml_file_path = '/tmp/%s.xml' % os.path.basename(video_full_path)
-	proc = subprocess.run('~/ffmpeg_sources/ffmpeg/ffprobe -v quiet -read_intervals "%+#2" -print_format xml -show_format -show_streams -show_entries side_data "{}" > "{}"'.format(video_full_path, xml_file_path), shell=True, stderr=subprocess.PIPE)
+	proc = subprocess.run('ffprobe -v quiet -read_intervals "%+#2" -print_format xml -show_format -show_streams -show_entries side_data "{}" > "{}"'.format(video_full_path, xml_file_path), shell=True, stderr=subprocess.PIPE)
 
 	if proc.returncode != 0:
 		error_msg = proc.stderr.decode('utf-8'.split('\n'))
@@ -344,7 +344,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 			return (None, msg)
 
 	# Crop
-	crop = subprocess.check_output("""~/ffmpeg_sources/ffmpeg/ffmpeg -i "%s" -ss 00:10:00 -t 00:00:30 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % movie_full_path, shell=True, encoding='UTF-8')
+	crop = subprocess.check_output("""ffmpeg -i "%s" -ss 00:10:00 -t 00:00:30 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % movie_full_path, shell=True, encoding='UTF-8')
 	encode_data.video_data.crop = crop.rstrip('\n\r')
 
 	msg = ['Built encode data for %s' % movie_full_path] + __build_encode_data_log_msg(encode_data)
@@ -410,7 +410,7 @@ def build_encode_command(encode_data, dest_dir):
 		subtitle_settings_str = '-c:s copy '
 
 	# TEMP CHANGE FOR TESTING
-	cmd = '~/ffmpeg_sources/ffmpeg/ffmpeg -y -i "%s" %s%s%s%s-max_muxing_queue_size 9999 "%s"' \
+	cmd = 'ffmpeg -y -i "%s" %s%s%s%s-max_muxing_queue_size 9999 "%s"' \
 		% (encode_data.source_file_full_path, map_str, video_settings_str, audio_settings_str, subtitle_settings_str, dest_path)
 
 	return (cmd, dest_path)

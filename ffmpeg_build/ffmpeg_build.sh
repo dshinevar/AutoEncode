@@ -4,7 +4,7 @@
 rm -rf ~/ffmpeg_build ~/bin/{ffmpeg,ffprobe,ffplay,x264,x265}
 
 echo "Getting dependencies"
-sudo apt-get update -qq && sudo apt-get -y install \
+sudo apt update -qq && sudo apt -y install \
   autoconf \
   automake \
   build-essential \
@@ -42,7 +42,7 @@ PATH="$HOME/bin:$PATH" make && \
 make -j4 install
 
 echo "Downloading/Building libx265 /w HIGH_BIT_DEPTH"
-sudo apt-get install mercurial libnuma-dev && \
+sudo apt install mercurial libnuma-dev && \
 cd ~/ffmpeg_sources && \
 if cd x265 2> /dev/null; then hg pull && hg update && cd ..; else hg clone https://bitbucket.org/multicoreware/x265; fi && \
 cd x265/build/linux && \
