@@ -12,17 +12,6 @@ import xml.etree.ElementTree as ET
 # This value is based on 720p
 min_265_res_val = 921600
 
-dir_lookup = {
-		'-m' : 'Movies',
-		'--movie' : 'Movies',
-		'-t' : 'TV Shows',
-		'--tv' : 'TV Shows',
-		'-a' : 'Anime',
-		'--anime' : 'Anime',
-		'-am' : 'Anime Movie',
-		'--anime_movie' : 'Anime Movies',
-	}
-
 audio_codec_priority = {
 		'truehd' : 10,
 		'DTS-HD MA' : 8,
@@ -184,7 +173,7 @@ def check_file_ready(video_full_path):
 # Runs a subprocess of ffprobe to create an xml file with data on the given video file
 # Returns: Tuple(the path of the xml file which is based on the name of the video file (None if error), msg)
 def create_video_data_xml(video_full_path):
-	xml_file_path = '/tmp/%s.xml' % os.path.basename(video_full_path)
+	xml_file_path = '/tmp/automated_ffmpeg/%s.xml' % os.path.basename(video_full_path)
 	proc = subprocess.run('ffprobe -v quiet -read_intervals "%+#2" -print_format xml -show_format -show_streams -show_entries side_data "{}" > "{}"'.format(video_full_path, xml_file_path), shell=True, stderr=subprocess.PIPE)
 
 	if proc.returncode != 0:

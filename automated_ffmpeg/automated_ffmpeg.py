@@ -161,6 +161,10 @@ def main():
 						# If not ready, move on to next movie
 						if is_ready == False:
 							log(Severity.ERROR, msg)
+							# If any movies come after this one, it'll flip back to true.
+							# If this is the last movie/only movie, it needs more time so 
+							# force the script to sleep.
+							found_movies_to_encode = False
 							continue
 
 						# CREATE XML
@@ -195,10 +199,10 @@ def main():
 						msg = ['STARTING ENCODING FOR: %s' % movie, 'FFMPEG CMD: %s' % cmd]
 						log(Severity.INFO, msg)
 
-						start_time = dt.now()
 						current_working_movie = movie
 						with open(working_movie_path, 'w') as f:
 							f.write(encoded_movie_path)
+						start_time = dt.now()
 
 						ffmpeg_proc = subprocess.run('exec ' + cmd, shell=True, stderr=subprocess.PIPE)
 
@@ -215,7 +219,7 @@ def main():
 							try:
 								os.remove(working_movie_path)
 							except Exception as error:
-								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', str(error)]
+								msg = ['Error deleting %s' % working_movie_path, str(error)]
 								log(Severity.ERROR, msg)
 						else:
 							msg = ['COMPLETED ENCODING FOR %s' % movie, 'Time Elapsed: %s' % str(stop_time - start_time)]
@@ -225,11 +229,10 @@ def main():
 							try:
 								os.remove(working_movie_path)
 							except Exception as error:
-								msg = ['Error deleting /tmp/automated_ffmpeg/working_movie.txt', str(error)]
+								msg = ['Error deleting %s' % working_movie_path, str(error)]
 								log(Severity.ERROR, msg)
 
 							# COPY FILE OVER TO PLEX MEDIA DIRECTORIES
-							# Don't need to delete file as this should be a new movie
 							# Get encoded_movie_path from building encode command
 							try:
 								shutil.copy2(encoded_movie_path, plex_dirs[i])
@@ -251,6 +254,7 @@ def main():
 			movie_files_base = []
 			movie_encoded_files = []
 			movie_encoded_files_base = []
+			to_encode = []
 			time.sleep(1800) # 30 minutes
 
 if __name__ == "__main__":
