@@ -151,7 +151,8 @@ def main():
 			to_encode = utils.build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base)
 
 			if len(to_encode) > 0:
-				log(Severity.INFO, 'Found %d new movie(s) to encode.' % len(to_encode))
+				msg = ['Found %d new movie(s) to encode.' % len(to_encode)] + [os.path.basename(movie) for movie in to_encode]
+				log(Severity.INFO, msg)
 				found_movies_to_encode = True
 				# Encode each new movie
 				for movie in to_encode:
