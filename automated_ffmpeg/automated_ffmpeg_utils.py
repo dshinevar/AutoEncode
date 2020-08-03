@@ -18,8 +18,8 @@ audio_codec_priority = {
 		'dts' : 5,
 		'DTS' : 5,
 		'pcm_s24le' : 4,
-		'pcm_s16le' : 4,
-		'ac3' : 3
+		'pcm_s16le' : 3,
+		'ac3' : 1
 }
 
 #### DICTIONARIES/STATICS ####
@@ -40,7 +40,7 @@ class HDRData:
 		self.max_luminance = ""
 
 class VideoData:
-	__slots__ = ['hdr', 'crop', 'codec', 'orig_resolution', 'color_space', 'color_primaries', 'color_transfer']
+	__slots__ = ['hdr', 'crop', 'codec', 'orig_resolution', 'color_space', 'color_primaries', 'color_transfer', 'max_cll', 'chroma_location']
 	def __init__(self):
 		self.hdr = None
 		self.crop = ""
@@ -49,6 +49,8 @@ class VideoData:
 		self.color_space = ""
 		self.color_primaries = ""
 		self.color_transfer = ""
+		self.max_cll = None
+		self.chroma_location = None
 
 class AudioData:
 	__slots__ = ['index', 'descriptor', 'language', 'channels', 'channel_layout']
@@ -148,7 +150,7 @@ def build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base
 	diff_list = [m for m in movie_files_base if m not in movie_encoded_files_base]
 
 	# Uses diff_list base file names to find full file path in movie_files
-	to_encode = [m for m in movie_files if any(sub in m for sub in diff_list)]
+	to_encode = [m for m in movie_files if any('%s.mkv' % sub in m for sub in diff_list)]
 
 	return to_encode
 
@@ -198,22 +200,31 @@ def build_encode_data(movie_full_path, xml_file_path):
 	for frame in xml_root.findall('packets_and_frames/frame'):
 		side_data_list = frame.find('side_data_list') #.find('side_data').get('side_data_type')
 		if side_data_list != None:
-			side_data = side_data_list.find('side_data')
-			if side_data != None:
-				side_data_type = side_data.get('side_data_type')
+			side_data = side_data_list.findall('side_data')
+			for data in side_data:
+				side_data_type = data.get('side_data_type')
 				if side_data_type == 'Mastering display metadata':
 					encode_data.video_data.hdr = HDRData()
-					encode_data.video_data.hdr.red_x = side_data.get('red_x').split('/')[0]
-					encode_data.video_data.hdr.red_y = side_data.get('red_y').split('/')[0]
-					encode_data.video_data.hdr.green_x = side_data.get('green_x').split('/')[0]
-					encode_data.video_data.hdr.green_y = side_data.get('green_y').split('/')[0]
-					encode_data.video_data.hdr.blue_x = side_data.get('blue_x').split('/')[0]
-					encode_data.video_data.hdr.blue_y = side_data.get('blue_y').split('/')[0]
-					encode_data.video_data.hdr.white_point_x = side_data.get('white_point_x').split('/')[0]
-					encode_data.video_data.hdr.white_point_y = side_data.get('white_point_y').split('/')[0]
-					encode_data.video_data.hdr.min_luminance = side_data.get('min_luminance').split('/')[0]
-					encode_data.video_data.hdr.max_luminance = side_data.get('max_luminance').split('/')[0]
-					break
+					encode_data.video_data.hdr.red_x = data.get('red_x').split('/')[0]
+					encode_data.video_data.hdr.red_y = data.get('red_y').split('/')[0]
+					encode_data.video_data.hdr.green_x = data.get('green_x').split('/')[0]
+					encode_data.video_data.hdr.green_y = data.get('green_y').split('/')[0]
+					encode_data.video_data.hdr.blue_x = data.get('blue_x').split('/')[0]
+					encode_data.video_data.hdr.blue_y = data.get('blue_y').split('/')[0]
+					encode_data.video_data.hdr.white_point_x = data.get('white_point_x').split('/')[0]
+					encode_data.video_data.hdr.white_point_y = data.get('white_point_y').split('/')[0]
+					encode_data.video_data.hdr.min_luminance = data.get('min_luminance').split('/')[0]
+					encode_data.video_data.hdr.max_luminance = data.get('max_luminance').split('/')[0]
+				elif side_data_type == 'Content light level metadata':
+					max_content = data.get('max_content')
+					if max_content == None:
+						max_content = '0'
+
+					max_avg = data.get('max_average')
+					if max_avg == None:
+						max_avg = '0'
+
+					encode_data.video_data.max_cll = "'%s,%s'" % (max_content, max_avg)
 				else:
 					continue
 			else:
@@ -241,6 +252,15 @@ def build_encode_data(movie_full_path, xml_file_path):
 
 				color_primaries = stream.get('color_primaries')
 				encode_data.video_data.color_primaries = color_primaries if color_primaries != None else 'bt709'
+
+				chroma_location = stream.get('chroma_location')
+				if chroma_location != None:
+					if chroma_location == 'topleft':
+						encode_data.video_data.chroma_location = '2'
+					elif chroma_location == 'left':
+						encode_data.video_data.chroma_location = '1'
+					else: # Default?
+						encode_data.video_data.chroma_location = '1'
 			else:
 				encode_data.video_data.codec = 'libx264'
 			encode_data.video_data.orig_resolution = '%dx%d' % (width, height)
@@ -333,7 +353,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 			return (None, msg)
 
 	# Crop
-	crop = subprocess.check_output("""ffmpeg -i "%s" -ss 00:10:00 -t 00:00:30 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % movie_full_path, shell=True, encoding='UTF-8')
+	crop = subprocess.check_output("""ffmpeg -i "%s" -ss 00:10:00 -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % movie_full_path, shell=True, encoding='UTF-8')
 	encode_data.video_data.crop = crop.rstrip('\n\r')
 
 	msg = ['Built encode data for %s' % movie_full_path] + __build_encode_data_log_msg(encode_data)
@@ -341,9 +361,21 @@ def build_encode_data(movie_full_path, xml_file_path):
 	return (encode_data, msg)
 
 # Creates ffmpeg command
-# Returns: Tuple(ffmpeg command string, encoded_file_destination_path)
-def build_encode_command(encode_data, dest_dir):
-	dest_path = '%s/%s' % (dest_dir, os.path.basename(encode_data.source_file_full_path))
+# Only returns a msg if there is an error.
+# Returns: Tuple(ffmpeg command string, encoded_file_destination_path, msg)
+def build_encode_command(encode_data, source_dir, dest_dir):
+	dest_path = encode_data.source_file_full_path.replace(source_dir, dest_dir, 1)
+	msg = None
+	vid_dir = ""
+
+	try:
+		vid_dir = dest_path.replace(os.path.basename(encode_data.source_file_full_path), '')
+		if os.path.exists(vid_dir) == False:
+			os.makedirs(vid_dir)
+	except Exception as error:
+		dest_path = '%s/%s' % (dest_dir, os.path.basename(encode_data.source_file_full_path))
+		msg = ['Error creating directory %s. Defaulting ffmpeg output to %s.' % (vid_dir, dest_dir), str(error)]
+
 	audio_list = encode_data.audio_data
 	video_data = encode_data.video_data
 	subtitle_data = encode_data.subtitle_data
@@ -363,16 +395,20 @@ def build_encode_command(encode_data, dest_dir):
 
 	# Video section
 	if video_data.codec == 'libx265':
-		video_settings_str = '-pix_fmt yuv420p10le -vcodec libx265 -vf "%s" -preset slow ' % video_data.crop
+		video_settings_str = '-pix_fmt yuv420p10le -vcodec libx265 -vf "%s" -preset slow -x265-params "keyint=60:bframes=3:vbv-bufsize=75000:vbv-maxrate=75000:repeat-headers=1:colorprim=%s:transfer=%s:colormatrix=%s' \
+			% (video_data.crop, video_data.color_primaries, video_data.color_transfer, video_data.color_space)
 		if video_data.hdr != None:
 			hdr = video_data.hdr
-			master_display_str = "master-display='G(%s,%s)B(%s,%s)R(%s,%s)WP(%s,%s)L(%s,%s)'" % (hdr.green_x, video_data.hdr.green_y, hdr.blue_x, hdr.blue_y, hdr.red_x, hdr.red_y, hdr.white_point_x, hdr.white_point_y, hdr.max_luminance, hdr.min_luminance)
-			video_settings_str += '-x265-params "keyint=60:bframes=3:vbv-bufsize=75000:vbv-maxrate=75000:colorprim=%s:transfer=%s:colormatrix=%s:%s" -crf 22 -force_key_frames "expr:gte(t,n_forced*2)" ' \
-				% (video_data.color_primaries, video_data.color_transfer, video_data.color_space, master_display_str)
+			master_display_str = ":hdr10-opt=1:master-display='G(%s,%s)B(%s,%s)R(%s,%s)WP(%s,%s)L(%s,%s)'" % (hdr.green_x, hdr.green_y, hdr.blue_x, hdr.blue_y, hdr.red_x, hdr.red_y, hdr.white_point_x, hdr.white_point_y, hdr.max_luminance, hdr.min_luminance)
+			video_settings_str += master_display_str
+		if video_data.max_cll != None:
+			max_cll_str = ':max-cll=%s' % video_data.max_cll
+			video_settings_str += max_cll_str
+		if video_data.chroma_location != None:
+			chroma_location_str = ':chromaloc=%s' % video_data.chroma_location
+			video_settings_str += chroma_location_str
 
-		else:
-			video_settings_str += '-x265-params "keyint=60:bframes=3:vbv-bufsize=75000:vbv-maxrate=75000:colorprim=%s:transfer=%s:colormatrix=%s" -crf 22 -force_key_frames "expr:gte(t,n_forced*2)" ' \
-				% (video_data.color_primaries, video_data.color_transfer, video_data.color_space)	
+		video_settings_str += '" -crf 20 -force_key_frames "expr:gte(t,n_forced*2)" '
 
 	elif video_data.codec == 'libx264':
 		video_settings_str = '-pix_fmt yuv420p -vcodec libx264 -vf "%s" -preset slow -crf 16 ' % video_data.crop
@@ -398,10 +434,9 @@ def build_encode_command(encode_data, dest_dir):
 	if subtitle_data != None:
 		subtitle_settings_str = '-c:s copy '
 
-	# TEMP CHANGE FOR TESTING
 	cmd = 'ffmpeg -y -i "%s" %s%s%s%s-max_muxing_queue_size 9999 "%s"' \
 		% (encode_data.source_file_full_path, map_str, video_settings_str, audio_settings_str, subtitle_settings_str, dest_path)
 
-	return (cmd, dest_path)
+	return (cmd, dest_path, msg)
 
 #### FUNCTIONS ####

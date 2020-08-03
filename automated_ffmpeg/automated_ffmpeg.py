@@ -5,6 +5,7 @@ import os
 import pytz
 import shutil
 from signal import *
+from stat import *
 import subprocess
 import sys
 import time
@@ -195,7 +196,9 @@ def main():
 							log(Severity.INFO, 'Deleted %s' % xml_file_path)
 
 						# BUILD COMMAND
-						cmd, encoded_movie_path = utils.build_encode_command(encode_data, movie_encoded_dirs[i])
+						cmd, encoded_movie_path, msg = utils.build_encode_command(encode_data, movie_dirs[i], movie_encoded_dirs[i])
+						if msg != None:
+							log(Severity.ERROR, msg)
 
 						msg = ['STARTING ENCODING FOR: %s' % movie, 'FFMPEG CMD: %s' % cmd]
 						log(Severity.INFO, msg)
@@ -236,7 +239,12 @@ def main():
 							# COPY FILE OVER TO PLEX MEDIA DIRECTORIES
 							# Get encoded_movie_path from building encode command
 							try:
-								shutil.copy2(encoded_movie_path, plex_dirs[i])
+								encoded_movie_plex_dest = encoded_movie_path.replace(movie_encoded_dirs[i], plex_dirs[i]).replace(os.path.basename(encoded_movie_path), '')
+
+								if os.path.exists(encoded_movie_plex_dest) == False:
+									os.makedirs(encoded_movie_plex_dest)
+
+								shutil.copy2(encoded_movie_path, encoded_movie_plex_dest)
 							except IOError as error:
 								msg = ['Error copying %s to %s (Details below). Will not attempt to update plex server.' % (encoded_movie_path, plex_dirs[i]), str(error)]
 								log(Severity.ERROR, msg)
