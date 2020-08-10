@@ -14,14 +14,14 @@ class SimpleLogger:
 		time_str = dt.now(self.timezone).strftime('%m/%d/%y %H:%M:%S')
 
 		if isinstance(msg, list):
-			log_msg = '[%s] - [%s] : %s\n' % (time_str, severity.name, msg[0])
+			log_msg = f'[{time_str}] - [{severity.name}] : {msg[0]}\n'
 			padding = len(log_msg) - len(msg[0]) - 1
 			
 			for i in range(1, len(msg)):
 				msg[i] = msg[i].rjust(padding + len(msg[i]), ' ') + '\n'
 				log_msg += msg[i]
 		else:
-			log_msg = '[%s] - [%s] : %s\n' % (time_str, severity.name, msg)
+			log_msg = f'[{time_str}] - [{severity.name}] : {msg}\n'
 
 		with open(self.log_file, 'a') as f:
 			f.write(log_msg)

@@ -8,6 +8,9 @@ import xml.etree.ElementTree as ET
 # This value is based on 720p
 min_265_res_val = 921600
 
+# Priority of 1 or less are "undesirable".
+# Unless the audio channels is greater than 2,
+# any codec with priority 1 or less will be encoded to aac
 audio_codec_priority = {
 		'truehd' : 10,
 		'DTS-HD MA' : 8,
@@ -49,13 +52,14 @@ class VideoData:
 		self.chroma_location = None
 
 class AudioData:
-	__slots__ = ['index', 'descriptor', 'language', 'channels', 'channel_layout']
+	__slots__ = ['index', 'descriptor', 'language', 'channels', 'channel_layout', 'priority']
 	def __init__(self):
 		self.index = -1
 		self.descriptor = ""
 		self.language = ""
 		self.channels = -1
 		self.channel_layout = ""
+		self.priority = -1
 
 class SubtitleData:
 	__slots__ = ['language', 'descriptor', 'index']
@@ -78,7 +82,7 @@ class EncodeData:
 # Builds encode data log message
 # Returns: Log Message
 def __build_encode_data_log_msg(encode_data):
-	msg = ['Encode Data: %s' % os.path.basename(encode_data.source_file_full_path)]
+	msg = [f'Encode Data: {os.path.basename(encode_data.source_file_full_path)}']
 
 	video_str = 'Video: %s %s%s %s' % (
 		encode_data.video_data.orig_resolution, 
@@ -88,14 +92,14 @@ def __build_encode_data_log_msg(encode_data):
 	msg.append(video_str)
 
 	for audio in encode_data.audio_data:
-		audio_str = 'Audio: %s %s (%s) => AAC (Stereo)' % (audio.descriptor, audio.channel_layout, audio.language)
+		audio_str = f'Audio: {audio.descriptor} {audio.channel_layout} ({audio.language}) => AAC (Stereo)'
 		msg.append(audio_str)
-		if ((audio.descriptor != 'ac3') or (audio.channels > 2)):
-			audio_str = 'Audio: %s %s (%s) => Copy' % (audio.descriptor, audio.channel_layout, audio.language)
+		if ((audio.priority > 1) or (audio.channels > 2)):
+			audio_str = f'Audio: {audio.descriptor} {audio.channel_layout} ({audio.language}) => Copy'
 			msg.append(audio_str)
 
 	if encode_data.subtitle_data != None:
-		subtitle_str = 'Subtitle: %s (%s)' % (encode_data.subtitle_data.language, encode_data.subtitle_data.descriptor)
+		subtitle_str = f'Subtitle: {encode_data.subtitle_data.language} ({encode_data.subtitle_data.descriptor})'
 	else:
 		subtitle_str = 'Subtitle: NONE'
 	msg.append(subtitle_str)
@@ -105,16 +109,16 @@ def __build_encode_data_log_msg(encode_data):
 # Assumes /tmp/automated_ffmpeg/ exists and is writable
 # Returns: Tuple(the path of the xml file which is based on the name of the video file (None if error), msg)
 def create_video_data_xml(video_full_path):
-	xml_file_path = '/tmp/automated_ffmpeg/%s.xml' % os.path.basename(video_full_path)
+	xml_file_path = f'/tmp/automated_ffmpeg/{os.path.basename(video_full_path)}.xml'
 	proc = subprocess.run('ffprobe -v quiet -read_intervals "%+#2" -print_format xml -show_format -show_streams -show_entries side_data "{}" > "{}"'.format(video_full_path, xml_file_path), shell=True, stderr=subprocess.PIPE)
 
 	if proc.returncode != 0:
 		error_msg = proc.stderr.decode('utf-8'.split('\n'))
-		msg = 'Error running ffprobe for %s. Details below' % movie
+		msg = f'Error running ffprobe for {movie}. Details below'
 		error_msg.insert(0, msg)
 		return (None, error_msg)
 	else:
-		return (xml_file_path, 'Created xml file to be analyzed for %s (XML File Location: %s)' % (video_full_path, xml_file_path))
+		return (xml_file_path, f'Created xml file to be analyzed for {video_full_path} (XML File Location: {xml_file_path})')
 
 # Analyzes ffprobe xml output of file and builds a EncodeData object with details needed to run ffmpeg.
 # Takes in the xml_root object (not the file object)
@@ -154,7 +158,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 					if max_avg == None:
 						max_avg = '0'
 
-					encode_data.video_data.max_cll = "'%s,%s'" % (max_content, max_avg)
+					encode_data.video_data.max_cll = f"'{max_content},{max_avg}'"
 				else:
 					continue
 			else:
@@ -193,7 +197,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 						encode_data.video_data.chroma_location = '1'
 			else:
 				encode_data.video_data.codec = 'libx264'
-			encode_data.video_data.orig_resolution = '%dx%d' % (width, height)
+			encode_data.video_data.orig_resolution = f'{width}x{height}'
 		elif codec_type == 'audio':
 			index = int(stream.get('index'))
 			codec_name = stream.get('codec_name')
@@ -203,7 +207,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 
 			# Unknown codec; Won't know what to do with it and should be added to dictionary.
 			if codec_priority == None:
-				msg = 'Unknown audio codec type found. Add to dictionary. Codec Type: %s' % codec_name
+				msg = f'Unknown audio codec type found. Add to dictionary. Codec Type: {codec_name}'
 				return (None, msg)
 
 			tags = stream.findall('tag')
@@ -216,7 +220,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 
 			# Exit if for some reason no language is found.
 			if language == None:
-				msg = 'Unknown language for stream index %s.' % index
+				msg = f'Unknown language for stream index {index}.'
 				return (None, msg)
 
 			# Check if we have ANY audio streams
@@ -225,6 +229,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 				audio_data.index = 0 #First audio stream found
 				audio_data.descriptor = codec_name
 				audio_data.language = language
+				audio_data.priority = codec_priority
 				audio_data.channels = int(stream.get('channels'))
 				audio_data.channel_layout = stream.get('channel_layout')
 				encode_data.audio_data.append(audio_data)
@@ -239,6 +244,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 							audio_data.index = index - 1
 							audio_data.descriptor = codec_name
 							audio_data.language = language
+							audio_data.priority = codec_priority
 							audio_data.channels = int(stream.get('channels'))
 							audio_data.channel_layout = stream.get('channel_layout')
 							encode_data.audio_data[i] = audio_data
@@ -251,6 +257,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 					audio_data.index = index - 1
 					audio_data.descriptor = codec_name
 					audio_data.language = language
+					audio_data.priority = codec_priority
 					audio_data.channels = int(stream.get('channels'))
 					audio_data.channel_layout = stream.get('channel_layout')
 					encode_data.audio_data.append(audio_data)
@@ -279,14 +286,14 @@ def build_encode_data(movie_full_path, xml_file_path):
 
 		else:
 			index = stream.get('index')
-			msg = 'Unable to identify stream/codec type for stream %s.' % index
+			msg = f'Unable to identify stream/codec type for stream {index}.'
 			return (None, msg)
 
 	# Crop
 	crop = subprocess.check_output("""ffmpeg -i "%s" -ss 00:10:00 -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % movie_full_path, shell=True, encoding='UTF-8')
 	encode_data.video_data.crop = crop.rstrip('\n\r')
 
-	msg = ['Built encode data for %s' % movie_full_path] + __build_encode_data_log_msg(encode_data)
+	msg = [f'Built encode data for {movie_full_path}'] + __build_encode_data_log_msg(encode_data)
 
 	return (encode_data, msg)
 
@@ -302,8 +309,8 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 		if os.path.exists(vid_dir) == False:
 			os.makedirs(vid_dir)
 	except Exception as error:
-		dest_path = '%s/%s' % (dest_dir, os.path.basename(encode_data.source_file_full_path))
-		msg = ['Error creating directory %s. Defaulting ffmpeg output to %s.' % (vid_dir, dest_dir), str(error)]
+		dest_path = f'{dest_dir}/{os.path.basename(encode_data.source_file_full_path)}'
+		msg = [f'Error creating directory {vid_dir}. Defaulting ffmpeg output to {dest_dir}.', str(error)]
 
 	audio_list = encode_data.audio_data
 	video_data = encode_data.video_data
@@ -312,50 +319,42 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 	# Map section
 	map_str = '-map 0:v:0 '
 	for audio in audio_list:
-		if audio.descriptor == 'ac3':
-			if audio.channels > 2:
-				map_str += '-map 0:a:%s -map 0:a:%s ' % (audio.index, audio.index)
-			else:
-				map_str += '-map 0:a:%s ' % (audio.index)
+		if (audio.priority <= 1) and (audio.channels <= 2):
+			map_str += f'-map 0:a:{audio.index} '
 		else:
-			map_str += '-map 0:a:%s -map 0:a:%s ' % (audio.index, audio.index)
+			map_str += f'-map 0:a:{audio.index} -map 0:a:{audio.index} '
 	if subtitle_data != None:
-		map_str += '-map 0:s:%s ' % subtitle_data.index
+		map_str += f'-map 0:s:{subtitle_data.index} '
 
 	# Video section
 	if video_data.codec == 'libx265':
-		video_settings_str = '-pix_fmt yuv420p10le -vcodec libx265 -vf "%s" -preset slow -x265-params "keyint=60:bframes=3:vbv-bufsize=75000:vbv-maxrate=75000:repeat-headers=1:colorprim=%s:transfer=%s:colormatrix=%s' \
-			% (video_data.crop, video_data.color_primaries, video_data.color_transfer, video_data.color_space)
+		video_settings_str = (	f'-pix_fmt yuv420p10le -vcodec libx265 -vf "{video_data.crop}" -preset slow '
+								f'-x265-params "keyint=60:bframes=3:vbv-bufsize=75000:vbv-maxrate=75000:repeat-headers=1:colorprim={video_data.color_primaries}:transfer={video_data.color_transfer}:colormatrix={video_data.color_space}')
 		if video_data.hdr != None:
 			hdr = video_data.hdr
-			master_display_str = ":hdr10-opt=1:master-display='G(%s,%s)B(%s,%s)R(%s,%s)WP(%s,%s)L(%s,%s)'" % (hdr.green_x, hdr.green_y, hdr.blue_x, hdr.blue_y, hdr.red_x, hdr.red_y, hdr.white_point_x, hdr.white_point_y, hdr.max_luminance, hdr.min_luminance)
+			master_display_str = f":hdr10-opt=1:master-display='G({hdr.green_x},{hdr.green_y})B({hdr.blue_x},{hdr.blue_y})R({hdr.red_x},{hdr.red_y})WP({hdr.white_point_x},{hdr.white_point_y})L({hdr.max_luminance},{hdr.min_luminance})'"
 			video_settings_str += master_display_str
 		if video_data.max_cll != None:
-			max_cll_str = ':max-cll=%s' % video_data.max_cll
+			max_cll_str = f':max-cll={video_data.max_cll}'
 			video_settings_str += max_cll_str
 		if video_data.chroma_location != None:
-			chroma_location_str = ':chromaloc=%s' % video_data.chroma_location
+			chroma_location_str = f':chromaloc={video_data.chroma_location}'
 			video_settings_str += chroma_location_str
 
 		video_settings_str += '" -crf 20 -force_key_frames "expr:gte(t,n_forced*2)" '
 
 	elif video_data.codec == 'libx264':
-		video_settings_str = '-pix_fmt yuv420p -vcodec libx264 -vf "%s" -preset slow -crf 16 ' % video_data.crop
+		video_settings_str = f'-pix_fmt yuv420p -vcodec libx264 -vf "{video_data.crop}" -preset slow -crf 16 '
 
 	# Audio section
 	audio_settings_str = ''
 	audio_count = 0
 	for audio in audio_list:
-		if audio.descriptor == 'ac3':
-			if audio.channels > 2:
-				audio_settings_str += '-c:a:%d libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:%d title="Stereo (%s)" -c:a:%d copy ' % (audio_count, audio_count, audio.language, audio_count + 1)
-				audio_count += 2
-			else:
-				audio_settings_str += '-c:a:%d libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:%d title="Stereo (%s)" ' % (audio_count, audio_count, audio.language)
-				audio_count += 1
-
+		if (audio.priority <= 1) and (audio.channels <= 2):
+			audio_settings_str += f'-c:a:{audio_count} libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" '
+			audio_count += 1
 		else:
-			audio_settings_str += '-c:a:%d libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:%d title="Stereo (%s)" -c:a:%d copy ' % (audio_count, audio_count, audio.language, audio_count + 1)
+			audio_settings_str += f'-c:a:{audio_count} libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" -c:a:{audio_count + 1} copy '
 			audio_count += 2
 	
 	# Subtitle section
@@ -363,8 +362,7 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 	if subtitle_data != None:
 		subtitle_settings_str = '-c:s copy '
 
-	cmd = 'ffmpeg -y -i "%s" %s%s%s%s-max_muxing_queue_size 9999 "%s"' \
-		% (encode_data.source_file_full_path, map_str, video_settings_str, audio_settings_str, subtitle_settings_str, dest_path)
+	cmd = f'ffmpeg -y -i "{encode_data.source_file_full_path}" {map_str}{video_settings_str}{audio_settings_str}{subtitle_settings_str}-max_muxing_queue_size 9999 "{dest_path}"'
 
 	return (cmd, dest_path, msg)
 

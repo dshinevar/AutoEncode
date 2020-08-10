@@ -38,7 +38,7 @@ def exit_cleanup(*args):
 			log(Severity.INFO, 'Program exited/terminated. Cleaning up.')
 		else:
 			msg = ['Program exited/terminated. Cleaning up.',
-				'Moving being encoded when terminated: %s' % current_working_movie]
+				f'Moving being encoded when terminated: {current_working_movie}']
 			log(Severity.INFO, msg)
 
 	if ffmpeg_proc != None:
@@ -124,21 +124,21 @@ if min_len < 1:
 	sys.exit(1)
 elif min_len != max_len:
 	msg = ['Issue with length of given directory lists.  Check config file.  Will proceed using minimum list length.',
-		'Minimum Directory List Length: %d' % min_len,
-		'Maximum Directory List Length: %d' % max_len]
+		f'Minimum Directory List Length: {min_len}',
+		f'Maximum Directory List Length: {max_len}']
 	log(Severity.ERROR, msg)
 
 ffmpeg_version = subprocess.check_output('ffmpeg -version', encoding='UTF-8', shell=True).split('\n')
 
 msg = ['AUTOMATED_FFMPEG START UP/INITIALIZED.',
-	'TIMEZONE: %s' % tz,
-	'MOVIE DIRECTORIES: %s' % movie_dirs[:min_len],
-	'MOVIE ENCODED DIRECTORIES: %s' % movie_encoded_dirs[:min_len]]
+	f'TIMEZONE: {tz}',
+	f'MOVIE DIRECTORIES: {movie_dirs[:min_len]}',
+	f'MOVIE ENCODED DIRECTORIES: {movie_encoded_dirs[:min_len]}']
 
 if plex_enabled == True:
-	msg += ['PLEX DIRECTORIES: %s' % plex_dirs[:min_len],
-	'PLEX LIBRARY SECTIONS: %s' % plex_sections[:min_len],
-	'PLEX SERVER: %s' % plex_servername]
+	msg += [f'PLEX DIRECTORIES: {plex_dirs[:min_len]}',
+	f'PLEX LIBRARY SECTIONS: {plex_sections[:min_len]}',
+	f'PLEX SERVER: {plex_servername}']
 
 msg += ['FFMPEG VERSION INFO:'] + ffmpeg_version
 log(Severity.INFO, msg)
@@ -153,7 +153,7 @@ while True:
 		to_encode = build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base)
 
 		if len(to_encode) > 0:
-			msg = ['Found %d new movie(s) to encode.' % len(to_encode)] + [os.path.basename(movie) for movie in to_encode]
+			msg = [f'Found {len(to_encode)} new movie(s) to encode.'] + [os.path.basename(movie) for movie in to_encode]
 			log(Severity.INFO, msg)
 			found_movies_to_encode = True
 			# Encode each new movie
@@ -191,17 +191,17 @@ while True:
 					try:
 						os.remove(xml_file_path)
 					except OSError as error:
-						msg = ['Error deleting %s' % xml_file_path, error]
+						msg = [f'Error deleting {xml_file_path}', error]
 						log(Severity.ERROR, msg)
 					else:
-						log(Severity.INFO, 'Deleted %s' % xml_file_path)
+						log(Severity.INFO, f'Deleted {xml_file_path}')
 
 					# BUILD COMMAND
 					cmd, encoded_movie_path, msg = build_encode_command(encode_data, movie_dirs[i], movie_encoded_dirs[i])
 					if msg != None:
 						log(Severity.ERROR, msg)
 
-					msg = ['STARTING ENCODING FOR: %s' % movie, 'FFMPEG CMD: %s' % cmd]
+					msg = [f'STARTING ENCODING FOR: {movie}', f'FFMPEG CMD: {cmd}']
 					log(Severity.INFO, msg)
 
 					current_working_movie = movie
@@ -216,7 +216,7 @@ while True:
 
 					if ffmpeg_proc.returncode != 0:
 						error_msg = ffmpeg_proc.stderr.decode('utf-8').split('\n')
-						msg = 'Error running ffmpeg for %s. Details below' % movie
+						msg = f'Error running ffmpeg for {movie}. Details below'
 						error_msg.insert(0, msg)
 						log(Severity.ERROR, error_msg)
 						ffmpeg_proc = None
@@ -224,17 +224,18 @@ while True:
 						try:
 							os.remove(working_movie_path)
 						except Exception as error:
-							msg = ['Error deleting %s' % working_movie_path, str(error)]
+							msg = [f'Error deleting {working_movie_path}', str(error)]
 							log(Severity.ERROR, msg)
 					else:
-						msg = ['COMPLETED ENCODING FOR %s' % movie, 'Time Elapsed: %s' % str(stop_time - start_time)]
+						elapsed_time = stop_time - start_time
+						msg = [f'COMPLETED ENCODING FOR {movie}', f'Time Elapsed: {str(elapsed_time)}']
 						log(Severity.INFO, msg)
 						ffmpeg_proc = None
 
 						try:
 							os.remove(working_movie_path)
 						except Exception as error:
-							msg = ['Error deleting %s' % working_movie_path, str(error)]
+							msg = [f'Error deleting {working_movie_path}', str(error)]
 							log(Severity.ERROR, msg)
 
 						if plex_enabled == True:
@@ -247,16 +248,16 @@ while True:
 
 								shutil.copy2(encoded_movie_path, encoded_movie_plex_dest)
 							except IOError as error:
-								msg = ['Error copying %s to %s (Details below). Will not attempt to update plex server.' % (encoded_movie_path, encoded_movie_plex_dest), str(error)]
+								msg = [f'Error copying {encoded_movie_path} to {encoded_movie_plex_dest} (Details below). Will not attempt to update plex server.', str(error)]
 								log(Severity.ERROR, msg)
 								continue
 							else:
-								log(Severity.INFO, 'Successfully copied %s to %s' % (encoded_movie_path, encoded_movie_plex_dest))
+								log(Severity.INFO, f'Successfully copied {encoded_movie_path} to {encoded_movie_plex_dest}')
 
 							plex_interact.update(plex_sections[i])
 
 				except Exception as error:
-					msg = ['Error during processing/encoding %s' % movie, str(error)]
+					msg = [f'Error during processing/encoding {movie}', str(error)]
 					log(Severity.ERROR, msg)
 
 	if found_movies_to_encode == False:

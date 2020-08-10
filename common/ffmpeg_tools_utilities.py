@@ -12,9 +12,9 @@ def check_file_ready(video_full_path):
 	file_size_after = Path(video_full_path).stat().st_size
 
 	if file_size_before != file_size_after:
-		msg = 'File %s is being written to (file size is changing). May still be ripping. Aborting encoding.' % video_full_path
+		msg = f'File {video_full_path} is being written to (file size is changing). May still be ripping. Aborting encoding.' 
 	else:
 		is_ready = True
-		msg = 'File %s is ready.' % video_full_path
+		msg = None
 
 	return (is_ready, msg)

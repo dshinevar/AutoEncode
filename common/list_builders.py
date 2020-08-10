@@ -45,6 +45,6 @@ def build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base
 	diff_list = [m for m in movie_files_base if m not in movie_encoded_files_base]
 
 	# Uses diff_list base file names to find full file path in movie_files
-	to_encode = [m for m in movie_files if any('%s.mkv' % sub in m for sub in diff_list)]
+	to_encode = [m for m in movie_files if any(f'{sub}.mkv' in m for sub in diff_list)]
 
 	return to_encode
