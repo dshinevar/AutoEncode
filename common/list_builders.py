@@ -8,7 +8,7 @@ from pathlib import Path
 def build_movie_lists(movie_dir):
 	movie_files = []
 	movie_files_base = []
-	for file in glob('%s/**/*.mkv' % movie_dir, recursive=True):
+	for file in glob(f'{movie_dir}/**/*.mkv', recursive=True):
 		movie_files.append(file)
 		movie_files_base.append(Path(file).stem)
 
@@ -29,7 +29,7 @@ def build_movie_encoded_lists(movie_encoded_dir):
 	file_extensions = ('*.mkv', '*.m4v', '*.mp4')
 
 	for file in file_extensions:
-		movie_encoded_files.extend(glob('%s/**/%s' % (movie_encoded_dir, file), recursive=True))
+		movie_encoded_files.extend(glob(f'{movie_encoded_dir}/**/{file}', recursive=True))
 
 	movie_encoded_files.sort()
 

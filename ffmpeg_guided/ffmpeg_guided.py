@@ -5,7 +5,14 @@ import sys
 import xml.etree.ElementTree as ET
 
 import ffmpeg_script_utils as utils
-from ffmpeg_script_utils import usage
+from encode_data import *
+from ffmpeg_tools_utilities import *
+from list_builders import *
+from plex_interactor import *
+from simple_logger import *
+
+def usage():
+	print('Usage: python3 %s [-m movie | -t tv_show_episode | -a anime | -am anime_movie]' % sys.argv[0])
 
 def main(argv):
 	# Need at least one argument

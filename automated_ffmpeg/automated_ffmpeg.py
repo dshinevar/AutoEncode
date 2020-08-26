@@ -1,4 +1,4 @@
-import configparser
+from configparser import ConfigParser
 from datetime import datetime as dt
 import os
 import pytz
@@ -8,6 +8,7 @@ from stat import *
 import subprocess
 import sys
 import time
+import traceback
 
 from encode_data import *
 from ffmpeg_tools_utilities import *
@@ -15,16 +16,16 @@ from list_builders import *
 from plex_interactor import *
 from simple_logger import *
 
-# GLOBALS
+### GLOBALS ###
 ffmpeg_proc = None
 logger = None
 
 config_name = '/usr/local/bin/automated_ffmpeg_config.ini'
 current_working_movie = None
 working_movie_path = '/tmp/automated_ffmpeg/working_movie.txt' 
-# GLOBALS
+### GLOBALS ###
 
-# FUNCTIONS
+### FUNCTIONS ###
 def log(severity, msg):
 	global logger
 	logger.log(severity, msg)
@@ -38,21 +39,23 @@ def exit_cleanup(*args):
 			log(Severity.INFO, 'Program exited/terminated. Cleaning up.')
 		else:
 			msg = ['Program exited/terminated. Cleaning up.',
-				f'Moving being encoded when terminated: {current_working_movie}']
+				f'Movie being encoded when terminated: {current_working_movie}']
 			log(Severity.INFO, msg)
 
 	if ffmpeg_proc != None:
 		ffmpeg_proc.kill()
 
-	sys.exit(1)
+	sys.exit(0)
 
-# FUNCTIONS
+### FUNCTIONS ###
 
-# MAIN
-config = configparser.ConfigParser()
+### MAIN ###
+config = ConfigParser()
 config.read(config_name)
-tz = config['DEFAULT'].get('timezone', 'US/Central')
+tz = config['Logger'].get('timezone', 'US/Central')
 timezone = pytz.timezone(tz)
+max_bytes = config['Logger'].getint('max_bytes', 256000) # Defaults to 250 KB
+backup_count = config['Logger'].getint('backup_count', 3)
 
 if os.path.exists('/tmp/automated_ffmpeg') == False:
 		os.makedirs('/tmp/automated_ffmpeg')
@@ -61,12 +64,12 @@ if os.access('/var/log/', os.W_OK) == True:
 	if os.path.exists('/var/log/automated_ffmpeg') == False:
 		os.makedirs('/var/log/automated_ffmpeg')
 
-	log_file = '/var/log/automated_ffmpeg/automated_ffmpeg_log.txt'
+	log_file = '/var/log/automated_ffmpeg/automated_ffmpeg.log'
 
 else:
-	log_file = '/tmp/automated_ffmpeg/automated_ffmpeg_log.txt'
+	log_file = '/tmp/automated_ffmpeg/automated_ffmpeg.log'
 
-logger = SimpleLogger(timezone, log_file)
+logger = SimpleLoggerWithRollover(timezone, log_file, max_bytes=max_bytes, backup_count=backup_count)
 
 # Set cleanup function for potential termination
 for sig in (SIGABRT, SIGALRM, SIGBUS, SIGILL, SIGINT, SIGTERM):
@@ -80,7 +83,7 @@ try:
 				os.remove(file_to_delete)
 		os.remove(working_movie_path)
 except Exception as error:
-	msg = ['Error deleting previous working movie or working_movie file.', str(error)]
+	msg = ['Error deleting previous working movie or working_movie file.'] + traceback.format_exc().split('\n')
 	log(Severity.ERROR, msg)
 
 plex_enabled = config['DEFAULT'].getboolean('plex_enabled', False)
@@ -95,8 +98,8 @@ try:
 		plex_dirs = directories['plex'].split(',')
 		plex_sections = directories['plex_section'].split(',')
 except Exception as error:
-	msg = ['Error getting directory info from config file. Exiting.', str(error)]
-	log(Severity.ERROR, msg)
+	msg = ['Error getting directory info from config file. Exiting.'] + traceback.format_exc().split('\n')
+	log(Severity.FATAL, msg)
 	sys.exit(1)
 
 # Config - Plex Info
@@ -107,20 +110,20 @@ if plex_enabled == True:
 		plex_servername = config['Plex']['server']
 
 		plex_interact = PlexInteractor(plex_username, plex_password, plex_servername)
-	except Exception as error:
-		msg = ['Error getting Plex info from config file. Exiting.', str(error)]
-		log(Severity.Error, msg)
-		sys.exit(1)
 
-if plex_enabled == True:
-	min_len = len(min(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
-	max_len = len(max(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
+		min_len = len(min(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
+		max_len = len(max(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
+
+	except Exception as error:
+		msg = ['Error getting Plex info from config file. Exiting.'] + traceback.format_exc().split('\n')
+		log(Severity.FATAL, msg)
+		sys.exit(1)
 else:
 	min_len = len(min(movie_dirs, movie_encoded_dirs, key=len))
 	max_len = len(max(movie_dirs, movie_encoded_dirs, key=len))
 
 if min_len < 1:
-	log(Severity.ERROR, 'Length of one of the directory lists in config file is zero. Exiting.')
+	log(Severity.FATAL, 'Length of one of the directory lists in config file is zero. Exiting.')
 	sys.exit(1)
 elif min_len != max_len:
 	msg = ['Issue with length of given directory lists.  Check config file.  Will proceed using minimum list length.',
@@ -130,7 +133,7 @@ elif min_len != max_len:
 
 ffmpeg_version = subprocess.check_output('ffmpeg -version', encoding='UTF-8', shell=True).split('\n')
 
-msg = ['AUTOMATED_FFMPEG START UP/INITIALIZED.',
+msg = ['AUTOMATED_FFMPEG INITIALIZED.',
 	f'TIMEZONE: {tz}',
 	f'MOVIE DIRECTORIES: {movie_dirs[:min_len]}',
 	f'MOVIE ENCODED DIRECTORIES: {movie_encoded_dirs[:min_len]}']
@@ -143,12 +146,20 @@ if plex_enabled == True:
 msg += ['FFMPEG VERSION INFO:'] + ffmpeg_version
 log(Severity.INFO, msg)
 
+sleep_time = config['DEFAULT'].getint('sleep', 1800) # Defaults to 30 minutes
+
 # Get into what should be a never ending loop
 while True:
 	found_movies_to_encode = False
 	for i in range(0, min_len):
 
 		movie_files, movie_files_base = build_movie_lists(movie_dirs[i])
+
+		if (not movie_files) or (not movie_files_base):
+			msg = f'No movies found in {movie_dirs[i]}.'
+			log(Severity.ERROR, msg)
+			continue
+
 		movie_encoded_files, movie_encoded_files_base = build_movie_encoded_lists(movie_encoded_dirs[i])
 		to_encode = build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base)
 
@@ -224,7 +235,7 @@ while True:
 						try:
 							os.remove(working_movie_path)
 						except Exception as error:
-							msg = [f'Error deleting {working_movie_path}', str(error)]
+							msg = [f'Error deleting {working_movie_path}'] + traceback.format_exc().split('\n')
 							log(Severity.ERROR, msg)
 					else:
 						elapsed_time = stop_time - start_time
@@ -235,9 +246,10 @@ while True:
 						try:
 							os.remove(working_movie_path)
 						except Exception as error:
-							msg = [f'Error deleting {working_movie_path}', str(error)]
+							msg = [f'Error deleting {working_movie_path}'] + traceback.format_exc().split('\n')
 							log(Severity.ERROR, msg)
 
+						# PLEX INTERACT SECTION
 						if plex_enabled == True:
 							# COPY FILE OVER TO PLEX MEDIA DIRECTORIES
 							# Get encoded_movie_path from building encode command
@@ -247,17 +259,21 @@ while True:
 									os.makedirs(encoded_movie_plex_dest)
 
 								shutil.copy2(encoded_movie_path, encoded_movie_plex_dest)
-							except IOError as error:
-								msg = [f'Error copying {encoded_movie_path} to {encoded_movie_plex_dest} (Details below). Will not attempt to update plex server.', str(error)]
+							except Exception as error:
+								msg = [f'Error copying {encoded_movie_path} to {encoded_movie_plex_dest} (Details below). Will not attempt to update plex server.'] + traceback.format_exc().split('\n')
 								log(Severity.ERROR, msg)
 								continue
 							else:
 								log(Severity.INFO, f'Successfully copied {encoded_movie_path} to {encoded_movie_plex_dest}')
 
-							plex_interact.update(plex_sections[i])
+							try:
+								plex_interact.update(plex_sections[i])
+							except Exception as error:
+								msg = [f'Failed to update Plex Server.', f'Server: {plex_servername}', f'Section: {plex_sections[i]}'] + traceback.format_exc().split('\n')
+								log(Severity.ERROR, msg)
 
 				except Exception as error:
-					msg = [f'Error during processing/encoding {movie}', str(error)]
+					msg = [f'Error during processing/encoding {movie}'] + traceback.format_exc().split('\n')
 					log(Severity.ERROR, msg)
 
 	if found_movies_to_encode == False:
@@ -266,6 +282,12 @@ while True:
 		movie_encoded_files = []
 		movie_encoded_files_base = []
 		to_encode = []
-		time.sleep(1800) # 30 minutes
+		try:
+			logger.check_rollover()
+		except Exception as error:
+			msg = ['Error doing log file rollover.'] + traceback.format_exc().split('\n')
+			log(Severity.ERROR, msg)
 
-# MAIN
+		time.sleep(sleep_time) # Wait a while before checking for more work
+
+### MAIN ###

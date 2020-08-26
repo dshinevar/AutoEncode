@@ -16,10 +16,11 @@ then
 		echo "Copied $file to /usr/local/bin"
 	done
 	echo "##### Completed installing automated_ffmpeg #####"
-	echo -e "Remember to reload systemctl daemon\n"
+	echo -e "Make sure to run this command: systemctl daemon-reload\n"
 elif [[ $arg = "ffmpeg" ]]
 then
 	echo "Installing ffmpeg"
+	sh ./ffmpeg_build/ffmpeg_build.sh
 else
 	echo "Usage: bash install.sh [automated_ffmpeg | ffmpeg]"
 fi

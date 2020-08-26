@@ -1,5 +1,6 @@
 import os
 import subprocess
+import traceback
 import xml.etree.ElementTree as ET
 
 #### DICTIONARIES/STATICS ####
@@ -69,12 +70,13 @@ class SubtitleData:
 		self.index = -1
 
 class EncodeData:
-	__slots__ = ['source_file_full_path', 'video_data', 'audio_data', 'subtitle_data']
+	__slots__ = ['source_file_full_path', 'video_data', 'audio_data', 'subtitle_data', 'subtitle_forced_data']
 	def __init__(self):
 		self.source_file_full_path = ""
 		self.video_data = VideoData()
 		self.audio_data = []
 		self.subtitle_data = None
+		self.subtitle_forced_data = None
 
 #### CLASSES ####
 
@@ -98,11 +100,16 @@ def __build_encode_data_log_msg(encode_data):
 			audio_str = f'Audio: {audio.descriptor} {audio.channel_layout} ({audio.language}) => Copy'
 			msg.append(audio_str)
 
-	if encode_data.subtitle_data != None:
-		subtitle_str = f'Subtitle: {encode_data.subtitle_data.language} ({encode_data.subtitle_data.descriptor})'
-	else:
+	if (encode_data.subtitle_data == None) and (encode_data.subtitle_forced_data == None):
 		subtitle_str = 'Subtitle: NONE'
-	msg.append(subtitle_str)
+		msg.append(subtitle_str)
+	else:
+		if encode_data.subtitle_data != None:
+			subtitle_str = f'Subtitle: {encode_data.subtitle_data.language} ({encode_data.subtitle_data.descriptor})'
+			msg.append(subtitle_str)
+		if encode_data.subtitle_forced_data != None:
+			subtitle_str = f'Subtitle (forced): {encode_data.subtitle_forced_data.language} ({encode_data.subtitle_forced_data.descriptor})'
+			msg.append(subtitle_str)
 
 	return msg
 # Runs a subprocess of ffprobe to create an xml file with data on the given video file
@@ -167,9 +174,10 @@ def build_encode_data(movie_full_path, xml_file_path):
 			continue
 
 	# Streams (Video, Audio, Subtitles)
+	audio_index = 0
+	subtitle_index = 0 # Used to keep track of index to use in ffmpeg command for subtitles (in case more than one subtitle stream is found)
+	primary_audio_language = ''
 	for stream in xml_root.findall('streams/stream'):
-		subtitle_index = 0 #Used to keep track of index to use in ffmpeg command for subtitles (in case more than one subtitle stream is found)
-
 		codec_type = stream.get('codec_type')
 		if codec_type == 'video':
 			width = int(stream.get('width'))
@@ -199,7 +207,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 				encode_data.video_data.codec = 'libx264'
 			encode_data.video_data.orig_resolution = f'{width}x{height}'
 		elif codec_type == 'audio':
-			index = int(stream.get('index'))
+			stream_index = int(stream.get('index'))
 			codec_name = stream.get('codec_name')
 			if codec_name == 'dts':
 				codec_name = stream.get('profile')
@@ -220,19 +228,20 @@ def build_encode_data(movie_full_path, xml_file_path):
 
 			# Exit if for some reason no language is found.
 			if language == None:
-				msg = f'Unknown language for stream index {index}.'
+				msg = f'Unknown language for stream index {stream_index}.'
 				return (None, msg)
 
 			# Check if we have ANY audio streams
 			if not encode_data.audio_data:
 				audio_data = AudioData()
-				audio_data.index = 0 #First audio stream found
+				audio_data.index = audio_index # Should be 0 - First audio stream found
 				audio_data.descriptor = codec_name
 				audio_data.language = language
 				audio_data.priority = codec_priority
 				audio_data.channels = int(stream.get('channels'))
 				audio_data.channel_layout = stream.get('channel_layout')
 				encode_data.audio_data.append(audio_data)
+				primary_audio_language = language
 			else:
 				found = False
 				for i in range(0, len(encode_data.audio_data)):
@@ -241,7 +250,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 						current_priority = audio_codec_priority[encode_data.audio_data[i].descriptor]
 						if codec_priority > current_priority:
 							audio_data = AudioData()
-							audio_data.index = index - 1
+							audio_data.index = audio_index
 							audio_data.descriptor = codec_name
 							audio_data.language = language
 							audio_data.priority = codec_priority
@@ -254,7 +263,7 @@ def build_encode_data(movie_full_path, xml_file_path):
 				# Didn't find audio data with a matching language, add a new language
 				if found == False:
 					audio_data = AudioData()
-					audio_data.index = index - 1
+					audio_data.index = audio_index
 					audio_data.descriptor = codec_name
 					audio_data.language = language
 					audio_data.priority = codec_priority
@@ -262,25 +271,44 @@ def build_encode_data(movie_full_path, xml_file_path):
 					audio_data.channel_layout = stream.get('channel_layout')
 					encode_data.audio_data.append(audio_data)
 
-		elif codec_type == 'subtitle':
-			# Only need 1 (english) subtitle; TODO: Forced subtitle tracks?
-			if encode_data.subtitle_data == None:
-				tags = stream.findall('tag')
-				for tag in tags:
-					key = tag.get('key')
-					if key == 'language':
-						language = tag.get('value')
-						if language != 'eng':
-							continue
-						else:
-							encode_data.subtitle_data = SubtitleData()
-							break
+			audio_index += 1
 
-				# If not english language, subtitle data won't be made
-				if encode_data.subtitle_data != None:
-					encode_data.subtitle_data.language = language
-					encode_data.subtitle_data.descriptor = stream.get('codec_name')
-					encode_data.subtitle_data.index = subtitle_index
+		elif codec_type == 'subtitle':
+			stream_index = int(stream.get('index'))
+			# Only need english subtitles; Should really never have more than 2 subtitle tracks TODO: Forced subtitle tracks?
+			language = None
+			tags = stream.findall('tag')
+			for tag in tags:
+				key = tag.get('key')
+				if key == 'language':
+					language = tag.get('value')
+
+			if language == 'eng':
+				disposition = stream.find('disposition')
+				if disposition != None:
+					default = disposition.get('default')
+					forced = disposition.get('forced')
+
+					# Handle forced/default subtitle track
+					if ((default == '1') or (forced == '1')) and (primary_audio_language == 'eng') :
+						if encode_data.subtitle_forced_data == None:
+							subtitle_forced_data = SubtitleData()
+							subtitle_forced_data.language = language
+							subtitle_forced_data.descriptor = stream.get('codec_name')
+							subtitle_forced_data.index = subtitle_index
+							encode_data.subtitle_forced_data = subtitle_forced_data
+
+					else:
+						if encode_data.subtitle_data == None:
+							subtitle_data = SubtitleData()
+							subtitle_data.language = language
+							subtitle_data.descriptor = stream.get('codec_name')
+							subtitle_data.index = subtitle_index
+							encode_data.subtitle_data = subtitle_data
+
+				else:
+					msg = f'English subtitle track found with no disposition section (stream index: {stream_index}).'
+					return (None, msg)
 
 			subtitle_index += 1
 
@@ -310,11 +338,12 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 			os.makedirs(vid_dir)
 	except Exception as error:
 		dest_path = f'{dest_dir}/{os.path.basename(encode_data.source_file_full_path)}'
-		msg = [f'Error creating directory {vid_dir}. Defaulting ffmpeg output to {dest_dir}.', str(error)]
+		msg = [f'Error creating directory {vid_dir}. Defaulting ffmpeg output to {dest_dir}.'] + traceback.format_exc().split('\n')
 
 	audio_list = encode_data.audio_data
 	video_data = encode_data.video_data
 	subtitle_data = encode_data.subtitle_data
+	subtitle_forced_data = encode_data.subtitle_forced_data
 
 	# Map section
 	map_str = '-map 0:v:0 '
@@ -325,6 +354,8 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 			map_str += f'-map 0:a:{audio.index} -map 0:a:{audio.index} '
 	if subtitle_data != None:
 		map_str += f'-map 0:s:{subtitle_data.index} '
+	if subtitle_forced_data != None:
+		map_str += f'-map 0:s:{subtitle_forced_data.index} '
 
 	# Video section
 	if video_data.codec == 'libx265':
@@ -351,16 +382,21 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 	audio_count = 0
 	for audio in audio_list:
 		if (audio.priority <= 1) and (audio.channels <= 2):
-			audio_settings_str += f'-c:a:{audio_count} libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" '
+			audio_settings_str += f'-c:a:{audio_count} aac -ac:a:{audio_count} 2 -b:a:{audio_count} 192k -filter:a:{audio_count} "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" '
 			audio_count += 1
 		else:
-			audio_settings_str += f'-c:a:{audio_count} libfdk_aac -ac 2 -filter:a:0 "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" -c:a:{audio_count + 1} copy '
+			audio_settings_str += f'-c:a:{audio_count} aac -ac:a:{audio_count} 2 -b:a:{audio_count} 192k -filter:a:{audio_count} "aresample=matrix_encoding=dplii" -metadata:s:a:{audio_count} title="Stereo ({audio.language})" -c:a:{audio_count + 1} copy '
 			audio_count += 2
 	
 	# Subtitle section
 	subtitle_settings_str = ''
+	subtitle_count = 0
 	if subtitle_data != None:
-		subtitle_settings_str = '-c:s copy '
+		subtitle_settings_str += f'-c:s:{subtitle_count} copy '
+		subtitle_count += 1
+	if subtitle_forced_data != None:
+		subtitle_settings_str += f'-c:s:{subtitle_count} copy -disposition:s:{subtitle_count} forced '
+		subtitle_count += 1
 
 	cmd = f'ffmpeg -y -i "{encode_data.source_file_full_path}" {map_str}{video_settings_str}{audio_settings_str}{subtitle_settings_str}-max_muxing_queue_size 9999 "{dest_path}"'
 
