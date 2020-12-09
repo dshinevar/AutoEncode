@@ -20,7 +20,7 @@ from simple_logger import *
 ffmpeg_proc = None
 logger = None
 
-config_name = '/usr/local/bin/automated_ffmpeg_config.ini'
+config_path = '/usr/local/bin/automated_ffmpeg_config.ini'
 current_working_movie = None
 working_movie_path = '/tmp/automated_ffmpeg/working_movie.txt' 
 ### GLOBALS ###
@@ -29,6 +29,9 @@ working_movie_path = '/tmp/automated_ffmpeg/working_movie.txt'
 def log(severity, msg):
 	global logger
 	logger.log(severity, msg)
+
+	if severity == Severity.FATAL:
+		sys.exit(1)
 
 def exit_cleanup(*args):
 	global logger
@@ -51,23 +54,25 @@ def exit_cleanup(*args):
 
 ### MAIN ###
 config = ConfigParser()
-config.read(config_name)
+config.read(config_path)
 tz = config['Logger'].get('timezone', 'US/Central')
 timezone = pytz.timezone(tz)
 max_bytes = config['Logger'].getint('max_bytes', 256000) # Defaults to 250 KB
 backup_count = config['Logger'].getint('backup_count', 3)
 
-if os.path.exists('/tmp/automated_ffmpeg') == False:
-		os.makedirs('/tmp/automated_ffmpeg')
+os.umask(0)
+os.makedirs('/tmp/automated_ffmpeg', mode=0o777, exist_ok=True)
 
 if os.access('/var/log/', os.W_OK) == True:
-	if os.path.exists('/var/log/automated_ffmpeg') == False:
-		os.makedirs('/var/log/automated_ffmpeg')
+	os.umask(0)
+	os.makedirs('/var/log/automated_ffmpeg', mode=0o777, exist_ok=True)
 
 	log_file = '/var/log/automated_ffmpeg/automated_ffmpeg.log'
 
 else:
 	log_file = '/tmp/automated_ffmpeg/automated_ffmpeg.log'
+
+os.chmod('/tmp/automated_ffmpeg', 0o777)
 
 logger = SimpleLoggerWithRollover(timezone, log_file, max_bytes=max_bytes, backup_count=backup_count)
 
@@ -93,6 +98,8 @@ try:
 	directories = config['Directories']
 	movie_dirs = directories['movie'].split(',')
 	movie_encoded_dirs = directories['movie_encoded'].split(',')
+	animated_config_values = directories['animated'].split(',')
+	animated = [convert_to_bool(values) for values in animated_config_values]
 
 	if plex_enabled == True:
 		plex_dirs = directories['plex'].split(',')
@@ -100,16 +107,14 @@ try:
 except Exception as error:
 	msg = ['Error getting directory info from config file. Exiting.'] + traceback.format_exc().split('\n')
 	log(Severity.FATAL, msg)
-	sys.exit(1)
 
 # Config - Plex Info
 if plex_enabled == True:
 	try:
-		plex_username = config['Plex']['username']
-		plex_password = config['Plex']['password']
-		plex_servername = config['Plex']['server']
+		plex_baseurl = config['Plex']['baseurl']
+		plex_token = config['Plex']['token']
 
-		plex_interact = PlexInteractor(plex_username, plex_password, plex_servername)
+		plex_interact = PlexInteractor(plex_baseurl, plex_token)
 
 		min_len = len(min(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
 		max_len = len(max(movie_dirs, movie_encoded_dirs, plex_dirs, plex_sections, key=len))
@@ -117,14 +122,12 @@ if plex_enabled == True:
 	except Exception as error:
 		msg = ['Error getting Plex info from config file. Exiting.'] + traceback.format_exc().split('\n')
 		log(Severity.FATAL, msg)
-		sys.exit(1)
 else:
 	min_len = len(min(movie_dirs, movie_encoded_dirs, key=len))
 	max_len = len(max(movie_dirs, movie_encoded_dirs, key=len))
 
 if min_len < 1:
 	log(Severity.FATAL, 'Length of one of the directory lists in config file is zero. Exiting.')
-	sys.exit(1)
 elif min_len != max_len:
 	msg = ['Issue with length of given directory lists.  Check config file.  Will proceed using minimum list length.',
 		f'Minimum Directory List Length: {min_len}',
@@ -132,6 +135,12 @@ elif min_len != max_len:
 	log(Severity.ERROR, msg)
 
 ffmpeg_version = subprocess.check_output('ffmpeg -version', encoding='UTF-8', shell=True).split('\n')
+
+try:
+	logger.check_rollover()
+except Exception as error:
+	msg = ['Error doing log file rollover.'] + traceback.format_exc().split('\n')
+	log(Severity.ERROR, msg)
 
 msg = ['AUTOMATED_FFMPEG INITIALIZED.',
 	f'TIMEZONE: {tz}',
@@ -141,7 +150,7 @@ msg = ['AUTOMATED_FFMPEG INITIALIZED.',
 if plex_enabled == True:
 	msg += [f'PLEX DIRECTORIES: {plex_dirs[:min_len]}',
 	f'PLEX LIBRARY SECTIONS: {plex_sections[:min_len]}',
-	f'PLEX SERVER: {plex_servername}']
+	f'PLEX SERVER: {plex_baseurl}']
 
 msg += ['FFMPEG VERSION INFO:'] + ffmpeg_version
 log(Severity.INFO, msg)
@@ -164,7 +173,7 @@ while True:
 		to_encode = build_to_encode_list(movie_files, movie_files_base, movie_encoded_files_base)
 
 		if len(to_encode) > 0:
-			msg = [f'Found {len(to_encode)} new movie(s) to encode.'] + [os.path.basename(movie) for movie in to_encode]
+			msg = [f'Found {len(to_encode)} new movie(s) to encode in {movie_dirs[i]}.'] + [os.path.basename(movie) for movie in to_encode]
 			log(Severity.INFO, msg)
 			found_movies_to_encode = True
 			# Encode each new movie
@@ -185,15 +194,20 @@ while True:
 					xml_file_path, msg = create_video_data_xml(movie)
 					if xml_file_path == None:
 						log(Severity.ERROR, msg)
+						found_movies_to_encode = False
 						continue
 					else:
 						log(Severity.INFO, msg)
 
 					# BUILD ENCODE DATA
-					encode_data, msg = build_encode_data(movie, xml_file_path)
+					encode_data, msg = build_automated_encode_data(xml_file_path, movie, animated[i])
 					if encode_data == None:
 						log(Severity.ERROR, msg)
-						# Don't delete xml file here in case it needs to be looked at
+						# Don't delete xml file here in case it needs to be looked at.
+						# Set this so if it is the last movie, it doesn't spin
+						# and fill up the log.  It'll at least have to wait
+						# the sleep time before trying again.
+						found_movies_to_encode = False
 						continue
 					else:
 						log(Severity.INFO, msg)
@@ -209,7 +223,10 @@ while True:
 
 					# BUILD COMMAND
 					cmd, encoded_movie_path, msg = build_encode_command(encode_data, movie_dirs[i], movie_encoded_dirs[i])
-					if msg != None:
+					if cmd == None:
+						log(Severity.ERROR, msg)
+						continue
+					elif msg != None:
 						log(Severity.ERROR, msg)
 
 					msg = [f'STARTING ENCODING FOR: {movie}', f'FFMPEG CMD: {cmd}']
@@ -227,6 +244,7 @@ while True:
 
 					if ffmpeg_proc.returncode != 0:
 						error_msg = ffmpeg_proc.stderr.decode('utf-8').split('\n')
+						error_msg[:] = [x for x in error_msg if not x.startswith('frame=')]
 						msg = f'Error running ffmpeg for {movie}. Details below'
 						error_msg.insert(0, msg)
 						log(Severity.ERROR, error_msg)
@@ -256,7 +274,7 @@ while True:
 							encoded_movie_plex_dest = encoded_movie_path.replace(movie_encoded_dirs[i], plex_dirs[i]).replace(os.path.basename(encoded_movie_path), '')
 							try:
 								if os.path.exists(encoded_movie_plex_dest) == False:
-									os.makedirs(encoded_movie_plex_dest)
+									os.makedirs(encoded_movie_plex_dest, mode=0o777)
 
 								shutil.copy2(encoded_movie_path, encoded_movie_plex_dest)
 							except Exception as error:
@@ -268,13 +286,22 @@ while True:
 
 							try:
 								plex_interact.update(plex_sections[i])
+								msg = f'Updated Plex Server. Server URL: {plex_baseurl} | Section: {plex_sections[i]}'
+								log(Severity.INFO, msg)
 							except Exception as error:
-								msg = [f'Failed to update Plex Server.', f'Server: {plex_servername}', f'Section: {plex_sections[i]}'] + traceback.format_exc().split('\n')
+								msg = [f'Failed to update Plex Server.', f'Server URL: {plex_baseurl}', f'Section: {plex_sections[i]}'] + traceback.format_exc().split('\n')
 								log(Severity.ERROR, msg)
 
 				except Exception as error:
 					msg = [f'Error during processing/encoding {movie}'] + traceback.format_exc().split('\n')
 					log(Severity.ERROR, msg)
+
+	# End of for loop - do rollover check
+	try:
+		logger.check_rollover()
+	except Exception as error:
+		msg = ['Error doing log file rollover.'] + traceback.format_exc().split('\n')
+		log(Severity.ERROR, msg)
 
 	if found_movies_to_encode == False:
 		movie_files = []
@@ -282,12 +309,6 @@ while True:
 		movie_encoded_files = []
 		movie_encoded_files_base = []
 		to_encode = []
-		try:
-			logger.check_rollover()
-		except Exception as error:
-			msg = ['Error doing log file rollover.'] + traceback.format_exc().split('\n')
-			log(Severity.ERROR, msg)
-
 		time.sleep(sleep_time) # Wait a while before checking for more work
 
 ### MAIN ###

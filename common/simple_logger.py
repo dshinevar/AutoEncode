@@ -52,20 +52,23 @@ class SimpleLoggerWithRollover(SimpleLogger):
 
 	def __do_rollover(self):
 		if self.backup_count > 0:
-			for i in range(backup_count, 0, -1):
+			for i in range(self.backup_count, 0, -1):
 				file = f'{self.log_file}.{i}'
 				if os.path.exists(file):
-					if i == backup_count:
+					if i == self.backup_count:
 						os.remove(file)
 					else:
 						os.rename(file, f'{self.log_file}.{i + 1}')
 
 			os.rename(self.log_file, f'{self.log_file}.1')
+			with open(self.log_file, 'w'):
+				pass
 		else:
-			os.remove(self.log_file)
+			with open(self.log_file, 'w'):
+				pass
 
 	def check_rollover(self):
-		if self.max_bytes <= -1:
+		if self.max_bytes >= -1:
 			current_log_file_size = Path(self.log_file).stat().st_size
 
 			if current_log_file_size >= self.max_bytes:

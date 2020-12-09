@@ -1,3 +1,5 @@
+import datetime
+from distutils.util import strtobool
 from pathlib import Path
 import time
 
@@ -18,3 +20,17 @@ def check_file_ready(video_full_path):
 		msg = None
 
 	return (is_ready, msg)
+
+# Converts number of seconds into a timestamp (HH:MM:SS)
+# Returns string of timestamp (HH:MM:SS)
+def convert_seconds_to_timestamp(num_seconds):
+	return str(datetime.timedelta(seconds = num_seconds))
+
+def convert_timestamp_to_seconds(timestamp):
+	return sum(x * int(t) for x, t in zip([0, 1, 60, 3600], reversed(timestamp.replace('.', ':').split(':'))))
+
+# Converts a proper string bool input to a boolean.
+# distutils.utils.strtobool does the heavy lifting
+# This wraps it in bool() to get a proper boolean.
+def convert_to_bool(input):
+	return bool(strtobool(input))

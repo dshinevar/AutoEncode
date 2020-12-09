@@ -1,14 +1,17 @@
 from glob import glob
+import os
 from pathlib import Path
 
 # Builds a list of movie files and their base filename based on the given directory
-# Mainly used to build lists of source movies to be used in determining what movies need 
-# to be encoded
+# and/or a user_input.  Assumes user_input is None if not given.
 # Returns: Tuple with index 0 being movie files, and index 1 being base filenames
-def build_movie_lists(movie_dir):
+def build_movie_lists(source_dir, user_input=None):
 	movie_files = []
 	movie_files_base = []
-	for file in glob(f'{movie_dir}/**/*.mkv', recursive=True):
+
+	full_search = f'{source_dir}/**/*.mkv' if user_input == None else f'{source_dir}/**/*{user_input}*.mkv'
+
+	for file in glob(full_search, recursive=True):
 		movie_files.append(file)
 		movie_files_base.append(Path(file).stem)
 
@@ -16,6 +19,21 @@ def build_movie_lists(movie_dir):
 	movie_files_base.sort()
 
 	return (movie_files, movie_files_base)
+
+def build_show_list_with_input(source_dir, user_input):
+	shows = []
+	shows_base = []
+
+	full_search = f'{source_dir}/*{user_input}*'
+
+	for show in glob(full_search):
+		shows.append(show)
+		shows_base.append(os.path.basename(show))
+
+	shows.sort()
+	shows_base.sort()
+
+	return (shows, shows_base)
 
 # Builds a list of movie files and their base filename based on the given directory.
 # Used for directory containing already encoded files (which could have different file extensions).

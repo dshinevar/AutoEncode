@@ -106,27 +106,27 @@ fi
 
 rm -rf ~/ffmpeg_build ~/bin/{ffmpeg,ffprobe,ffplay,x264,x265}
 
-echo -e "#\t\t Getting dependencies" > "$LOG"
+echo -e "#\t\t Getting dependencies" >> "$LOG"
 get_dependencies > /dev/null 2>> "$LOG"
 
 mkdir -p ~/ffmpeg_sources ~/bin
 
-echo -e "##\t\t Downloading/Building NASM" > "$LOG"
+echo -e "##\t\t Downloading/Building NASM" >> "$LOG"
 get_nasm > /dev/null 2>> "$LOG"
 
-echo -e "###\t\t Downloading/Building libx264" > "$LOG"
+echo -e "###\t\t Downloading/Building libx264" >> "$LOG"
 get_libx264 > /dev/null 2>> "$LOG"
 
-echo -e "####\t\t Downloading/Building libx265 /w HIGH_BIT_DEPTH" > "$LOG"
+echo -e "####\t\t Downloading/Building libx265 /w HIGH_BIT_DEPTH" >> "$LOG"
 get_libx265 > /dev/null 2>> "$LOG"
 
-echo -e "#####\t Downloading/Building libmp3lame" > "$LOG"
+echo -e "#####\t Downloading/Building libmp3lame" >> "$LOG"
 get_libmp3lame > /dev/null 2>> "$LOG"
 
-echo -e "######\t Downloading/Building libopus" > "$LOG"
+echo -e "######\t Downloading/Building libopus" >> "$LOG"
 get_libopus > /dev/null 2>> "$LOG"
 
-echo -e "#######\t Downloading/Building ffmpeg" > "$LOG"
+echo -e "#######\t Downloading/Building ffmpeg" >> "$LOG"
 build_ffmpeg > /dev/null 2>> "$LOG"
 
 output_files = ("$HOME/bin/ffmpeg" "$HOME/bin/ffprobe" "$HOME/bin/lame" "$HOME/bin/nasm" "$HOME/bin/ndisasm" "$HOME/bin/x264")
