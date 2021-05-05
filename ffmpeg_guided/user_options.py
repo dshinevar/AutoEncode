@@ -1,6 +1,7 @@
 from colorama import Fore, Back, Style
 import copy
 import os
+import sys
 
 from encode_data import *
 
@@ -22,7 +23,8 @@ def __select_video_options(video_stream_data, source_file_path):
 	video_details = {
 		'RESOLUTION' : video_stream_data.orig_resolution,
 		'CROP' : video_stream_data.crop,
-		'HDR' : video_stream_data.hdr != None
+		'HDR' : video_stream_data.hdr != None,
+		'SCAN' : video_stream_data.scan.name
 	}
 	print_formatted_info(50, 'VIDEO DATA', source_file, video_details)
 

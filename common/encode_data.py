@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import itertools
 import os
 from subprocess import Popen
@@ -23,8 +23,9 @@ audio_codec_priority = {
 		'pcm_s24le' : 8,
 		'pcm_s16le' : 7,
 		'DTS-HD HRA' : 6,
-		'dts' : 5,
-		'DTS' : 5,
+		'DTS-ES' : 5,
+		'dts' : 4,
+		'DTS' : 4,
 		'ac3' : 1
 }
 
@@ -39,6 +40,11 @@ class AudioEncodeProcess(Enum):
 	COPY = 1
 	COPY_WITH_AAC_STEREO = 2
 	AAC_STEREO = 3
+
+class VideoScan(IntEnum):
+	INTERLACED_TFF = 0
+	INTERLACED_BFF = 1
+	PROGRESSIVE = 2
 
 class HDRData:
 	__slots__ = ['red_x', 'red_y', 'green_x', 'green_y', 'blue_x', 'blue_y', 'white_point_x', 'white_point_y', 'min_luminance', 'max_luminance']
@@ -55,7 +61,7 @@ class HDRData:
 		self.max_luminance = ""
 
 class VideoData:
-	__slots__ = ['hdr', 'crop', 'encoder', 'orig_resolution', 'color_space', 'color_primaries', 'color_transfer', 'max_cll', 'chroma_location', 'animated']
+	__slots__ = ['hdr', 'crop', 'encoder', 'orig_resolution', 'color_space', 'color_primaries', 'color_transfer', 'max_cll', 'chroma_location', 'animated', 'scan']
 	def __init__(self):
 		self.hdr = None
 		self.crop = ""
@@ -67,6 +73,7 @@ class VideoData:
 		self.max_cll = None
 		self.chroma_location = None
 		self.animated = False
+		self.scan = None
 
 class AudioData:
 	__slots__ = ['index', 'stream_index', 'descriptor', 'language', 'channels', 'channel_layout', 'priority', 'commentary', 'encode_process']
@@ -122,7 +129,14 @@ def __build_encode_data_log_msg(encode_data):
 		video_encoder = 'libx264'
 	hdr = '' if encode_data.video_data.hdr == None else '(HDR) '
 	crop = '' if encode_data.video_data.crop == None else encode_data.video_data.crop
-	video_str = f'Video: {encode_data.video_data.orig_resolution} {hdr}{crop} {video_encoder}'
+	scan = ''
+	if encode_data.video_data.scan == VideoScan.PROGRESSIVE:
+		scan = 'Progressive'
+	elif encode_data.video_data.scan == VideoScan.INTERLACED_TFF:
+		scan = '(Interlaced TFF => Progressive)'
+	elif encode_data.video_data.scan == VideoScan.INTERLACED_TFF:
+		scan = '(Interlaced BFF => Progressive)'
+	video_str = f'Video: {encode_data.video_data.orig_resolution} {scan}{hdr}{crop} {video_encoder}'
 	msg.append(video_str)
 
 	for audio in encode_data.audio_data:
@@ -195,6 +209,25 @@ def __get_xml_hdr(xml_root):
 			continue
 
 	return (hdr, max_cll)
+
+def __get_crop(video_full_path, start_timestamp):
+	crop = subprocess.check_output("""ffmpeg -i "%s" -ss %s -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % (video_full_path, start_timestamp), shell=True, encoding='UTF-8')
+	return crop.strip('\r\n')
+
+def __get_scan(video_full_path):
+	scan_raw = subprocess.check_output("""ffmpeg -filter:v idet -frames:v 10000 -an -f rawvideo -y /dev/null -i "%s" 2>&1 | awk '/frame detection/ {print $8, $10, $12}'""" % (video_full_path), shell=True, encoding='UTF-8')
+	scan = list(filter(None, scan_raw.split('\n')))
+	frame_totals = [0, 0, 0]
+
+	for frames in scan:
+		counts = frames.split(' ')
+		# Should always be the order of: TFF, BFF, PROG
+		frame_totals[VideoScan.INTERLACED_TFF] += int(counts[0])
+		frame_totals[VideoScan.INTERLACED_BFF] += int(counts[1])
+		frame_totals[VideoScan.PROGRESSIVE] += int(counts[2])
+
+	video_scan = VideoScan(frame_totals.index(max(frame_totals)))
+	return video_scan
 
 # Runs a subprocess of ffprobe to create an xml file with data on the given video file
 # Assumes /tmp/automated_ffmpeg/ exists and is writable
@@ -332,9 +365,11 @@ def build_stream_data(xml_file_path, video_full_path):
 	duration_half = int(duration_seconds / 2)
 	timestamp_half = convert_seconds_to_timestamp(duration_half)
 
-	# Crop
-	crop = subprocess.check_output("""ffmpeg -i "%s" -ss %s -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % (video_full_path, timestamp_half), shell=True, encoding='UTF-8')
-	stream_data.video_stream.crop = crop.strip('\r\n')
+	# Crop, Scan
+	#crop = subprocess.check_output("""ffmpeg -i "%s" -ss %s -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % (video_full_path, timestamp_half), shell=True, encoding='UTF-8')
+	#stream_data.video_stream.crop = crop.strip('\r\n')
+	stream_data.video_stream.crop = __get_crop(video_full_path, timestamp_half)
+	stream_data.video_stream.scan = __get_scan(video_full_path)
 
 	return stream_data
 
@@ -537,8 +572,10 @@ def build_automated_encode_data(xml_file_path, movie_full_path, animated=False):
 	timestamp_half = convert_seconds_to_timestamp(duration_half)
 
 	# Crop
-	crop = subprocess.check_output("""ffmpeg -i "%s" -ss %s -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % (movie_full_path, timestamp_half), shell=True, encoding='UTF-8')
-	encode_data.video_data.crop = crop.strip('\r\n')
+	#crop = subprocess.check_output("""ffmpeg -i "%s" -ss %s -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1""" % (movie_full_path, timestamp_half), shell=True, encoding='UTF-8')
+	#encode_data.video_data.crop = crop.strip('\r\n')
+	encode_data.video_data.crop = __get_crop(movie_full_path, timestamp_half)
+	encode_data.video_data.scan = __get_scan(movie_full_path)
 
 	msg = [f'Built encode data for {movie_full_path}'] + __build_encode_data_log_msg(encode_data)
 
@@ -577,15 +614,25 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 		map_str += f'-map 0:s:{subtitle_forced_data.index} '
 
 	# Video section
+	crop = ''
+	convert = ''
+	# Crop
 	if video_data.crop != None:
-		crop = f'-vf "{video_data.crop}" '
-	else:
-		crop = ''
+		crop = video_data.crop
+	# Scan/Convert	
+	if (video_data.scan != None) and (video_data.scan != VideoScan.PROGRESSIVE):
+		# parity should be either 0 (TFF) or 1 (BFF) if here
+		convert = f'yadif=1:{video_data.scan}:0' # mode=one frame for each field : parity : deint=all frames
+
+	video_filter_str = ''
+	if crop or convert:
+		filter_str = ','.join(filter(None, [crop, convert]))
+		video_filter_str = f'-vf "{filter_str}" '
 
 	b_frames_str = 'bframes=3' if video_data.animated == False else 'bframes=8'
 
 	if video_data.encoder == VideoEncoder.LIBX265:
-		video_settings_str = (	f'-pix_fmt yuv420p10le -vcodec libx265 {crop}-preset slow '
+		video_settings_str = (	f'-pix_fmt yuv420p10le -vcodec libx265 {video_filter_str}-preset slow '
 								f'-x265-params "keyint=60:{b_frames_str}:vbv-bufsize=75000:vbv-maxrate=75000:repeat-headers=1:colorprim={video_data.color_primaries}:transfer={video_data.color_transfer}:colormatrix={video_data.color_space}')
 		if video_data.hdr != None:
 			hdr = video_data.hdr
@@ -601,7 +648,7 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 		video_settings_str += '" -crf 20 -force_key_frames "expr:gte(t,n_forced*2)" '
 
 	elif video_data.encoder == VideoEncoder.LIBX264:
-		video_settings_str = f'-pix_fmt yuv420p -vcodec libx264 -x264-params "bframes=16:b-adapt=2" {crop}-preset slow -crf 16 '
+		video_settings_str = f'-pix_fmt yuv420p -vcodec libx264 {video_filter_str}-preset veryslow -x264-params "bframes=16:b-adapt=2:b-pyramid=normal:partitions=all" -crf 16 '
 	else:
 		error_msg = f'Invalid VideoEncoder: {video_data.encoder}. Either not handled or a bizarre issue happened.'
 		msg = error_msg if msg == None else msg.append(error_msg)

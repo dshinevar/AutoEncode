@@ -179,10 +179,10 @@ if plex_enabled == True:
 	plex_section = directories[3]
 
 	try:
-		plex_username = config['Plex']['username']
-		plex_password = config['Plex']['password']
-		plex_servername = config['Plex']['server']
-		plex_interact = PlexInteractor(plex_username, plex_password, plex_servername)
+		plex_baseurl = config['Plex']['baseurl']
+		plex_token = config['Plex']['token']
+
+		plex_interact = PlexInteractor(plex_baseurl, plex_token)
 	except Exception as error:
 		msg = ['Error getting Plex info from config file. Exiting.'] + traceback.format_exc().split('\n')
 		error(msg)
@@ -257,10 +257,10 @@ elif video_type == VideoType.SHOW:
 				try:
 					plex_interact.update(plex_section)
 				except Exception as error:
-					msg = [f'Failed to update Plex Server.', f'Server: {plex_servername}', f'Section: {plex_section}'] + traceback.format_exc().split('\n')
+					msg = [f'Failed to update Plex Server.', f'Server URL: {plex_baseurl}', f'Section: {plex_section}'] + traceback.format_exc().split('\n')
 					error(msg)
 				else:
-					msg = f'Updated Plex Server. Server: {plex_servername} | Section: {plex_section}'
+					msg = f'Updated Plex Server. Server URL: {plex_baseurl} | Section: {plex_section}'
 					info(msg)
 			else:
 				error(f'Only {copy_count} out of {len(encoded_file_path_list)} files copied. Plex will not be updated.', False)
