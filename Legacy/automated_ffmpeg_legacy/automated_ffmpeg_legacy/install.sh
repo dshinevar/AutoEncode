@@ -5,7 +5,7 @@
 # to /usr/local/bin
 
 arg=$1
-auto_ffmpeg_files=(./automated_ffmpeg/automated_ffmpeg.py ./Common/encode_data.py ./Common/ffmpeg_tools_utilities.py ./Common/list_builders.py ./Common/simple_logger.py ./plex_interactor/plex_interactor.py)
+auto_ffmpeg_files=(./automated_ffmpeg.py ./Common/encode_data.py ./Common/ffmpeg_tools_utilities.py ./Common/list_builders.py ./Common/simple_logger.py ./plex_interactor/plex_interactor.py)
 
 if [[ $arg = "automated_ffmpeg" ]]
 then
