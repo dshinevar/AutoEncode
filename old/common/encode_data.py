@@ -136,7 +136,7 @@ def __build_encode_data_log_msg(encode_data):
 		scan = '(Interlaced TFF => Progressive)'
 	elif encode_data.video_data.scan == VideoScan.INTERLACED_TFF:
 		scan = '(Interlaced BFF => Progressive)'
-	video_str = f'Video: {encode_data.video_data.orig_resolution} {scan}{hdr}{crop} {video_encoder}'
+	video_str = f'Video: {encode_data.video_data.orig_resolution} {scan} {hdr}{crop} {video_encoder}'
 	msg.append(video_str)
 
 	for audio in encode_data.audio_data:
@@ -538,7 +538,7 @@ def build_automated_encode_data(xml_file_path, movie_full_path, animated=False):
 					forced = disposition.get('forced')
 
 					# Handle forced/default subtitle track
-					if ((default == '1') or (forced == '1')) and (primary_audio_language == 'eng') :
+					if (forced == '1') and (primary_audio_language == 'eng') :
 						if encode_data.subtitle_forced_data == None:
 							subtitle_forced_data = SubtitleData()
 							subtitle_forced_data.language = language
@@ -629,11 +629,11 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 		filter_str = ','.join(filter(None, [crop, convert]))
 		video_filter_str = f'-vf "{filter_str}" '
 
-	b_frames_str = 'bframes=3' if video_data.animated == False else 'bframes=8'
+	b_frames_str = 'bframes=6' if video_data.animated == False else 'bframes=8'
 
 	if video_data.encoder == VideoEncoder.LIBX265:
-		video_settings_str = (	f'-pix_fmt yuv420p10le -vcodec libx265 {video_filter_str}-preset slow '
-								f'-x265-params "keyint=60:{b_frames_str}:vbv-bufsize=75000:vbv-maxrate=75000:repeat-headers=1:colorprim={video_data.color_primaries}:transfer={video_data.color_transfer}:colormatrix={video_data.color_space}')
+		video_settings_str = (	f'-pix_fmt yuv420p10le -vcodec libx265 {video_filter_str}'
+								f'-x265-params "preset=slow:keyint=60:{b_frames_str}:repeat-headers=1:colorprim={video_data.color_primaries}:transfer={video_data.color_transfer}:colormatrix={video_data.color_space}')
 		if video_data.hdr != None:
 			hdr = video_data.hdr
 			master_display_str = f":hdr10-opt=1:master-display='G({hdr.green_x},{hdr.green_y})B({hdr.blue_x},{hdr.blue_y})R({hdr.red_x},{hdr.red_y})WP({hdr.white_point_x},{hdr.white_point_y})L({hdr.max_luminance},{hdr.min_luminance})'"
@@ -645,10 +645,10 @@ def build_encode_command(encode_data, source_dir, dest_dir):
 			chroma_location_str = f':chromaloc={video_data.chroma_location}'
 			video_settings_str += chroma_location_str
 
-		video_settings_str += '" -crf 20 -force_key_frames "expr:gte(t,n_forced*2)" '
+		video_settings_str += '" -crf 20 '
 
 	elif video_data.encoder == VideoEncoder.LIBX264:
-		video_settings_str = f'-pix_fmt yuv420p -vcodec libx264 {video_filter_str}-preset veryslow -x264-params "bframes=16:b-adapt=2:b-pyramid=normal:partitions=all" -crf 16 '
+		video_settings_str = f'-pix_fmt yuv420p -vcodec libx264 {video_filter_str}-x264-params "preset=veryslow:bframes=16:b-adapt=2:b-pyramid=normal:partitions=all" -crf 16 '
 	else:
 		error_msg = f'Invalid VideoEncoder: {video_data.encoder}. Either not handled or a bizarre issue happened.'
 		msg = error_msg if msg == None else msg.append(error_msg)
