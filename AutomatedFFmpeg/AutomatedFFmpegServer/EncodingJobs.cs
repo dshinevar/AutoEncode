@@ -1,13 +1,14 @@
 ﻿using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AutomatedFFmpegServer
 {
     public class EncodingJobs
     {
         private List<EncodingJob> _jobList = new List<EncodingJob>();
-        private object _lock = new object();
+        private readonly object _lock = new object();
 
         public EncodingJobs() { }
 
@@ -18,6 +19,14 @@ namespace AutomatedFFmpegServer
             lock (_lock)
             {
                 return _jobList;
+            }
+        }
+
+        public List<EncodingJobClientData> GetEncodingJobsForClient()
+        {
+            lock (_lock)
+            {
+                return _jobList.Count > 0 ? _jobList.ConvertAll(x => new EncodingJobClientData(x)).ToList() : new List<EncodingJobClientData>();
             }
         }
 
@@ -37,6 +46,14 @@ namespace AutomatedFFmpegServer
             lock (_lock)
             {
                 _jobList.Remove(job);
+            }
+        }
+
+        public bool Exists(EncodingJob job)
+        {
+            lock (_lock)
+            {
+                return _jobList.Exists(x => x.Name == job.Name);
             }
         }
         /// <summary> Gets first EncodingJob from list with the given status. </summary>

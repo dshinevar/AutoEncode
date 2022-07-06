@@ -14,13 +14,12 @@ namespace AutomatedFFmpegServer.WorkerThreads
 {
     public class EncodingJobFinderThread : AFWorkerThreadBase
     {
-        private bool _shutdown = false;
-        private bool _directoryUpdate = false;
-        private int _sleepMS = 1_800_000;
-        private object _videoSourceFileLock = new object();
-        private object _showSourceFileLock = new object();
-        private AutoResetEvent _sleep = new AutoResetEvent(false);
-        private Dictionary<string, SearchDirectory> _searchDirectories { get; set; }
+        private bool Shutdown = false;
+        private bool DirectoryUpdate = false;
+ 
+        private readonly object _videoSourceFileLock = new object();
+        private readonly object _showSourceFileLock = new object();
+        private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
         private Dictionary<string, List<VideoSourceData>> _videoSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
         private Dictionary<string, List<ShowSourceData>> _showSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
@@ -31,23 +30,20 @@ namespace AutomatedFFmpegServer.WorkerThreads
         public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs)
             : base("EncodingJobFinderThread", mainThread, serverConfig, encodingJobs)
         {
-            _searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
+            SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
         }
 
         #region PUBLIC FUNCTIONS
-        public override void Start(params object[] threadObjects) => base.Start(_searchDirectories);
+        public override void Start(params object[] threadObjects) => base.Start(SearchDirectories);
 
-        public override void Shutdown()
+        public override void Stop()
         {
-            _shutdown = true;
-            base.Shutdown();
+            Shutdown = true;
+            base.Stop();
         }
 
         /// <summary>Signal to thread to update directories to search for jobs.</summary>
-        public void UpdateSearchDirectories() => _directoryUpdate = true;
-
-        /// <summary>Signal to thread to wake up. </summary>
-        public void Wake() => _sleep.Set();
+        public void UpdateSearchDirectories() => DirectoryUpdate = true;
 
         /// <summary>Gets a copy of video source files </summary>
         /// <returns></returns>
@@ -74,12 +70,12 @@ namespace AutomatedFFmpegServer.WorkerThreads
         {
             Dictionary<string, SearchDirectory> searchDirectories = (Dictionary<string, SearchDirectory>)threadObjects[0];
 
-            while (_shutdown == false)
+            while (Shutdown == false)
             {
                 try
                 {
                     Status = AFWorkerThreadStatus.PROCESSING;
-                    if (_directoryUpdate) UpdateSearchDirectories(searchDirectories);
+                    if (DirectoryUpdate) UpdateSearchDirectories(searchDirectories);
 
                     bool bFoundEncodingJob = false;
                     foreach (KeyValuePair<string, SearchDirectory> entry in searchDirectories)
@@ -165,7 +161,11 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                     }
                                 }
 
-                                newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
+                                if (newEncodingJobs.Count > 0)
+                                {
+                                    newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
+                                    MainThread.WakeThreads(); // Found jobs, wake up other threads if they aren't already awake
+                                }
                             }
                         }
                         else
@@ -186,12 +186,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
         }
 
         #region PRIVATE FUNCTIONS
-        private void Sleep()
-        {
-            Status = AFWorkerThreadStatus.SLEEPING;
-            _sleep.WaitOne(_sleepMS);
-        }
-
         private void UpdateSearchDirectories(Dictionary<string, SearchDirectory> searchDirectories)
         {
             searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
@@ -207,6 +201,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 List<string> deleteKeys = _videoSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
                 deleteKeys.ForEach(x => _videoSourceFiles.Remove(x));
             }
+
+            DirectoryUpdate = false;
         }
 
         private void AddEncodingJob(VideoSourceData sourceData, string sourceDirectoryPath, string destinationDirectoryPath)
@@ -221,7 +217,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     DestinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
                 };
 
-                EncodingJobs.AddEncodingJob(encodingJob);
+                if (!EncodingJobs.Exists(encodingJob)) EncodingJobs.AddEncodingJob(encodingJob);
             }
         }
 

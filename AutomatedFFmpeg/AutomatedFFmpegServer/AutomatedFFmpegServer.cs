@@ -13,44 +13,9 @@ namespace AutomatedFFmpegServer
     {
         private const string CONFIG_FILE_LOCATION = "AFServerConfig.yaml";
 
-        private class Test
-        {
-            public List<Frames> frames;
-        }
-
-        public class Frames
-        {
-            public string media_type;
-            public int stream_index;
-            public List<SideDataListMastering> side_data_list;
-        }
-
-        public class SideDataList
-        {
-            public string side_data_type;
-        }
-
-        public class SideDataListMastering : SideDataList
-        {
-            public string red_x;
-            public int max_content;
-        }
-
-        public class SideDataListContent : SideDataList
-        {
-            public int max_content;
-        }
-
-
-
         static void Main(string[] args)
         {
-            Console.WriteLine("Server Start");
             AFServerConfig serverConfig = null;
-
-            //Test o = JsonConvert.DeserializeObject<Test>(File.ReadAllText("Y:\\plex-media\\Hereditary.json"));
-
-            //SideDataList s = o.frames[1].side_data_list.Find(x => x.side_data_type == "Mastering display metadata");
 
             try
             {

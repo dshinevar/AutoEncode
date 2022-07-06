@@ -1,30 +1,26 @@
 ﻿using AutomatedFFmpegServer.Base;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using AutomatedFFmpegUtilities.Config;
 
 namespace AutomatedFFmpegServer.WorkerThreads
 {
     public class EncodingThread : AFWorkerThreadBase
     {
-        private bool _shutdown { get; set; } = false;
+        private bool Shutdown { get; set; } = false;
 
-        public EncodingThread(AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs) 
+        public EncodingThread(AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs)
             : base("EncodingThread", mainThread, serverConfig, encodingJobs) { }
 
-        public override void Shutdown()
+        public override void Stop()
         {
-            _shutdown = true;
-            base.Shutdown();
+            Shutdown = true;
+            base.Stop();
         }
 
         protected override void ThreadLoop(EncodingJobs encodingJobs, object[] objects = null)
         {
-            while (_shutdown == false)
+            while (Shutdown == false)
             {
-                Thread.Sleep(5000);
+                DeepSleep();
             }
         }
     }

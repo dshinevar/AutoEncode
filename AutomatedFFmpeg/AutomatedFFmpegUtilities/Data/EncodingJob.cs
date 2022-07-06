@@ -10,6 +10,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string Name { get; set; }
         public string SourceFullPath { get; set; }
         public string DestinationFullPath { get; set; }
+        public SourceFileData SourceFileData { get; set; }
 
         public EncodingJob() => Status = EncodingJobStatus.NEW;
     }

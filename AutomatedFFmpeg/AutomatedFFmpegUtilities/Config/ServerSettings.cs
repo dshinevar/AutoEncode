@@ -10,6 +10,8 @@ namespace AutomatedFFmpegUtilities.Config
 
         public int Port { get; set; }
 
-        public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v" };
+        public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v", ".avi" };
+
+        public int ThreadSleepInMS { get; set; } = 300000; // 5 minutes
     }
 }

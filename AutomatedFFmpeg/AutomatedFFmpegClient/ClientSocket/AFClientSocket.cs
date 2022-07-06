@@ -1,8 +1,6 @@
 ﻿using AutomatedFFmpegUtilities;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Messages;
-using AutomatedFFmpegUtilities.Messages.ClientToServer;
-using AutomatedFFmpegUtilities.Messages.ServerToClient;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -15,7 +13,7 @@ namespace AutomatedFFmpegClient.ClientSocket
 {
     public class AFClientSocket
     {
-        private const int BUFFER_SIZE = 2048;
+        private const int BUFFER_SIZE = 4096;
         private byte[] _buffer = new byte[BUFFER_SIZE];
 
         private IPAddress _serverIP { get; set; }
@@ -110,7 +108,7 @@ namespace AutomatedFFmpegClient.ClientSocket
         public void Disconnect()
         {
             if (!IsConnected()) return;
-            Send(new CTSTest() { MessageType = AFMessageType.DISCONNECT });
+            Send(new AFMessageBase() { MessageType = AFMessageType.DISCONNECT });
             _clientSocket.Shutdown(SocketShutdown.Both);
             _clientSocket.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), _clientSocket);
 

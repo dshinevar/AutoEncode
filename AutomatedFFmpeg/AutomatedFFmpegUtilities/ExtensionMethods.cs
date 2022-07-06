@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.IO;
 
 namespace AutomatedFFmpegUtilities
@@ -18,6 +19,7 @@ namespace AutomatedFFmpegUtilities
                 }
                 catch (JsonReaderException ex)
                 {
+                    Debug.WriteLine(ex.Message);
                     return false;
                 }
             }

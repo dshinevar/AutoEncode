@@ -1,7 +1,6 @@
 ﻿using AutomatedFFmpegUtilities;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Messages;
-using AutomatedFFmpegUtilities.Messages.ClientToServer;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace AutomatedFFmpegServer.ServerSocket
 {
     public class AFServerSocket : IDisposable
     {
-        private const int BUFFER_SIZE = 1024;
+        private const int BUFFER_SIZE = 4096;
         private byte[] _buffer = new byte[BUFFER_SIZE];
         private IPAddress _serverIP;
         private IPEndPoint _endPoint;
@@ -158,10 +157,10 @@ namespace AutomatedFFmpegServer.ServerSocket
                     if (state.stringBuffer.ToString().IsValidJson())
                     {
                         object msg = JsonConvert.DeserializeObject<AFMessageBase>(state.stringBuffer.ToString(), _settings);
-                        if (msg is CTSTest)
+                        if (msg is AFMessageBase)
                         {
                             Debug.WriteLine($"Message from client: {((AFMessageBase)msg).MessageType}");
-                            if (((CTSTest)msg).MessageType.Equals(AFMessageType.DISCONNECT))
+                            if (((AFMessageBase)msg).MessageType.Equals(AFMessageType.DISCONNECT))
                             {
                                 Disconnect();
                                 return;

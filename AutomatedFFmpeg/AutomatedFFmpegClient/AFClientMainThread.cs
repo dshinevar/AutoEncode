@@ -3,7 +3,7 @@ using AutomatedFFmpegUtilities.Messages;
 using AutomatedFFmpegClient.Config;
 using AutomatedFFmpegUtilities.Base;
 using System;
-using AutomatedFFmpegClient.Model;
+using AutomatedFFmpegClient.ViewData;
 using AutomatedFFmpegUtilities.Enums;
 using System.Collections.Generic;
 using AutomatedFFmpegUtilities.Data;
@@ -43,6 +43,7 @@ namespace AutomatedFFmpegClient
         public void Connect() => _clientSocket.Connect();
         public void Disconnect() => _clientSocket.Disconnect();
         public void Send(AFMessageBase msg) => _clientSocket.Send(msg);
+        //public void SendEncodeRequest(VideoSourceData data) => _clientSocket.Send()
         #endregion PUBLIC FUNCTIONS
 
         protected override void OnTimerElapsed(object obj) => base.OnTimerElapsed(obj);
@@ -54,17 +55,13 @@ namespace AutomatedFFmpegClient
             {
                 case AFMessageType.CLIENT_UPDATE:
                 {
+                    _mainWindow.UpdateEncodingJobs(((ClientUpdateMessage)msg).Data.EncodingJobs);
                     return;
                 }
                 case AFMessageType.CLIENT_CONNECT:
                 {
-                    List<VideoSourceViewModel> models = new List<VideoSourceViewModel>();
-                    foreach (KeyValuePair<string, List<VideoSourceData>> data in ((ClientConnectMessage)msg).Data.VideoSourceFiles)
-                    {
-                        VideoSourceViewModel model = new VideoSourceViewModel(data.Key, data.Value);
-                        models.Add(model);
-                    }
-                    _mainWindow.UpdateSource(models);
+                    _mainWindow.UpdateVideoSource(((ClientConnectMessage)msg).Data.VideoSourceFiles);
+                    _mainWindow.UpdateShowSource(((ClientConnectMessage)msg).Data.ShowSourceFiles);
                     return;
                 }
                 default:

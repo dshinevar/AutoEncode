@@ -8,10 +8,12 @@ namespace AutomatedFFmpegServer.Base
     /// <summary> Worker thread base class.  Uses a thread loop as the worker threads are expected to have lengthy tasks. </summary>
     public abstract class AFWorkerThreadBase
     {
-        private Thread _thread { get; set; }
+        private Thread Thread { get; set; }
+        private int ThreadSleep { get; set; } = 5000;
         protected AFServerMainThread MainThread { get; set; }
         protected EncodingJobs EncodingJobs { get; set; }
         protected AFServerConfig Config { get; set; }
+        protected AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
         public string ThreadName { get; set; } = "AFWorkerThread";
         public AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
 
@@ -23,6 +25,7 @@ namespace AutomatedFFmpegServer.Base
             MainThread = mainThread;
             Config = serverConfig;
             EncodingJobs = encodingJobs;
+            ThreadSleep = Config.ServerSettings.ThreadSleepInMS;
         }
 
         /// <summary>Gets the current status of the thread. </summary>
@@ -33,12 +36,38 @@ namespace AutomatedFFmpegServer.Base
         public virtual void Start(params object[] threadObjects)
         {
             ThreadStart threadStart = () => ThreadLoop(EncodingJobs, threadObjects);
-            _thread = new Thread(threadStart);
-            _thread.Start();
+            Thread = new Thread(threadStart);
+            Thread.Start();
         }
         /// <summary> Stops thread (join). </summary>
-        public virtual void Shutdown() => _thread.Join();
+        public virtual void Stop()
+        {
+            Wake();
+            Thread.Join();
+        }
+
+        /// <summary> Wakes up thread by setting the Sleep AutoResetEvent. Not used by default.</summary>
+        public void Wake()
+        {
+            SleepARE.Set();
+            Status = AFWorkerThreadStatus.PROCESSING;
+        }
+
+        /// <summary> Sleeps thread for certain amount of time. </summary>
+        protected virtual void Sleep()
+        {
+            Status = AFWorkerThreadStatus.SLEEPING;
+            SleepARE.WaitOne(ThreadSleep);
+        }
+
+        /// <summary> Sleeps thread indefinitely. </summary>
+        protected virtual void DeepSleep()
+        {
+            Status = AFWorkerThreadStatus.DEEP_SLEEPING;
+            SleepARE.WaitOne(-1);
+        }
 
         protected abstract void ThreadLoop(EncodingJobs encodingJobs, object[] objects = null);
+
     }
 }
