@@ -14,17 +14,17 @@ namespace AutomatedFFmpegServer.ServerSocket
     public class AFServerSocket : IDisposable
     {
         private const int BUFFER_SIZE = 4096;
-        private byte[] _buffer = new byte[BUFFER_SIZE];
-        private IPAddress _serverIP;
-        private IPEndPoint _endPoint;
-        private Socket _serverSocketListener;
-        private Socket _clientHandler;
-        private ManualResetEvent _disconnectDone = new ManualResetEvent(false);
-        private JsonSerializerSettings _settings = new JsonSerializerSettings()
+        private byte[] Buffer = new byte[BUFFER_SIZE];
+        private IPAddress ServerIP;
+        private IPEndPoint EndPoint;
+        private Socket Listener = null;
+        private Socket ClientHandler = null;
+        private ManualResetEvent DisconnectDone = new ManualResetEvent(false);
+        private JsonSerializerSettings JsonSettings = new JsonSerializerSettings()
         {
             TypeNameHandling = TypeNameHandling.All
         };
-        private AFServerMainThread _mainThreadHandle;
+        private AFServerMainThread MainThreadHandle = null;
 
         // State object for reading client data asynchronously  
         private class StateObject
@@ -41,32 +41,32 @@ namespace AutomatedFFmpegServer.ServerSocket
         /// <param name="port">Port to bind to.</param>
         public AFServerSocket(AFServerMainThread thread, string IP, int port)
         {
-            _mainThreadHandle = thread;
-            _serverIP = IPAddress.Parse(IP);
-            _endPoint = new IPEndPoint(_serverIP, port);
+            MainThreadHandle = thread;
+            ServerIP = IPAddress.Parse(IP);
+            EndPoint = new IPEndPoint(ServerIP, port);
         }
 
         public void Dispose()
         {
             if (IsConnected()) Disconnect(false);
 
-            _clientHandler.Close();
-            _serverSocketListener.Dispose();
+            ClientHandler.Close();
+            Listener.Dispose();
         }
 
         #region CONNECT
-        public bool IsConnected() => !(((_clientHandler?.Poll(1000, SelectMode.SelectRead) ?? false) && (_clientHandler?.Available == 0)) || !(_clientHandler?.Connected ?? false));
+        public bool IsConnected() => !(((ClientHandler?.Poll(1000, SelectMode.SelectRead) ?? false) && (ClientHandler?.Available == 0)) || !(ClientHandler?.Connected ?? false));
 
         public void StartListening()
         {
             try
             {
-                if (_serverSocketListener == null) _serverSocketListener = new Socket(_serverIP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                if (!_serverSocketListener.IsBound) _serverSocketListener.Bind(_endPoint);
-                _serverSocketListener.Listen(1);
+                if (Listener is null) Listener = new Socket(ServerIP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                if (!Listener.IsBound) Listener.Bind(EndPoint);
+                Listener.Listen(1);
 
                 Debug.WriteLine("Waiting for connection...");
-                _serverSocketListener.BeginAccept(new AsyncCallback(AcceptCallback), _serverSocketListener);
+                Listener.BeginAccept(new AsyncCallback(AcceptCallback), Listener);
 
             }
             catch (Exception ex)
@@ -78,15 +78,15 @@ namespace AutomatedFFmpegServer.ServerSocket
         private void AcceptCallback(IAsyncResult ar)
         {
             Socket listener = (Socket)ar.AsyncState;
-            _clientHandler = listener.EndAccept(ar);
+            ClientHandler = listener.EndAccept(ar);
 
             Debug.WriteLine("Connected to Client");
 
             StateObject state = new StateObject();
-            state.clientSocket = _clientHandler;
+            state.clientSocket = ClientHandler;
 
-            _mainThreadHandle.AddSendClientConnectData();
-            _clientHandler.BeginReceive(_buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
+            MainThreadHandle.AddSendClientConnectData();
+            ClientHandler.BeginReceive(Buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
         }
         #endregion CONNECT
 
@@ -95,10 +95,10 @@ namespace AutomatedFFmpegServer.ServerSocket
         {
             try
             {
-                _clientHandler.Shutdown(SocketShutdown.Both);
-                _clientHandler.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), _clientHandler);
-                _disconnectDone.WaitOne();
-                _disconnectDone.Reset();
+                ClientHandler.Shutdown(SocketShutdown.Both);
+                ClientHandler.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), ClientHandler);
+                DisconnectDone.WaitOne();
+                DisconnectDone.Reset();
             }
             catch { }
 
@@ -109,7 +109,7 @@ namespace AutomatedFFmpegServer.ServerSocket
         {
             Socket handler = (Socket)ar.AsyncState;
             handler.EndDisconnect(ar);
-            _disconnectDone.Set();
+            DisconnectDone.Set();
         }
         #endregion DISCONNECT
 
@@ -117,10 +117,10 @@ namespace AutomatedFFmpegServer.ServerSocket
         public void Send(AFMessageBase msg)
         {
             if (!IsConnected()) return;
-            byte[] byteData = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, _settings));
+            byte[] byteData = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, JsonSettings));
 
             // Begin sending the data to the remote device.  
-            _clientHandler.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), _clientHandler);
+            ClientHandler.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), ClientHandler);
         }
 
         private void SendCallback(IAsyncResult ar)
@@ -152,11 +152,11 @@ namespace AutomatedFFmpegServer.ServerSocket
                 if (bytesRead > 0)
                 {
                     // There  might be more data, so store the data received so far.  
-                    state.stringBuffer.Append(Encoding.ASCII.GetString(_buffer, 0, bytesRead));
+                    state.stringBuffer.Append(Encoding.ASCII.GetString(Buffer, 0, bytesRead));
 
                     if (state.stringBuffer.ToString().IsValidJson())
                     {
-                        object msg = JsonConvert.DeserializeObject<AFMessageBase>(state.stringBuffer.ToString(), _settings);
+                        object msg = JsonConvert.DeserializeObject<AFMessageBase>(state.stringBuffer.ToString(), JsonSettings);
                         if (msg is AFMessageBase)
                         {
                             Debug.WriteLine($"Message from client: {((AFMessageBase)msg).MessageType}");
@@ -167,16 +167,16 @@ namespace AutomatedFFmpegServer.ServerSocket
                             }
                             else
                             {
-                                _mainThreadHandle.AddProcessMessage((AFMessageBase)msg);
+                                MainThreadHandle.AddProcessMessage((AFMessageBase)msg);
                             }
                         }
                         state.stringBuffer.Clear();
-                        handler.BeginReceive(_buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
+                        handler.BeginReceive(Buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
                     }
                     else
                     {
                         // Not all data received. Get more. 
-                        handler.BeginReceive(_buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
+                        handler.BeginReceive(Buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReadCallback), state);
                     }
                 }
             }

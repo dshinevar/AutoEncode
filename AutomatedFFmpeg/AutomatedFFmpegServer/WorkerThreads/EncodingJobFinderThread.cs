@@ -17,24 +17,29 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private bool Shutdown = false;
         private bool DirectoryUpdate = false;
  
-        private readonly object _videoSourceFileLock = new object();
-        private readonly object _showSourceFileLock = new object();
+        private readonly object videoSourceFileLock = new object();
+        private readonly object showSourceFileLock = new object();
         private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
-        private Dictionary<string, List<VideoSourceData>> _videoSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
-        private Dictionary<string, List<ShowSourceData>> _showSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
+        private Dictionary<string, List<VideoSourceData>> VideoSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
+        private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
         /// <summary>Constructor</summary>
         /// <param name="mainThread">AFServerMainThread</param>
         /// <param name="serverConfig">AFServerConfig</param>
         /// <param name="encodingJobs">EncodingJobs</param>
-        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs)
-            : base("EncodingJobFinderThread", mainThread, serverConfig, encodingJobs)
+        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig)
+            : base("EncodingJobFinderThread", mainThread, serverConfig)
         {
             SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
         }
 
         #region PUBLIC FUNCTIONS
-        public override void Start(params object[] threadObjects) => base.Start(SearchDirectories);
+        public override void Start(params object[] threadObjects) 
+        {
+            // Update the search directories initially before starting thread
+            UpdateSearchDirectories(SearchDirectories);
+            base.Start(SearchDirectories);
+        }
 
         public override void Stop()
         {
@@ -49,9 +54,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <returns></returns>
         public Dictionary<string, List<VideoSourceData>> GetVideoSourceFiles()
         {
-            lock (_videoSourceFileLock)
+            lock (videoSourceFileLock)
             {
-                return _videoSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => new VideoSourceData(v)).ToList());
+                return VideoSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => new VideoSourceData(v)).ToList());
             }
         }
 
@@ -59,14 +64,14 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <returns></returns>
         public Dictionary<string, List<ShowSourceData>> GetShowSourceFiles()
         {
-            lock (_showSourceFileLock)
+            lock (showSourceFileLock)
             {
-                return _showSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(s => s.DeepClone()).ToList());
+                return ShowSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(s => s.DeepClone()).ToList());
             }
         }
         #endregion PUBLIC FUNCTIONS
 
-        protected override void ThreadLoop(EncodingJobs encodingJobs, object[] threadObjects)
+        protected override void ThreadLoop(object[] threadObjects)
         {
             Dictionary<string, SearchDirectory> searchDirectories = (Dictionary<string, SearchDirectory>)threadObjects[0];
 
@@ -86,9 +91,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             if (entry.Value.TVShowStructure)
                             {
                                 List<VideoSourceData> newEncodingJobs = new List<VideoSourceData>();
-                                lock (_showSourceFileLock)
+                                lock (showSourceFileLock)
                                 {
-                                    _showSourceFiles[entry.Key] = new List<ShowSourceData>();
+                                    ShowSourceFiles[entry.Key] = new List<ShowSourceData>();
                                     List<string> sourceShows = Directory.GetDirectories(entry.Value.Source).ToList();
                                     List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories).ToList()
                                         .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
@@ -124,7 +129,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                             }
                                             showData.Seasons.Add(seasonData);
                                         }
-                                        _showSourceFiles[entry.Key].Add(showData);
+                                        ShowSourceFiles[entry.Key].Add(showData);
                                     }
                                 }
                                 newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
@@ -132,9 +137,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             else
                             {
                                 List<VideoSourceData> newEncodingJobs = new List<VideoSourceData>();
-                                lock (_videoSourceFileLock)
+                                lock (videoSourceFileLock)
                                 {
-                                    _videoSourceFiles[entry.Key] = new List<VideoSourceData>();
+                                    VideoSourceFiles[entry.Key] = new List<VideoSourceData>();
                                     List<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
                                         .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
                                     List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
@@ -150,7 +155,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                             FullPath = sourceFile,
                                             Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
                                         };
-                                        _videoSourceFiles[entry.Key].Add(sourceData);
+                                        VideoSourceFiles[entry.Key].Add(sourceData);
 
                                         // If the source file has not been encoded already and it's an automated directory, add to encoding job list
                                         if (sourceData.Encoded == false && entry.Value.Automated == true)
@@ -164,7 +169,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                 if (newEncodingJobs.Count > 0)
                                 {
                                     newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
-                                    MainThread.WakeThreads(); // Found jobs, wake up other threads if they aren't already awake
                                 }
                             }
                         }
@@ -191,15 +195,15 @@ namespace AutomatedFFmpegServer.WorkerThreads
             searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
 
             // Remove any old directories (keys) in source files
-            lock (_showSourceFileLock)
+            lock (showSourceFileLock)
             {
-                List<string> deleteKeys = _showSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
-                deleteKeys.ForEach(x => _showSourceFiles.Remove(x));
+                List<string> deleteKeys = ShowSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
+                deleteKeys.ForEach(x => ShowSourceFiles.Remove(x));
             }
-            lock (_videoSourceFileLock)
+            lock (videoSourceFileLock)
             {
-                List<string> deleteKeys = _videoSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
-                deleteKeys.ForEach(x => _videoSourceFiles.Remove(x));
+                List<string> deleteKeys = VideoSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
+                deleteKeys.ForEach(x => VideoSourceFiles.Remove(x));
             }
 
             DirectoryUpdate = false;
@@ -212,12 +216,12 @@ namespace AutomatedFFmpegServer.WorkerThreads
             {
                 EncodingJob encodingJob = new EncodingJob()
                 {
-                    Name = sourceData.FileName,
+                    FileName = sourceData.FileName,
                     SourceFullPath = sourceData.FullPath,
                     DestinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
                 };
 
-                if (!EncodingJobs.Exists(encodingJob)) EncodingJobs.AddEncodingJob(encodingJob);
+                if (!EncodingJobQueue.ExistsByFileName(encodingJob.FileName)) EncodingJobQueue.AddEncodingJob(encodingJob);
             }
         }
 
@@ -226,16 +230,13 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <returns></returns>
         private bool CheckFileReady(string filePath)
         {
-            bool fileReady = false;
             FileInfo fileInfo = new FileInfo(filePath);
 
             long beforeFileSize = fileInfo.Length;
             Thread.Sleep(2000);
             long afterFileSize = fileInfo.Length;
 
-            if (beforeFileSize == afterFileSize) fileReady = true;
-
-            return fileReady;
+            return beforeFileSize == afterFileSize;
         }
         #endregion PRIVATE FUNCTIONS
     }

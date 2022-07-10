@@ -11,7 +11,6 @@ namespace AutomatedFFmpegServer.Base
         private Thread Thread { get; set; }
         private int ThreadSleep { get; set; } = 5000;
         protected AFServerMainThread MainThread { get; set; }
-        protected EncodingJobs EncodingJobs { get; set; }
         protected AFServerConfig Config { get; set; }
         protected AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
         public string ThreadName { get; set; } = "AFWorkerThread";
@@ -19,12 +18,11 @@ namespace AutomatedFFmpegServer.Base
 
         /// <summary>Constructor</summary>
         /// <param name="encodingJobs">EncodingJobs handle.</param>
-        public AFWorkerThreadBase(string threadName, AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs)
+        public AFWorkerThreadBase(string threadName, AFServerMainThread mainThread, AFServerConfig serverConfig)
         {
             ThreadName = threadName;
             MainThread = mainThread;
             Config = serverConfig;
-            EncodingJobs = encodingJobs;
             ThreadSleep = Config.ServerSettings.ThreadSleepInMS;
         }
 
@@ -35,7 +33,7 @@ namespace AutomatedFFmpegServer.Base
         /// <summary> Starts thread. </summary>
         public virtual void Start(params object[] threadObjects)
         {
-            ThreadStart threadStart = () => ThreadLoop(EncodingJobs, threadObjects);
+            ThreadStart threadStart = () => ThreadLoop(threadObjects);
             Thread = new Thread(threadStart);
             Thread.Start();
         }
@@ -67,7 +65,7 @@ namespace AutomatedFFmpegServer.Base
             SleepARE.WaitOne(-1);
         }
 
-        protected abstract void ThreadLoop(EncodingJobs encodingJobs, object[] objects = null);
+        protected abstract void ThreadLoop(object[] objects = null);
 
     }
 }

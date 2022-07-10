@@ -15,8 +15,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
     {
         private bool Shutdown { get; set; } = false;
         private int JobCheckCounter { get; set; } = 0;
-        public EncodingJobBuilderThread(AFServerMainThread mainThread, AFServerConfig serverConfig, EncodingJobs encodingJobs)
-            : base("EncodingJobBuilderThread", mainThread, serverConfig, encodingJobs) { }
+        public EncodingJobBuilderThread(AFServerMainThread mainThread, AFServerConfig serverConfig)
+            : base("EncodingJobBuilderThread", mainThread, serverConfig) { }
 
         public override void Stop()
         {
@@ -24,11 +24,11 @@ namespace AutomatedFFmpegServer.WorkerThreads
             base.Stop();
         }
 
-        protected override void ThreadLoop(EncodingJobs encodingJobs, object[] objects = null)
+        protected override void ThreadLoop(object[] objects = null)
         {
             while (Shutdown == false)
             {
-                EncodingJob job = encodingJobs.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
+                EncodingJob job = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
 
                 if (job != null)
                 {

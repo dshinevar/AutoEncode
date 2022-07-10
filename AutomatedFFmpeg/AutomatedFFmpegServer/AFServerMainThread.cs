@@ -1,5 +1,4 @@
 ﻿using AutomatedFFmpegServer.ServerSocket;
-using AutomatedFFmpegUtilities.Base;
 using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Messages;
 using AutomatedFFmpegUtilities.Enums;
@@ -9,48 +8,49 @@ using AutomatedFFmpegServer.WorkerThreads;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer
 {
     public class AFServerMainThread : AFMainThreadBase
     {
-        private List<AFWorkerThreadBase> WorkerThreads { get; set; } = new List<AFWorkerThreadBase>();
-        private EncodingJobFinderThread _encodingJobFinderThread { get; set; }
-        private AFServerSocket _serverSocket { get; set; }
+        private Task EncodingJobBuilderTask { get; set; }
+        private Timer ServerTimer { get ; set; }
+        private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
+        private AFServerSocket ServerSocket { get; set; }
         private AFServerConfig Config { get; set; }
-        private EncodingJobs _encodingJobs = new EncodingJobs();
-        private bool _alive { get; set; } = true;
+        private ManualResetEvent ShutdownMRE = null;
         private bool clientData { get; set; } = false;
 
         /// <summary>Constructor; Creates Server Socket</summary>
         /// <param name="serverConfig">Server Config</param>
-        public AFServerMainThread(AFServerConfig serverConfig) : base(1000)
+        public AFServerMainThread(AFServerConfig serverConfig, ManualResetEvent shutdown) : base(1000)
         {
             Config = serverConfig;
-            _serverSocket = new AFServerSocket(this, Config.ServerSettings.IP, Config.ServerSettings.Port);
-            WorkerThreads.Add(_encodingJobFinderThread = new EncodingJobFinderThread(this, Config, _encodingJobs));
-            WorkerThreads.Add(new EncodingJobBuilderThread(this, Config, _encodingJobs));
-            WorkerThreads.Add(new EncodingThread(this, Config, _encodingJobs));
+            ShutdownMRE = shutdown;
+            ServerSocket = new AFServerSocket(this, Config.ServerSettings.IP, Config.ServerSettings.Port);
+            EncodingJobFinderThread = new EncodingJobFinderThread(this, Config);
         }
         #region PUBLIC FUNCTIONS
         /// <summary> Starts AFServerMainThread; Server socket starts listening. </summary>
         public override void Start()
         {
-            _serverSocket?.StartListening();
-            WorkerThreads.ForEach(x => x.Start(null));
             base.Start();
+            EncodingJobFinderThread.Start(null);
+            ServerSocket?.StartListening();
+            ServerTimer = new Timer(OnServerTimerElapsed, null, 10000, 1000);
+
         }
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
         public override void Shutdown()
         {
-            _serverSocket.Disconnect(false);
-            WorkerThreads.ForEach(x => x.Stop());
+            ServerSocket.Disconnect(false);
+            ServerSocket.Dispose();
             base.Shutdown();
-            _alive = false;
+            ShutdownMRE.Set();
         }
 
-        public void WakeThreads() => WorkerThreads.ForEach(x => x.Wake());
-        public bool IsAlive() => _alive;
         /// <summary>Adds ProcessMessage task to Task Queue (Client to Server Message).</summary>
         /// <param name="msg">AFMessageBase</param>
         public void AddProcessMessage(AFMessageBase msg) => AddTask(() => ProcessMessage(msg));
@@ -60,12 +60,20 @@ namespace AutomatedFFmpegServer
         public void AddSendMessage(AFMessageBase msg) => AddTask(() => SendMessage(msg));
         #endregion PUBLIC FUNCTIONS
 
-        /// <summary>Timer task</summary>
-        /// <param name="obj">Task Queue</param>
-        protected override void OnTimerElapsed(object obj) 
+        /// <summary>Server timer task: Send update to client; Spin up threads for other tasks</summary>
+        private void OnServerTimerElapsed(object obj) 
         {
-            base.OnTimerElapsed(obj);
-            if (_serverSocket.IsConnected()) AddSendClientUpdate();
+            if (EncodingJobQueue.Any())
+            {
+                EncodingJob jobToBuild = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
+                if (jobToBuild is not null)
+                {
+                    //EncodingJobBuilderTask.Start()
+                }
+            }
+
+            
+            if (ServerSocket.IsConnected()) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
         }
 
         #region PRIVATE FUNCTIONS
@@ -84,36 +92,16 @@ namespace AutomatedFFmpegServer
         }
         /// <summary>Send message to client.</summary>
         /// <param name="msg"></param>
-        private void SendMessage(AFMessageBase msg) => _serverSocket.Send(msg);
+        private void SendMessage(AFMessageBase msg) => ServerSocket.Send(msg);
 
         private void SendClientConnectData()
         {
             ClientConnectData clientConnect = new ClientConnectData()
             {
-                VideoSourceFiles = _encodingJobFinderThread.GetVideoSourceFiles(),
-                ShowSourceFiles = _encodingJobFinderThread.GetShowSourceFiles()
+                VideoSourceFiles = EncodingJobFinderThread.GetVideoSourceFiles(),
+                ShowSourceFiles = EncodingJobFinderThread.GetShowSourceFiles()
             };
             SendMessage(ServerToClientMessageFactory.CreateClientConnectMessage(clientConnect));
-        }
-
-        private void AddSendClientUpdate()
-        {
-            ClientUpdateData clientUpdate = new ClientUpdateData()
-            {
-                ThreadStatuses = GetThreadStatuses(),
-                EncodingJobs = _encodingJobs.GetEncodingJobsForClient()
-            };
-            AddSendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(clientUpdate));
-        }
-
-        private List<ThreadStatusData> GetThreadStatuses()
-        {
-            List<ThreadStatusData> threadStatuses = new List<ThreadStatusData>();
-            foreach(AFWorkerThreadBase thread in WorkerThreads)
-            {
-                threadStatuses.Add(thread.GetThreadStatus());
-            }
-            return threadStatuses;
         }
         #endregion PRIVATE FUNCTIONS
     }

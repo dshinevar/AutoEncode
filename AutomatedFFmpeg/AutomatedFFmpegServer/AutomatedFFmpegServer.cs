@@ -6,6 +6,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace AutomatedFFmpegServer
 {
@@ -16,6 +17,7 @@ namespace AutomatedFFmpegServer
         static void Main(string[] args)
         {
             AFServerConfig serverConfig = null;
+            ManualResetEvent Shutdown = new ManualResetEvent(false);
 
             try
             {
@@ -33,10 +35,12 @@ namespace AutomatedFFmpegServer
                 Environment.Exit(-2);
             }
 
-            AFServerMainThread mainThread = new AFServerMainThread(serverConfig);
+            AFServerMainThread mainThread = new AFServerMainThread(serverConfig, Shutdown);
             mainThread.Start();
 
-            while (mainThread.IsAlive());
+            Shutdown.WaitOne();
+
+            mainThread = null;
         }
     }
 }
