@@ -14,5 +14,7 @@ namespace AutomatedFFmpegUtilities.Data
         public SourceFileData SourceFileData { get; set; }
 
         public EncodingJob() => Status = EncodingJobStatus.NEW;
+
+        public override string ToString() => $"({JobId}) {FileName}";
     }
 }

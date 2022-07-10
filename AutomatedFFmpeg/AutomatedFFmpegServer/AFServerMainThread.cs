@@ -16,12 +16,13 @@ namespace AutomatedFFmpegServer
     public class AFServerMainThread : AFMainThreadBase
     {
         private Task EncodingJobBuilderTask { get; set; }
+        private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; } = new CancellationTokenSource();
+
         private Timer ServerTimer { get ; set; }
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private AFServerSocket ServerSocket { get; set; }
         private AFServerConfig Config { get; set; }
-        private ManualResetEvent ShutdownMRE = null;
-        private bool clientData { get; set; } = false;
+        private ManualResetEvent ShutdownMRE { get; set; }
 
         /// <summary>Constructor; Creates Server Socket</summary>
         /// <param name="serverConfig">Server Config</param>
@@ -40,8 +41,8 @@ namespace AutomatedFFmpegServer
             EncodingJobFinderThread.Start(null);
             ServerSocket?.StartListening();
             ServerTimer = new Timer(OnServerTimerElapsed, null, 10000, 1000);
-
         }
+        
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
         public override void Shutdown()
         {
@@ -61,14 +62,21 @@ namespace AutomatedFFmpegServer
         #endregion PUBLIC FUNCTIONS
 
         /// <summary>Server timer task: Send update to client; Spin up threads for other tasks</summary>
-        private void OnServerTimerElapsed(object obj) 
+        private void OnServerTimerElapsed(object obj)
         {
+            // TODO: Handle Cancelling
+
             if (EncodingJobQueue.Any())
             {
-                EncodingJob jobToBuild = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
-                if (jobToBuild is not null)
+                // Check if task is done (or null -- first time setup)
+                if (EncodingJobBuilderTask?.IsCompletedSuccessfully ?? true)
                 {
-                    //EncodingJobBuilderTask.Start()
+                    EncodingJob jobToBuild = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
+                    if (jobToBuild is not null)
+                    {
+                        EncodingJobBuilderTask = Task.Factory.StartNew(() 
+                            => EncodingJobTasks.BuildEncodingJob(jobToBuild, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                    }
                 }
             }
 
