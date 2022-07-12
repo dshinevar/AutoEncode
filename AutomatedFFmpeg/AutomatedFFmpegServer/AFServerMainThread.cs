@@ -39,7 +39,7 @@ namespace AutomatedFFmpegServer
         {
             base.Start();
             EncodingJobFinderThread.Start(null);
-            ServerSocket?.StartListening();
+            //ServerSocket?.StartListening();
             ServerTimer = new Timer(OnServerTimerElapsed, null, 10000, 1000);
         }
         

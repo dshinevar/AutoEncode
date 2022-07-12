@@ -24,11 +24,10 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
         /// <summary>Constructor</summary>
-        /// <param name="mainThread">AFServerMainThread</param>
-        /// <param name="serverConfig">AFServerConfig</param>
-        /// <param name="encodingJobs">EncodingJobs</param>
+        /// <param name="mainThread">Main Thread handle <see cref="AFServerMainThread"/></param>
+        /// <param name="serverConfig">Config <see cref="AFServerConfig"/></param>
         public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig)
-            : base("EncodingJobFinderThread", mainThread, serverConfig)
+            : base(nameof(EncodingJobFinderThread), mainThread, serverConfig)
         {
             SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
         }
