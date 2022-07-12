@@ -12,6 +12,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string SourceFullPath { get; set; } = string.Empty;
         public string DestinationFullPath { get; set; } = string.Empty;
         public SourceFileData SourceFileData { get; set; } = null;
+        
         public override string ToString() => $"({JobId}) {FileName}";
     }
 }

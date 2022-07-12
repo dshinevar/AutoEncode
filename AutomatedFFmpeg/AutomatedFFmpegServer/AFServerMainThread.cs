@@ -42,7 +42,7 @@ namespace AutomatedFFmpegServer
             //ServerSocket?.StartListening();
             ServerTimer = new Timer(OnServerTimerElapsed, null, 10000, 1000);
         }
-        
+
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
         public override void Shutdown()
         {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using AutomatedFFmpegUtilities.Data;
 
 namespace AutomatedFFmpegServer.Data
 {
@@ -74,6 +75,14 @@ namespace AutomatedFFmpegServer.Data
         {
             public int nb_streams;
             public string duration; // seconds
+        }
+
+        public SourceFileData ToSourceFileData()
+        {
+            // TODO
+            SourceFileData sourceFileData = new SourceFileData();
+
+            return sourceFileData;
         }
     }
 }

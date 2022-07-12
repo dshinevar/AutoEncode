@@ -4,11 +4,13 @@ namespace AutomatedFFmpegUtilities.Enums
 {
     public enum VideoScanType : int
     {
+        [Description("Unknown")]
+        UNKNOWN = 0,
         [Description("Interlaced Top Field First")]
-        INTERLACED_TFF = 0,
+        INTERLACED_TFF = 1,
         [Description("Interlaced Bottom Field First")]
-        INTERLACED_BFF = 1,
+        INTERLACED_BFF = 2,
         [Description("Progressive")]
-        PROGRESSIVE = 2
+        PROGRESSIVE = 3
     }
 }
