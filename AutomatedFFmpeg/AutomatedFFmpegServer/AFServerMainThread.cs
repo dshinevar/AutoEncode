@@ -19,6 +19,7 @@ namespace AutomatedFFmpegServer
         private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; } = new CancellationTokenSource();
 
         private Timer ServerTimer { get ; set; }
+        private ManualResetEvent ServerTimerDispose { get; set; } = new ManualResetEvent(false);
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private AFServerSocket ServerSocket { get; set; }
         private AFServerConfig Config { get; set; }
@@ -48,6 +49,9 @@ namespace AutomatedFFmpegServer
         {
             ServerSocket.Disconnect(false);
             ServerSocket.Dispose();
+            ServerTimer.Dispose(ServerTimerDispose);
+            ServerTimerDispose.WaitOne(-1);
+            ServerTimerDispose.Dispose();
             base.Shutdown();
             ShutdownMRE.Set();
         }
@@ -106,7 +110,7 @@ namespace AutomatedFFmpegServer
         {
             ClientConnectData clientConnect = new ClientConnectData()
             {
-                VideoSourceFiles = EncodingJobFinderThread.GetVideoSourceFiles(),
+                VideoSourceFiles = EncodingJobFinderThread.GetMovieSourceFiles(),
                 ShowSourceFiles = EncodingJobFinderThread.GetShowSourceFiles()
             };
             SendMessage(ServerToClientMessageFactory.CreateClientConnectMessage(clientConnect));

@@ -9,18 +9,20 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer.WorkerThreads
 {
     public class EncodingJobFinderThread : AFWorkerThreadBase
     {
+        private const int MAX_COUNT = 6;
         private bool Shutdown = false;
         private bool DirectoryUpdate = false;
  
-        private readonly object videoSourceFileLock = new object();
-        private readonly object showSourceFileLock = new object();
+        private readonly object movieSourceFileLock = new();
+        private readonly object showSourceFileLock = new();
         private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
-        private Dictionary<string, List<VideoSourceData>> VideoSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
+        private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
         private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
         /// <summary>Constructor</summary>
@@ -35,8 +37,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region PUBLIC FUNCTIONS
         public override void Start(params object[] threadObjects) 
         {
-            // Update the search directories initially before starting thread
-            UpdateSearchDirectories(SearchDirectories);
+            // Update the source files initially before starting thread
+            BuildSourceFiles(SearchDirectories);
             base.Start(SearchDirectories);
         }
 
@@ -51,11 +53,11 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         /// <summary>Gets a copy of video source files </summary>
         /// <returns></returns>
-        public Dictionary<string, List<VideoSourceData>> GetVideoSourceFiles()
+        public Dictionary<string, List<VideoSourceData>> GetMovieSourceFiles()
         {
-            lock (videoSourceFileLock)
+            lock (movieSourceFileLock)
             {
-                return VideoSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => new VideoSourceData(v)).ToList());
+                return MovieSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => new VideoSourceData(v)).ToList());
             }
         }
 
@@ -73,6 +75,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         protected override void ThreadLoop(object[] threadObjects)
         {
             Dictionary<string, SearchDirectory> searchDirectories = (Dictionary<string, SearchDirectory>)threadObjects[0];
+            int failedToFindJobCount = 0;
 
             while (Shutdown == false)
             {
@@ -82,103 +85,46 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     if (DirectoryUpdate) UpdateSearchDirectories(searchDirectories);
 
                     bool bFoundEncodingJob = false;
-                    foreach (KeyValuePair<string, SearchDirectory> entry in searchDirectories)
+                    BuildSourceFiles(searchDirectories);
+
+                    // Add encoding jobs for automated search directories and files not encoded
+                    foreach (KeyValuePair<string, List<VideoSourceData>> entry in MovieSourceFiles)
                     {
-                        if (Directory.Exists(entry.Value.Source))
+                        if (SearchDirectories[entry.Key].Automated is true)
                         {
-                            // TV Show structured directories
-                            if (entry.Value.TVShowStructure)
-                            {
-                                List<VideoSourceData> newEncodingJobs = new List<VideoSourceData>();
-                                lock (showSourceFileLock)
-                                {
-                                    ShowSourceFiles[entry.Key] = new List<ShowSourceData>();
-                                    List<string> sourceShows = Directory.GetDirectories(entry.Value.Source).ToList();
-                                    List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories).ToList()
-                                        .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
-                                    // Show
-                                    foreach (string showPath in sourceShows)
-                                    {
-                                        string showName = showPath.Replace(entry.Value.Source, "").RemoveLeadingSlash();
-                                        ShowSourceData showData = new ShowSourceData(showName);
-                                        List<string> seasons = Directory.GetDirectories(showPath).ToList();
-                                        // Season
-                                        foreach (string seasonPath in seasons)
-                                        {
-                                            string season = seasonPath.Replace(showPath, "").RemoveLeadingSlash();
-                                            SeasonSourceData seasonData = new SeasonSourceData(season);
-                                            List<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                                .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
-                                            // Episode
-                                            foreach (string episodePath in episodes)
-                                            {
-                                                string episode = episodePath.Replace(seasonPath, "").RemoveLeadingSlash();
-                                                VideoSourceData episodeData = new VideoSourceData()
-                                                {
-                                                    FileName = episode,
-                                                    FullPath = episodePath,
-                                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
-                                                };
-                                                seasonData.Episodes.Add(episodeData);
-                                                if (episodeData.Encoded == false && entry.Value.Automated == true)
-                                                {
-                                                    bFoundEncodingJob = true;
-                                                    newEncodingJobs.Add(episodeData);
-                                                }
-                                            }
-                                            showData.Seasons.Add(seasonData);
-                                        }
-                                        ShowSourceFiles[entry.Key].Add(showData);
-                                    }
-                                }
-                                newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
-                            }
-                            else
-                            {
-                                List<VideoSourceData> newEncodingJobs = new List<VideoSourceData>();
-                                lock (videoSourceFileLock)
-                                {
-                                    VideoSourceFiles[entry.Key] = new List<VideoSourceData>();
-                                    List<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                                        .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
-                                    List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                                        .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
-                                    foreach (string sourceFile in sourceFiles)
-                                    {
-                                        // Handles files in subdirectories
-                                        string filename = sourceFile.Replace(entry.Value.Source, "").RemoveLeadingSlash();
-
-                                        VideoSourceData sourceData = new VideoSourceData()
-                                        {
-                                            FileName = filename,
-                                            FullPath = sourceFile,
-                                            Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
-                                        };
-                                        VideoSourceFiles[entry.Key].Add(sourceData);
-
-                                        // If the source file has not been encoded already and it's an automated directory, add to encoding job list
-                                        if (sourceData.Encoded == false && entry.Value.Automated == true)
-                                        {
-                                            bFoundEncodingJob = true;
-                                            newEncodingJobs.Add(sourceData);
-                                        }
-                                    }
-                                }
-
-                                if (newEncodingJobs.Count > 0)
-                                {
-                                    newEncodingJobs.ForEach(x => AddEncodingJob(x, entry.Value.Source, entry.Value.Destination));
-                                }
-                            }
+                            List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
+                            bFoundEncodingJob = moviesToEncode.Any();
+                            moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                         }
-                        else
+
+                    }
+                    foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
+                    {
+                        if (SearchDirectories[entry.Key].Automated is true)
                         {
-                            // TODO Logging
-                            Console.WriteLine($"{entry.Value.Source} does not exist.");
+                            List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
+                                .Where(episode => episode.Encoded is false).ToList();
+                            bFoundEncodingJob = episodesToEncode.Any();
+                            episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                         }
                     }
 
-                    if (bFoundEncodingJob == false) Sleep();
+                    if (bFoundEncodingJob is false)
+                    {
+                        failedToFindJobCount++;
+                        if (failedToFindJobCount >= MAX_COUNT)
+                        {
+                            DeepSleep();
+                        }
+                        else
+                        {
+                            Sleep();
+                        }
+                    }
+                    else
+                    {
+                        failedToFindJobCount = 0;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -199,28 +145,106 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 List<string> deleteKeys = ShowSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
                 deleteKeys.ForEach(x => ShowSourceFiles.Remove(x));
             }
-            lock (videoSourceFileLock)
+            lock (movieSourceFileLock)
             {
-                List<string> deleteKeys = VideoSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
-                deleteKeys.ForEach(x => VideoSourceFiles.Remove(x));
+                List<string> deleteKeys = MovieSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
+                deleteKeys.ForEach(x => MovieSourceFiles.Remove(x));
             }
 
             DirectoryUpdate = false;
         }
 
-        private void AddEncodingJob(VideoSourceData sourceData, string sourceDirectoryPath, string destinationDirectoryPath)
+        /// <summary> Builds out SourceFiles from the search directories </summary>
+        /// <param name="searchDirectories">Search Directories</param>
+        private void BuildSourceFiles(Dictionary<string, SearchDirectory> searchDirectories)
+        {
+            Parallel.ForEach(searchDirectories.ToList(), entry => 
+            {
+                if (Directory.Exists(entry.Value.Source))
+                {
+                    // TV Show structured directories
+                    if (entry.Value.TVShowStructure)
+                    {
+                        List<ShowSourceData> shows = new List<ShowSourceData>();
+                        List<string> sourceShows = Directory.GetDirectories(entry.Value.Source).ToList();
+                        List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories).ToList()
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
+                        // Show
+                        foreach (string showPath in sourceShows)
+                        {
+                            string showName = showPath.Replace(entry.Value.Source, "").RemoveLeadingSlash();
+                            ShowSourceData showData = new ShowSourceData(showName);
+                            List<string> seasons = Directory.GetDirectories(showPath).ToList();
+                            // Season
+                            foreach (string seasonPath in seasons)
+                            {
+                                string season = seasonPath.Replace(showPath, "").RemoveLeadingSlash();
+                                SeasonSourceData seasonData = new SeasonSourceData(season);
+                                List<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
+                                    .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
+                                // Episode
+                                foreach (string episodePath in episodes)
+                                {
+                                    string episode = episodePath.Replace(seasonPath, "").RemoveLeadingSlash();
+                                    VideoSourceData episodeData = new VideoSourceData()
+                                    {
+                                        FileName = episode,
+                                        FullPath = episodePath,
+                                        Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
+                                    };
+                                    seasonData.Episodes.Add(episodeData);
+                                }
+                                showData.Seasons.Add(seasonData);
+                            }
+                            shows.Add(showData);
+                        }
+
+                        lock (showSourceFileLock)
+                        {
+                            ShowSourceFiles[entry.Key] = shows;
+                        }
+                    }
+                    else
+                    {
+                        List<VideoSourceData> movies = new List<VideoSourceData>();
+                        List<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
+                        List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
+                        foreach (string sourceFile in sourceFiles)
+                        {
+                            // Handles files in subdirectories
+                            string filename = sourceFile.Replace(entry.Value.Source, "").RemoveLeadingSlash();
+
+                            VideoSourceData sourceData = new VideoSourceData()
+                            {
+                                FileName = filename,
+                                FullPath = sourceFile,
+                                Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
+                            };
+                            movies.Add(sourceData);
+                        }
+
+                        lock (movieSourceFileLock)
+                        {
+                            MovieSourceFiles[entry.Key] = movies;
+                        }
+                    }
+                }
+                else
+                {
+                    // TODO Logging
+                    Console.WriteLine($"{entry.Value.Source} does not exist.");
+                }
+            });
+        }
+
+        private void CreateEncodingJob(VideoSourceData sourceData, string sourceDirectoryPath, string destinationDirectoryPath)
         {
             // Only add encoding job is file is ready.
             if (CheckFileReady(sourceData.FullPath))
             {
-                EncodingJob encodingJob = new EncodingJob()
-                {
-                    FileName = sourceData.FileName,
-                    SourceFullPath = sourceData.FullPath,
-                    DestinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
-                };
-
-                if (!EncodingJobQueue.ExistsByFileName(encodingJob.FileName)) EncodingJobQueue.AddEncodingJob(encodingJob);
+                EncodingJobQueue.CreateEncodingJob(sourceData, sourceDirectoryPath, destinationDirectoryPath);
             }
         }
 

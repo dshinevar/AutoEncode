@@ -96,7 +96,7 @@ namespace AutomatedFFmpegServer
 
         private static ProbeData GetProbeData(string sourceFullPath)
         {
-            string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{job.SourceFullPath}\"";
+            string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFullPath}\"";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {

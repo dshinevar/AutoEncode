@@ -10,6 +10,10 @@ namespace AutomatedFFmpegServer.Base
     {
         private Thread Thread { get; set; }
         private int ThreadSleep { get; set; } = 5000;
+        private int ThreadDeepSleep
+        {
+            get => ThreadSleep * 5;
+        }
         protected AFServerMainThread MainThread { get; set; }
         protected AFServerConfig Config { get; set; }
         protected AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
@@ -58,11 +62,11 @@ namespace AutomatedFFmpegServer.Base
             SleepARE.WaitOne(ThreadSleep);
         }
 
-        /// <summary> Sleeps thread indefinitely. </summary>
+        /// <summary> Sleeps thread for 5x length of sleep. </summary>
         protected virtual void DeepSleep()
         {
             Status = AFWorkerThreadStatus.DEEP_SLEEPING;
-            SleepARE.WaitOne(-1);
+            SleepARE.WaitOne(ThreadDeepSleep);
         }
 
         protected abstract void ThreadLoop(object[] objects = null);

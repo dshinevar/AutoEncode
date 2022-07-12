@@ -40,14 +40,25 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        /// <summary>Adds an encoding job to the list.</summary>
-        /// <param name="job">EncodingJob</param>
-        public static void AddEncodingJob(EncodingJob job)
+        /// <summary>Creates an EncodingJob and adds to queue based off the given info. </summary>
+        /// <param name="videoSourceData"><see cref="VideoSourceData"/></param>
+        /// <param name="sourceDirectoryPath">Directory path of source</param>
+        /// <param name="destinationDirectoryPath">Directory path of destination</param>
+        public static void CreateEncodingJob(VideoSourceData videoSourceData, string sourceDirectoryPath, string destinationDirectoryPath)
         {
-            lock (jobLock)
+            if (!ExistsByFileName(videoSourceData.FileName))
             {
-                job.JobId = idNumber;
-                jobQueue.Add(job);
+                EncodingJob newJob = new EncodingJob()
+                {
+                    JobId = idNumber,
+                    FileName = videoSourceData.FileName,
+                    SourceFullPath = videoSourceData.FullPath,
+                    DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
+                };
+                lock (jobLock)
+                {
+                    jobQueue.Add(newJob);
+                }
             }
         }
         /// <summary>Removes an encoding job from the list.</summary>
