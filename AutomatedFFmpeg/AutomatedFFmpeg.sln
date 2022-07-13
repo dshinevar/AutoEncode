@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31205.134
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutomatedFFmpegServer", "AutomatedFFmpegServer\AutomatedFFmpegServer.csproj", "{3997B7D0-0C00-42C9-B082-629A287BF5C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutomatedFFmpegServer", "AutomatedFFmpegServer\AutomatedFFmpegServer.csproj", "{3997B7D0-0C00-42C9-B082-629A287BF5C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutomatedFFmpegClient", "AutomatedFFmpegClient\AutomatedFFmpegClient.csproj", "{F57B3B0F-B3EA-4180-B334-21088CADC58B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutomatedFFmpegClient", "AutomatedFFmpegClient\AutomatedFFmpegClient.csproj", "{F57B3B0F-B3EA-4180-B334-21088CADC58B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutomatedFFmpegUtilities", "AutomatedFFmpegUtilities\AutomatedFFmpegUtilities.csproj", "{E23536D4-246D-46C2-B45D-FA32BD97C551}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutomatedFFmpegUtilities", "AutomatedFFmpegUtilities\AutomatedFFmpegUtilities.csproj", "{E23536D4-246D-46C2-B45D-FA32BD97C551}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{DDC47033-6E35-456B-9234-26E3D1EA470D}"
+	ProjectSection(SolutionItems) = preProject
+		AFServerConfigTemplate.yaml = AFServerConfigTemplate.yaml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

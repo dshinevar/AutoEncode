@@ -5,6 +5,7 @@ using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegServer.Base;
 using AutomatedFFmpegServer.WorkerThreads;
+using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace AutomatedFFmpegServer
         private AFServerSocket ServerSocket { get; set; }
         private AFServerConfig Config { get; set; }
         private ManualResetEvent ShutdownMRE { get; set; }
+        private Logger Logger { get; set; }
 
         /// <summary>Constructor; Creates Server Socket</summary>
         /// <param name="serverConfig">Server Config</param>
@@ -31,6 +33,7 @@ namespace AutomatedFFmpegServer
         {
             Config = serverConfig;
             ShutdownMRE = shutdown;
+            Logger = new Logger(""); // TODO: Logger Config values
             ServerSocket = new AFServerSocket(this, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, Config);
         }
