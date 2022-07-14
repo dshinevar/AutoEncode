@@ -1,6 +1,7 @@
 ﻿using AutomatedFFmpegUtilities.Config;
 using System;
 using System.IO;
+using System.Diagnostics;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -19,6 +20,8 @@ namespace AutomatedFFmpegServer
             AFServerConfig serverConfig = null;
             ManualResetEvent Shutdown = new ManualResetEvent(false);
 
+            Debug.WriteLine("AutomatedFFmpegServer Starting Up.");
+
             try
             {
                 using (var reader = new StreamReader(CONFIG_FILE_LOCATION))
@@ -34,6 +37,8 @@ namespace AutomatedFFmpegServer
                 Console.WriteLine(ex.ToString());
                 Environment.Exit(-2);
             }
+
+            Debug.WriteLine("Config file loaded.");
 
             AFServerMainThread mainThread = new AFServerMainThread(serverConfig, Shutdown);
             mainThread.Start();

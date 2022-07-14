@@ -9,6 +9,7 @@ using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +19,9 @@ namespace AutomatedFFmpegServer
     {
         private Task EncodingJobBuilderTask { get; set; }
         private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; } = new CancellationTokenSource();
+
+        private Task EncodingTask { get; set; }
+        private CancellationTokenSource EncodingCancellationToken { get; set; } = new CancellationTokenSource();
 
         private Timer ServerTimer { get ; set; }
         private ManualResetEvent ServerTimerDispose { get; set; } = new ManualResetEvent(false);
@@ -33,14 +37,17 @@ namespace AutomatedFFmpegServer
         {
             Config = serverConfig;
             ShutdownMRE = shutdown;
-            Logger = new Logger(""); // TODO: Logger Config values
-            ServerSocket = new AFServerSocket(this, Config.ServerSettings.IP, Config.ServerSettings.Port);
-            EncodingJobFinderThread = new EncodingJobFinderThread(this, Config);
+            Logger = new Logger(Config.ServerSettings.LoggerSettings.LogFileLocation, 
+                                Config.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
+                                Config.ServerSettings.LoggerSettings.BackupFileCount);
+            ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
+            EncodingJobFinderThread = new EncodingJobFinderThread(this, Config, Logger);
         }
         #region PUBLIC FUNCTIONS
         /// <summary> Starts AFServerMainThread; Server socket starts listening. </summary>
         public override void Start()
         {
+            Debug.WriteLine("AFServer Starting");
             base.Start();
             EncodingJobFinderThread.Start(null);
             //ServerSocket?.StartListening();
@@ -50,6 +57,7 @@ namespace AutomatedFFmpegServer
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
         public override void Shutdown()
         {
+            Debug.WriteLine("AFServer Shutting Down.");
             ServerSocket.Disconnect(false);
             ServerSocket.Dispose();
             ServerTimer.Dispose(ServerTimerDispose);
@@ -82,13 +90,25 @@ namespace AutomatedFFmpegServer
                     if (jobToBuild is not null)
                     {
                         EncodingJobBuilderTask = Task.Factory.StartNew(() 
-                            => EncodingJobTasks.BuildEncodingJob(jobToBuild, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                            => EncodingJobTasks.BuildEncodingJob(jobToBuild, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                    }
+                }
+
+                // Check if task is done (or null -- first time setup)
+                if (EncodingTask?.IsCompletedSuccessfully ?? true)
+                {
+                    EncodingJob jobToEncode = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.ANALYZED);
+                    if (jobToEncode is not null)
+                    {
+                        EncodingTask = Task.Factory.StartNew(() 
+                            => EncodingJobTasks.Encode(jobToEncode, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
             }
-
             
-            if (ServerSocket.IsConnected()) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
+            if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
+
+            Logger.CheckAndDoRollover();
         }
 
         #region PRIVATE FUNCTIONS

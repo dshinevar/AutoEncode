@@ -1,6 +1,7 @@
 ﻿using AutomatedFFmpegUtilities;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Messages;
+using AutomatedFFmpegUtilities.Logger;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -25,6 +26,8 @@ namespace AutomatedFFmpegServer.ServerSocket
             TypeNameHandling = TypeNameHandling.All
         };
         private AFServerMainThread MainThreadHandle = null;
+        private Logger Logger { get; set; }
+
 
         // State object for reading client data asynchronously  
         private class StateObject
@@ -39,9 +42,10 @@ namespace AutomatedFFmpegServer.ServerSocket
         /// <summary> Constructor </summary>
         /// <param name="IP">IP Address of the Server</param>
         /// <param name="port">Port to bind to.</param>
-        public AFServerSocket(AFServerMainThread thread, string IP, int port)
+        public AFServerSocket(AFServerMainThread thread, Logger logger, string IP, int port)
         {
             MainThreadHandle = thread;
+            Logger = logger;
             ServerIP = IPAddress.Parse(IP);
             EndPoint = new IPEndPoint(ServerIP, port);
         }

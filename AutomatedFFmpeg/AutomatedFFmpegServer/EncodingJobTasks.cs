@@ -11,12 +11,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Logger;
 
 namespace AutomatedFFmpegServer
 {
     public static class EncodingJobTasks
     {
-        public static void BuildEncodingJob(EncodingJob job, CancellationToken cancellationToken)
+        public static void BuildEncodingJob(EncodingJob job, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.ANALYZING;
 
@@ -31,17 +32,40 @@ namespace AutomatedFFmpegServer
                 {
                     // TODO: Convert to SourceFileData
                 }
+                else
+                {
+                    // Reset job status and exit
+                    // TODO: Log error message
+                    ResetJobStatus(job);
+                    return;
+                }
             }
             catch (Exception ex)
             {
                 // TODO: Log Error
+                ResetJobStatus(job);
                 Debug.WriteLine(ex.Message);
+                return;
             }
 
             CheckForCancellation(cancellationToken, job);
 
-            // STEP 2: Get Crop and Scan
-            // 2a: Crop
+            // STEP 2: Get ScanType
+            try
+            {
+                job.SourceFileData.VideoStream.ScanType = GetVideoScan(job.SourceFullPath);
+            }
+            catch (Exception ex)
+            {
+                // TODO: Log Error
+                ResetJobStatus(job);
+                Debug.WriteLine($"Error getting crop: {ex.Message}");
+                return;
+            }
+
+            CheckForCancellation(cancellationToken, job);
+
+            // STEP 3: Decide Encoding options / Determine Crop
             try
             {
                 string crop = GetCrop(job.SourceFullPath, job.SourceFileData.DurationInSeconds / 2);
@@ -49,36 +73,25 @@ namespace AutomatedFFmpegServer
             catch (Exception ex)
             {
                 // TODO: Log Error
+                ResetJobStatus(job);
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
+                return;
             }
 
             CheckForCancellation(cancellationToken, job);
-
-            // 2b: Scan
-            try
-            {
-                VideoScanType scanType = GetVideoScan(job.SourceFullPath);
-            }
-            catch (Exception ex)
-            {
-                // TODO: Log Error
-                Debug.WriteLine($"Error getting crop: {ex.Message}");
-            }
-
-            CheckForCancellation(cancellationToken, job);
-
-            // STEP 3: Decide Encoding options
 
             // STEP 4: Create FFMPEG command
 
             job.Status = EncodingJobStatus.ANALYZED;
         }
 
-        public static void Encode(EncodingJob job, CancellationToken cancellationToken)
+        public static void Encode(EncodingJob job, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.ENCODING;
 
             CheckForCancellation(cancellationToken, job);
+
+            job.Status = EncodingJobStatus.COMPLETE;
         }
 
         #region PRIVATE FUNCTIONS
@@ -87,12 +100,14 @@ namespace AutomatedFFmpegServer
             if (cancellationToken.IsCancellationRequested)
             {
                 // Reset Status
-                job.Status = job.Status.Equals(EncodingJobStatus.ANALYZING) ? EncodingJobStatus.NEW : EncodingJobStatus.ANALYZED;
+                ResetJobStatus(job);
                 // TODO: Log Cancel
                 Console.WriteLine($"{callingFunctionName} was cancelled for {job}");
                 return;
             }
         }
+
+        private static void ResetJobStatus(EncodingJob job) => job.Status = job.Status.Equals(EncodingJobStatus.ANALYZING) ? EncodingJobStatus.NEW : EncodingJobStatus.ANALYZED;
 
         private static ProbeData GetProbeData(string sourceFullPath)
         {

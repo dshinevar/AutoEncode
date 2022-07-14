@@ -3,6 +3,7 @@ using AutomatedFFmpegUtilities;
 using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,19 +25,22 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
         private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
         private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
+        private Logger Logger { get; set; }
 
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Main Thread handle <see cref="AFServerMainThread"/></param>
         /// <param name="serverConfig">Config <see cref="AFServerConfig"/></param>
-        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig)
+        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig, Logger logger)
             : base(nameof(EncodingJobFinderThread), mainThread, serverConfig)
         {
             SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
+            Logger = logger;
         }
 
         #region PUBLIC FUNCTIONS
         public override void Start(params object[] threadObjects) 
         {
+            Debug.WriteLine($"{ThreadName} Starting.");
             // Update the source files initially before starting thread
             BuildSourceFiles(SearchDirectories);
             base.Start(SearchDirectories);
@@ -44,6 +48,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         public override void Stop()
         {
+            Debug.WriteLine($"{ThreadName} Shutting Down.");
             Shutdown = true;
             base.Stop();
         }
