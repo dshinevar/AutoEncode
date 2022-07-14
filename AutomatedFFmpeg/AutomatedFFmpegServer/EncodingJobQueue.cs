@@ -97,31 +97,30 @@ namespace AutomatedFFmpegServer
             }
         }
         /// <summary>Moves encoding job at given index up one in the list.</summary>
-        /// <param name="jobIndex">Index of job to move</param>
-        public static void MoveEncodingJobForward(int jobIndex)
+        /// <param name="jobId">Id of job to move</param>
+        public static void MoveEncodingJobForward(int jobId)
         {
-            // Already at the front of the list
-            if (jobIndex == 0) return;
+            int jobIndex = jobQueue.FindIndex(x => x.JobId == jobId);
+            // Already at the front of the list or not found
+            if (jobIndex == 0 || jobIndex == -1) return;
 
             lock (jobLock)
             {
-                EncodingJob tmp = jobQueue[jobIndex];
-                jobQueue[jobIndex] = jobQueue[jobIndex - 1];
-                jobQueue[jobIndex - 1] = tmp;
+                (jobQueue[jobIndex - 1], jobQueue[jobIndex]) = (jobQueue[jobIndex], jobQueue[jobIndex - 1]);
             }
         }
         /// <summary>Moves encoding job at given index back one in the list.</summary>
-        /// <param name="jobIndex">Index of job to move</param>
-        public static void MoveEncodingJobBack(int jobIndex)
+        /// <param name="jobId">Id of job to move</param>
+        public static void MoveEncodingJobBack(int jobId)
         {
-            // Already at the back of the list
-            if (jobIndex == (jobQueue.Count - 1)) return;
+            int jobIndex = jobQueue.FindIndex(x => x.JobId == jobId);
+
+            // Already at the back of the list or not found
+            if (jobIndex == (jobQueue.Count - 1) || jobIndex == -1) return;
 
             lock (jobLock)
             {
-                EncodingJob tmp = jobQueue[jobIndex];
-                jobQueue[jobIndex] = jobQueue[jobIndex + 1];
-                jobQueue[jobIndex + 1] = tmp;
+                (jobQueue[jobIndex + 1], jobQueue[jobIndex]) = (jobQueue[jobIndex], jobQueue[jobIndex + 1]);
             }
         }
 
@@ -130,7 +129,7 @@ namespace AutomatedFFmpegServer
             string output = string.Empty;
             foreach (EncodingJob job in jobQueue)
             {
-                output += $"{job.FileName} ";
+                output += $"{job.JobId} - {job.FileName} ";
             }
             return output;
         }
