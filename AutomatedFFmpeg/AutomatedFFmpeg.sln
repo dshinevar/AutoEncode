@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutomatedFFmpegClient", "Au
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutomatedFFmpegUtilities", "AutomatedFFmpegUtilities\AutomatedFFmpegUtilities.csproj", "{E23536D4-246D-46C2-B45D-FA32BD97C551}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{DDC47033-6E35-456B-9234-26E3D1EA470D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config Templates", "Config Templates", "{DDC47033-6E35-456B-9234-26E3D1EA470D}"
 	ProjectSection(SolutionItems) = preProject
 		AFServerConfigTemplate.yaml = AFServerConfigTemplate.yaml
 	EndProjectSection
