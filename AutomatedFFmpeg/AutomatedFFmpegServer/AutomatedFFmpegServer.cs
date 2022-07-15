@@ -17,8 +17,11 @@ namespace AutomatedFFmpegServer
 
         static void Main(string[] args)
         {
+            AFServerMainThread mainThread = null;
             AFServerConfig serverConfig = null;
             ManualResetEvent Shutdown = new ManualResetEvent(false);
+
+            AppDomain.CurrentDomain.ProcessExit += OnApplicationExit;
 
             Debug.WriteLine("AutomatedFFmpegServer Starting Up.");
 
@@ -40,12 +43,17 @@ namespace AutomatedFFmpegServer
 
             Debug.WriteLine("Config file loaded.");
 
-            AFServerMainThread mainThread = new AFServerMainThread(serverConfig, Shutdown);
+            mainThread = new AFServerMainThread(serverConfig, Shutdown);
             mainThread.Start();
 
             Shutdown.WaitOne();
 
             mainThread = null;
+        }
+
+        static void OnApplicationExit(object sender, EventArgs e)
+        {
+
         }
     }
 }
