@@ -21,7 +21,7 @@ namespace AutomatedFFmpegServer
             AFServerConfig serverConfig = null;
             ManualResetEvent Shutdown = new ManualResetEvent(false);
 
-            AppDomain.CurrentDomain.ProcessExit += OnApplicationExit;
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown);
 
             Debug.WriteLine("AutomatedFFmpegServer Starting Up.");
 
@@ -51,9 +51,11 @@ namespace AutomatedFFmpegServer
             mainThread = null;
         }
 
-        static void OnApplicationExit(object sender, EventArgs e)
+        static void OnApplicationExit(object sender, EventArgs e, AFServerMainThread mainThread, ManualResetEvent shutdownMRE)
         {
-
+            mainThread.Shutdown();
+            shutdownMRE.WaitOne();
+            mainThread = null;
         }
     }
 }

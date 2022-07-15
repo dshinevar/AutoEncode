@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,4 +20,12 @@
     <ProjectReference Include="..\AutomatedFFmpegUtilities\AutomatedFFmpegUtilities.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Compile Update="AFServerMainThread_*.cs">
+			<DependentUpon>AFServerMainThread.cs</DependentUpon>
+		</Compile>
+		<Compile Update="WorkerThreads\EncodingJobFinderThread_*.cs">
+			<DependentUpon>WorkerThreads\EncodingJobFinderThread.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
 </Project>

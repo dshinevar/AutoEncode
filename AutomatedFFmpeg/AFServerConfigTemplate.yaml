@@ -5,6 +5,7 @@ ServerSettings:
     Port: 39000
     VideoFileExtensions: ['.mkv', '.m4v', '.avi']
     ThreadSleepInMS: 300000
+    FFmpegDirectory: ''
     LoggerSettings:
         LogFileLocation: '\Fake\Path'
         MaxFileSizeInBytes: 4098

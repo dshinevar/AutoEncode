@@ -1,7 +1,6 @@
 ﻿using AutomatedFFmpegClient.ClientSocket;
 using AutomatedFFmpegUtilities.Messages;
 using AutomatedFFmpegClient.Config;
-using AutomatedFFmpegUtilities.Base;
 using System;
 using AutomatedFFmpegClient.ViewData;
 using AutomatedFFmpegUtilities.Enums;
@@ -10,7 +9,7 @@ using AutomatedFFmpegUtilities.Data;
 
 namespace AutomatedFFmpegClient
 {
-    public class AFClientMainThread : AFMainThreadBase
+    public class AFClientMainThread
     {
         private MainWindow _mainWindow { get; set; }
         private AFClientSocket _clientSocket { get; set; }
@@ -19,7 +18,7 @@ namespace AutomatedFFmpegClient
         /// <summary> Constructor </summary>
         /// <param name="wnd">MainWindow handle</param>
         /// <param name="config">Client config</param>
-        public AFClientMainThread(MainWindow wnd, AFClientConfig config) : base(1000)
+        public AFClientMainThread(MainWindow wnd, AFClientConfig config)
         {
             _mainWindow = wnd;
             _clientConfig = config;
@@ -27,26 +26,24 @@ namespace AutomatedFFmpegClient
 
         #region PUBLIC FUNCTIONS
         /// <summary> Starts AFClientMainThread; Client socket tries to connect. </summary>
-        public override void Start()
+        public  void Start()
         {
             _clientSocket = new AFClientSocket(this, _clientConfig.ServerIP, _clientConfig.Port);
             _clientSocket.Connect();
-            base.Start();
         }
         /// <summary>Shuts down AFClientMainThread; Closes socket. </summary>
-        public override void Shutdown()
+        public void Shutdown()
         {
             _clientSocket.Close();
-            base.Shutdown();
         }
-        public void AddProcessMessage(AFMessageBase msg) => AddTask(new Action(() => ProcessMessage(msg)));
+        //public void AddProcessMessage(AFMessageBase msg) => AddTask(new Action(() => ProcessMessage(msg)));
         public void Connect() => _clientSocket.Connect();
         public void Disconnect() => _clientSocket.Disconnect();
         public void Send(AFMessageBase msg) => _clientSocket.Send(msg);
         //public void SendEncodeRequest(VideoSourceData data) => _clientSocket.Send()
         #endregion PUBLIC FUNCTIONS
 
-        protected override void OnTimerElapsed(object obj) => base.OnTimerElapsed(obj);
+        //protected override void OnTimerElapsed(object obj) => base.OnTimerElapsed(obj);
 
         #region PRIVATE FUNCTIONS
         private void ProcessMessage(AFMessageBase msg)

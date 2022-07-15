@@ -1,23 +1,23 @@
-using System;
-using System.Threading;
-using System.Diagnostics;
-using AutomatedFFmpegUtilities.Data;
-using System.Text;
-using Newtonsoft.Json;
-using System.IO;
 using AutomatedFFmpegServer.Data;
+using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Logger;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Logger;
+using System.Text;
+using System.Threading;
 
 namespace AutomatedFFmpegServer
 {
     public static class EncodingJobTasks
     {
-        public static void BuildEncodingJob(EncodingJob job, Logger logger, CancellationToken cancellationToken)
+        public static void BuildEncodingJob(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.ANALYZING;
 
@@ -26,7 +26,7 @@ namespace AutomatedFFmpegServer
             // STEP 1: Initial ffprobe
             try
             {
-                ProbeData probeData = GetProbeData(job.SourceFullPath);
+                ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
 
                 if (probeData is not null)
                 {
@@ -85,7 +85,7 @@ namespace AutomatedFFmpegServer
             job.Status = EncodingJobStatus.ANALYZED;
         }
 
-        public static void Encode(EncodingJob job, Logger logger, CancellationToken cancellationToken)
+        public static void Encode(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.ENCODING;
 
@@ -109,7 +109,7 @@ namespace AutomatedFFmpegServer
 
         private static void ResetJobStatus(EncodingJob job) => job.Status = job.Status.Equals(EncodingJobStatus.ANALYZING) ? EncodingJobStatus.NEW : EncodingJobStatus.ANALYZED;
 
-        private static ProbeData GetProbeData(string sourceFullPath)
+        private static ProbeData GetProbeData(string sourceFullPath, string ffmpegDir)
         {
             string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFullPath}\"";
 
@@ -117,7 +117,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = "ffprobe.exe",
+                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}\ffprobe.exe",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
                 RedirectStandardOutput = true

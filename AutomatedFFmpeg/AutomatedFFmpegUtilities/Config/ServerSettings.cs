@@ -14,6 +14,8 @@ namespace AutomatedFFmpegUtilities.Config
 
         public int ThreadSleepInMS { get; set; } = 300000; // 5 minutes
 
+        public string FFmpegDirectory { get; set; }
+
         public LoggerSettings LoggerSettings { get; set; }
     }
 
