@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.IO;
+using System.Diagnostics;
 
 namespace AutomatedFFmpegUtilities.Logger
 {
@@ -36,12 +37,15 @@ namespace AutomatedFFmpegUtilities.Logger
         }
 
         #region Log Functions
-        public void LogDebug(string msg, [CallerMemberName] string callingMemberName = "", string threadName = "") => Log(Severity.DEBUG, msg, callingMemberName, threadName);
-        public void LogInfo(string msg, [CallerMemberName] string callingMemberName = "", string threadName = "") => Log(Severity.INFO, msg, callingMemberName, threadName);
-        public void LogError(string msg, [CallerMemberName] string callingMemberName = "", string threadName = "") => Log(Severity.ERROR, msg, callingMemberName, threadName);
-        public void LogFatal(string msg, [CallerMemberName] string callingMemberName = "", string threadName = "") => Log(Severity.FATAL, msg, callingMemberName, threadName);
+        [Conditional("DEBUG")]
+        public void LogDebug(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, msg, threadName, callingMemberName);
+        public void LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, msg, threadName, callingMemberName);
+        public void LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, msg, threadName, callingMemberName);
+        public void LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, msg, threadName, callingMemberName);
+        public void LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
+            => LogFatal($"{msg} (Exception: {ex.Message})", threadName, callingMemberName);
 
-        private void Log(Severity severity, string msg, [CallerMemberName] string callingMemberName = "", string threadName = "")
+        private void Log(Severity severity, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
         {
             StringBuilder sbLogMsg = new StringBuilder();
 
@@ -50,7 +54,7 @@ namespace AutomatedFFmpegUtilities.Logger
             {
                 if (!string.IsNullOrEmpty(callingMemberName))
                 {
-                    sbLogMsg.Append($"[{callingMemberName}]: ");
+                    sbLogMsg.Append($"[{callingMemberName}]");
                 }
             }
             else
@@ -59,11 +63,11 @@ namespace AutomatedFFmpegUtilities.Logger
 
                 if (!string.IsNullOrEmpty(callingMemberName))
                 {
-                    sbLogMsg.Append($"[{callingMemberName}]: ");
+                    sbLogMsg.Append($"[{callingMemberName}]");
                 }
             }
 
-            sbLogMsg.Append($"{msg}{Environment.NewLine}");
+            sbLogMsg.Append($": {msg}{Environment.NewLine}");
 
             try
             {
@@ -74,34 +78,49 @@ namespace AutomatedFFmpegUtilities.Logger
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to log to file ({LogFileLocation}) : {ex.Message}");
+                Debug.WriteLine($"Failed to log to file ({LogFileLocation}) : {ex.Message}");
             }
         }
         #endregion Log Functions
 
         #region Rollover Functions
-        public void CheckAndDoRollover()
+        public bool CheckAndDoRollover()
         {
-            if (MaxSizeInBytes > -1)
+            bool bSuccess = true;
+            try
             {
-                FileInfo fileInfo = new FileInfo(LogFileLocation);
-
-                if (fileInfo.Length >= MaxSizeInBytes)
+                if (MaxSizeInBytes > -1)
                 {
+                    FileInfo fileInfo = new FileInfo(LogFileLocation);
 
-                    lock (FileLock)
+                    if (fileInfo.Length >= MaxSizeInBytes)
                     {
-                        try
+
+                        lock (FileLock)
                         {
                             DoRollover();
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Failed to do log file rollover: {ex.Message}");
-                        }  
                     }
                 }
             }
+            catch (FileNotFoundException fnfEx)
+            {
+                Debug.WriteLine($"Failed to do log file rollover: {fnfEx.Message}");
+                bSuccess = false;
+            }
+            catch (UnauthorizedAccessException uaEx)
+            {
+                Debug.WriteLine($"Failed to do log file rollover: {uaEx.Message}");
+                bSuccess = false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to do log file rollover: {ex.Message}");
+                LogException(ex, "Failed to do log file rollover", "Logger");
+                bSuccess = false;
+            }
+
+            return bSuccess;
         }
 
         private void DoRollover()
@@ -132,7 +151,5 @@ namespace AutomatedFFmpegUtilities.Logger
             }
         }
         #endregion Rollover Functions
-
-
     }
 }
