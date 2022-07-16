@@ -1,4 +1,5 @@
 ﻿using AutomatedFFmpegUtilities.Config;
+using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.IO;
 using System.Diagnostics;
@@ -8,6 +9,8 @@ using YamlDotNet.Serialization.NamingConventions;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Threading;
+using AutomatedFFmpegUtilities;
+using System.Text;
 
 namespace AutomatedFFmpegServer
 {
@@ -43,7 +46,44 @@ namespace AutomatedFFmpegServer
 
             Debug.WriteLine("Config file loaded.");
 
-            mainThread = new AFServerMainThread(serverConfig, Shutdown);
+            Logger logger = new(serverConfig.ServerSettings.LoggerSettings.LogFileLocation,
+                serverConfig.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
+                serverConfig.ServerSettings.LoggerSettings.BackupFileCount);
+
+            ProcessStartInfo startInfo = new ProcessStartInfo()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = $@"{serverConfig.ServerSettings.FFmpegDirectory.RemoveEndingSlashes()}\ffprobe.exe",
+                Arguments = "-version",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+
+            StringBuilder sbFfprobeOutput = new StringBuilder();
+
+            using (Process ffprobeProcess = new Process())
+            {
+                ffprobeProcess.StartInfo = startInfo;
+                ffprobeProcess.Start();
+
+                using (StreamReader reader = ffprobeProcess.StandardOutput)
+                {
+                    while (reader.Peek() >= 0)
+                    {
+                        sbFfprobeOutput.Append(reader.ReadLine());
+                    }
+                }
+
+                ffprobeProcess.WaitForExit();
+            }
+
+            // TODO: Log startup
+            // TODO: Check for ffmpeg being installed.
+
+            Debug.WriteLine(sbFfprobeOutput.ToString());
+
+            mainThread = new AFServerMainThread(serverConfig, logger, Shutdown);
             mainThread.Start();
 
             Shutdown.WaitOne();
@@ -53,9 +93,11 @@ namespace AutomatedFFmpegServer
 
         static void OnApplicationExit(object sender, EventArgs e, AFServerMainThread mainThread, ManualResetEvent shutdownMRE)
         {
-            mainThread.Shutdown();
-            shutdownMRE.WaitOne();
-            mainThread = null;
+            if (mainThread is not null)
+            {
+                mainThread.Shutdown();
+                shutdownMRE.WaitOne();
+            }
         }
     }
 }

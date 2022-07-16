@@ -24,6 +24,8 @@
 		<Compile Update="AFServerMainThread_*.cs">
 			<DependentUpon>AFServerMainThread.cs</DependentUpon>
 		</Compile>
+	</ItemGroup>
+	<ItemGroup>
 		<Compile Update="WorkerThreads\EncodingJobFinderThread_*.cs">
 			<DependentUpon>WorkerThreads\EncodingJobFinderThread.cs</DependentUpon>
 		</Compile>

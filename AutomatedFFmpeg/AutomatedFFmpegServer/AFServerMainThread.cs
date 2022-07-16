@@ -37,13 +37,11 @@ namespace AutomatedFFmpegServer
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
         /// <param name="serverConfig">Server Config</param>
-        public AFServerMainThread(AFServerConfig serverConfig, ManualResetEvent shutdown)
+        public AFServerMainThread(AFServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
         {
             Config = serverConfig;
             ShutdownMRE = shutdown;
-            Logger = new Logger(Config.ServerSettings.LoggerSettings.LogFileLocation,
-                                Config.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
-                                Config.ServerSettings.LoggerSettings.BackupFileCount);
+            Logger = logger;
             ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, Config, Logger, EncodingJobShutdown);
 
