@@ -17,9 +17,15 @@ namespace AutomatedFFmpegServer
 {
     class AutomatedFFmpegServer
     {
+#if DEBUG
         private static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) 
                                                     ? "./bin/Debug/net6.0/AFServerConfig.yaml"
-                                                    : "AFServerConfig.yaml";
+                                                    : "AFServerConfig.yaml";                                            
+#else
+        private static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) 
+                                                    ? "/usr/local/bin/AFServerConfig.yaml"
+                                                    : "AFServerConfig.yaml";        
+#endif
         private const string LOG_THREAD_NAME = "STARTUP";
 
         static void Main(string[] args)
