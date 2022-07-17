@@ -79,7 +79,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = $@"ffmpeg.exe",
+                    FileName = $@"{serverConfig.ServerSettings.FFmpegDirectory}/ffmpeg",
                     Arguments = "-version",
                     UseShellExecute = false,
                     RedirectStandardOutput = true
@@ -102,7 +102,7 @@ namespace AutomatedFFmpegServer
                 }
 
                 Debug.WriteLine(sbFfmpegVersion.ToString());
-                logger.LogInfo(sbFfmpegVersion.ToString(), threadName: LOG_THREAD_NAME);
+                //logger.LogInfo(sbFfmpegVersion.ToString(), threadName: LOG_THREAD_NAME);
             }
             catch (Exception ex)
             {

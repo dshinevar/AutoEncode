@@ -53,7 +53,7 @@ namespace AutomatedFFmpegServer
         /// <summary> Starts AFServerMainThread; Server socket starts listening. </summary>
         public void Start()
         {
-            Debug.WriteLine("AFServer Starting");
+            Debug.WriteLine("AFServerMainThread Starting");
             EncodingJobFinderThread.Start();
             //ServerSocket?.StartListening();
             TaskTimer = new Timer(OnTaskTimerElapsed, null, 15000, TaskTimerWaitTime);
@@ -63,7 +63,7 @@ namespace AutomatedFFmpegServer
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
         public void Shutdown()
         {
-            Debug.WriteLine("AFServer Shutting Down.");
+            Debug.WriteLine("AFServerMainThread Shutting Down.");
 
             // Stop threads
             EncodingJobFinderThread?.Stop();

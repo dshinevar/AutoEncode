@@ -4,11 +4,17 @@ namespace AutomatedFFmpegUtilities.Enums
 {
     public enum ChromaLocation
     {
-        [Description("Default")]
-        DEFAULT = 0,
         [Description("Left")]
-        LEFT = 1,
+        LEFT_DEFAULT = 0,
+        [Description("Center")]
+        CENTER = 1,
         [Description("Top Left")]
-        TOP_LEFT = 2
+        TOP_LEFT = 2,
+        [Description("Top")]
+        TOP = 3,
+        [Description("Bottom Left")]
+        BOTTOM_LEFT = 4,
+        [Description("Bottom")]
+        BOTTOM = 5
     }
 }

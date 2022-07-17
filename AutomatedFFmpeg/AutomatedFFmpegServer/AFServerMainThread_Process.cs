@@ -92,10 +92,7 @@ namespace AutomatedFFmpegServer
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
 
-            if (Logger?.CheckAndDoRollover() ?? false)
-            {
-                Debug.WriteLine("Logger CheckAndDoRollover failed.");
-            }
+            //(Logger?.CheckAndDoRollover();
         }
 
         /// <summary> Task Timer: Checks, dequeues, and invokes tasks. </summary>

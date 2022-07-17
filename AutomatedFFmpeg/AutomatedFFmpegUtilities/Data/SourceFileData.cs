@@ -9,8 +9,8 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public int DurationInSeconds { get; set; }
         public VideoStreamData VideoStream { get; set; }
-        public List<AudioStreamData> AudioStreams { get; set; }
-        public List<SubtitleStreamData> SubtitleStreams { get; set; }
+        public List<AudioStreamData> AudioStreams { get; set; } = new List<AudioStreamData>();
+        public List<SubtitleStreamData> SubtitleStreams { get; set; } = new List<SubtitleStreamData>();
     }
 
     public class StreamData
@@ -21,6 +21,8 @@ namespace AutomatedFFmpegUtilities.Data
     public class VideoStreamData : StreamData
     {
         public HDRData HDRData { get; set; }
+        public string CodecName { get; set; }
+        public string PixelFormat { get; set; }
         public string Crop { get; set; }
         public string Resolution { get; set; }
         public int ResoultionInt { get; set; }

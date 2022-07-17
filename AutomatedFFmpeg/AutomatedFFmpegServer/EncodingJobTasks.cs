@@ -30,19 +30,19 @@ namespace AutomatedFFmpegServer
 
                 if (probeData is not null)
                 {
-                    // TODO: Convert to SourceFileData
+                    job.SourceFileData = probeData.ToSourceFileData();
                 }
                 else
                 {
                     // Reset job status and exit
-                    // TODO: Log error message
+                    //logger.LogError($"Failed to get probe data for {job.FileName}");
                     ResetJobStatus(job);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                // TODO: Log Error
+                //logger.LogException(ex, $"Error getting probe or source file data for {job.FileName}");
                 ResetJobStatus(job);
                 Debug.WriteLine(ex.Message);
                 return;
@@ -53,7 +53,7 @@ namespace AutomatedFFmpegServer
             // STEP 2: Get ScanType
             try
             {
-                job.SourceFileData.VideoStream.ScanType = GetVideoScan(job.SourceFullPath);
+                job.SourceFileData.VideoStream.ScanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
             }
             catch (Exception ex)
             {
@@ -68,7 +68,7 @@ namespace AutomatedFFmpegServer
             // STEP 3: Decide Encoding options / Determine Crop
             try
             {
-                string crop = GetCrop(job.SourceFullPath, job.SourceFileData.DurationInSeconds / 2);
+                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
             }
             catch (Exception ex)
             {
@@ -117,7 +117,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}\ffprobe.exe",
+                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffprobe",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
@@ -144,7 +144,7 @@ namespace AutomatedFFmpegServer
             return JsonConvert.DeserializeObject<ProbeData>(sbFfprobeOutput.ToString());
         }
 
-        private static string GetCrop(string sourceFullPath, int halfwayInSeconds)
+        private static string GetCrop(string sourceFullPath, string ffmpegDir, int halfwayInSeconds)
         {
             string crop = string.Empty;
             string ffprobeArgs = $"-i \"{sourceFullPath}\" -ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ {{ print $NF }}' | tail -1";
@@ -153,7 +153,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = "ffprobe.exe",
+                FileName =  $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffprobe",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
@@ -182,7 +182,7 @@ namespace AutomatedFFmpegServer
             return crop;
         }
 
-        private static VideoScanType GetVideoScan(string sourceFullPath)
+        private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
         {
             string ffprobeArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y /dev/null -i \"{sourceFullPath}\" 2>&1 | awk '/frame detection/ {{print $8, $10, $12}}'";
 
@@ -190,7 +190,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = "ffprobe.exe",
+                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffprobe",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
                 RedirectStandardOutput = true

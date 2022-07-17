@@ -53,16 +53,16 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region Start/Stop Functions
         public void Start()
         {
-            Debug.WriteLine($"{ThreadName} Starting.");
-            // Update the source files initially before starting thread
-            BuildSourceFiles(SearchDirectories);
-
             ThreadStart threadStart = () => ThreadLoop();
             Thread = new Thread(threadStart)
             {
                 Name = nameof(EncodingJobFinderThread),
                 IsBackground = true
             };
+
+            Debug.WriteLine($"{ThreadName} Starting");
+            // Update the source files initially before starting thread
+            BuildSourceFiles(SearchDirectories);
             Thread.Start();
         }
 
