@@ -79,7 +79,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = $@"{serverConfig.ServerSettings.FFmpegDirectory}/ffmpeg",
+                    FileName = $@"{serverConfig.ServerSettings.FFmpegDirectory.RemoveEndingSlashes()}/ffmpeg",
                     Arguments = "-version",
                     UseShellExecute = false,
                     RedirectStandardOutput = true

@@ -184,7 +184,7 @@ namespace AutomatedFFmpegServer
 
         private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
         {
-            string ffprobeArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y /dev/null -i \"{sourceFullPath}\" 2>&1 | awk '/frame detection/ {{print $8, $10, $12}}'";
+            string ffprobeArgs = $"-filter:v idet -frames:v 200 -an -f rawvideo -y /dev/null -i \"{sourceFullPath}\"";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
@@ -193,7 +193,7 @@ namespace AutomatedFFmpegServer
                 FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
-                RedirectStandardOutput = true
+                RedirectStandardError = true,
             };
 
             StringBuilder sbScan = new StringBuilder();
@@ -202,17 +202,29 @@ namespace AutomatedFFmpegServer
             {
                 ffprobeProcess.StartInfo = startInfo;
                 ffprobeProcess.Start();
+                ffprobeProcess.WaitForExit();
 
-                using (StreamReader reader = ffprobeProcess.StandardOutput)
+                IEnumerable<string> frameDetections = ffprobeProcess.StandardError.ReadToEnd().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
+
+                foreach (string frame in frameDetections)
+                {
+                    //frame.SkipWhile()
+                }
+                /*using (StreamReader reader = ffprobeProcess.StandardError)
                 {
                     while (reader.Peek() >= 0)
                     {
-                        sbScan.Append(reader.ReadLine());
+                        string line = reader.ReadLine();
+                        if (line is not null)
+                        {
+                            sbScan.Append(reader.ReadLine());
+                        }
                     }
-                }
+                }*/
 
-                ffprobeProcess.WaitForExit();
+                Debug.WriteLine(sbScan.ToString());
 
+                
                 List<string> scan = sbScan.ToString().Trim(Environment.NewLine.ToCharArray()).Split(',').ToList();
                 int[] frame_totals = new int[3];
 
