@@ -55,11 +55,22 @@ namespace AutomatedFFmpegServer
             // STEP 2: Get ScanType
             try
             {
-                job.SourceFileData.VideoStream.ScanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+                VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+
+                if (scanType.Equals(VideoScanType.UNDETERMINED))
+                {
+                    //logger.LogError($"Failed to determine VideoScanType for {job.FileName}.");
+                    ResetJobStatus(job);
+                    return;
+                }
+                else
+                {
+                    job.SourceFileData.VideoStream.ScanType = scanType;
+                }
             }
             catch (Exception ex)
             {
-                // TODO: Log Error
+                //logger.LogException(ex, $"Error determining VideoScanType for {job.FileName}");
                 ResetJobStatus(job);
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
                 return;
@@ -221,13 +232,13 @@ namespace AutomatedFFmpegServer
 
             int[] frame_totals = new int[4];
 
-            foreach ((int tff, int bff, int prog, int undet) counts in scan)
+            foreach ((int tff, int bff, int prog, int undet) in scan)
             {
                 // Should always be the order of: TFF, BFF, PROG
-                frame_totals[(int)VideoScanType.UNDETERMINED] += counts.undet;
-                frame_totals[(int)VideoScanType.INTERLACED_TFF] += counts.tff;
-                frame_totals[(int)VideoScanType.INTERLACED_BFF] += counts.bff;
-                frame_totals[(int)VideoScanType.PROGRESSIVE] += counts.prog;
+                frame_totals[(int)VideoScanType.INTERLACED_TFF] += tff;
+                frame_totals[(int)VideoScanType.INTERLACED_BFF] += bff;
+                frame_totals[(int)VideoScanType.PROGRESSIVE] += prog;
+                frame_totals[(int)VideoScanType.UNDETERMINED] += undet;
             }
 
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());

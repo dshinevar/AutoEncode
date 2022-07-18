@@ -31,7 +31,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string ColorTransfer { get; set; }
         public string MaxCLL { get; set; }
         public bool Animated { get; set; } = false;
-        public VideoScanType ScanType { get; set; }
+        public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
         public ChromaLocation ChromaLocation { get; set; }
     }
 
