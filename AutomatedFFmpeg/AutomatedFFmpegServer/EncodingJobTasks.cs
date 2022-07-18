@@ -197,7 +197,7 @@ namespace AutomatedFFmpegServer
 
             StringBuilder sbScan = new StringBuilder();
 
-            using (Process ffmpegProcess = new Process())
+            using (Process ffmpegProcess = new())
             {
                 ffmpegProcess.StartInfo = startInfo;
                 ffmpegProcess.ErrorDataReceived += (sender, e) =>
@@ -208,29 +208,29 @@ namespace AutomatedFFmpegServer
                 ffmpegProcess.Start();
                 ffmpegProcess.BeginErrorReadLine();
                 ffmpegProcess.WaitForExit();
-
-                IEnumerable<string> frameDetections = sbScan.ToString().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
-
-                List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
-                foreach (string frame in frameDetections)
-                {
-                    MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");
-                    scan.Add(new(Convert.ToInt32(matches[0].Value), Convert.ToInt32(matches[1].Value), Convert.ToInt32(matches[2].Value), Convert.ToInt32(matches[3].Value)));
-                }
-
-                int[] frame_totals = new int[4];
-
-                foreach ((int tff, int bff, int prog, int undet) counts in scan)
-                {
-                    // Should always be the order of: TFF, BFF, PROG
-                    frame_totals[(int)VideoScanType.UNDETERMINED] += counts.undet;
-                    frame_totals[(int)VideoScanType.INTERLACED_TFF] += counts.tff;
-                    frame_totals[(int)VideoScanType.INTERLACED_BFF] += counts.bff;
-                    frame_totals[(int)VideoScanType.PROGRESSIVE] += counts.prog;
-                }
-
-                return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
             }
+
+            IEnumerable<string> frameDetections = sbScan.ToString().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
+
+            List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
+            foreach (string frame in frameDetections)
+            {
+                MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");
+                scan.Add(new(Convert.ToInt32(matches[0].Value), Convert.ToInt32(matches[1].Value), Convert.ToInt32(matches[2].Value), Convert.ToInt32(matches[3].Value)));
+            }
+
+            int[] frame_totals = new int[4];
+
+            foreach ((int tff, int bff, int prog, int undet) counts in scan)
+            {
+                // Should always be the order of: TFF, BFF, PROG
+                frame_totals[(int)VideoScanType.UNDETERMINED] += counts.undet;
+                frame_totals[(int)VideoScanType.INTERLACED_TFF] += counts.tff;
+                frame_totals[(int)VideoScanType.INTERLACED_BFF] += counts.bff;
+                frame_totals[(int)VideoScanType.PROGRESSIVE] += counts.prog;
+            }
+
+            return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
         }
         #endregion PRIVATE FUNCTIONS
     }
