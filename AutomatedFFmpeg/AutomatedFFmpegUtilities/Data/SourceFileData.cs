@@ -1,18 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using AutomatedFFmpegUtilities.Enums;
 
 namespace AutomatedFFmpegUtilities.Data
 {
     public class SourceFileData
     {
-        public VideoData VideoStream { get; set; }
+        public int DurationInSeconds { get; set; }
+        public VideoStreamData VideoStream { get; set; }
+        public List<AudioStreamData> AudioStreams { get; set; } = new List<AudioStreamData>();
+        public List<SubtitleStreamData> SubtitleStreams { get; set; } = new List<SubtitleStreamData>();
     }
 
-    public class VideoData
+    public class StreamData
     {
-        // TODO: ChromaLocation, Scan
+        public int StreamIndex { get; set; } = -1;
+    }
+
+    public class VideoStreamData : StreamData
+    {
         public HDRData HDRData { get; set; }
+        public string CodecName { get; set; }
+        public string PixelFormat { get; set; }
         public string Crop { get; set; }
         public string Resolution { get; set; }
         public int ResoultionInt { get; set; }
@@ -21,6 +31,8 @@ namespace AutomatedFFmpegUtilities.Data
         public string ColorTransfer { get; set; }
         public string MaxCLL { get; set; }
         public bool Animated { get; set; } = false;
+        public VideoScanType ScanType { get; set; }
+        public ChromaLocation ChromaLocation { get; set; }
     }
 
     public class HDRData
@@ -35,5 +47,24 @@ namespace AutomatedFFmpegUtilities.Data
         public string WhitePoint_Y { get; set; }
         public string MinLuminance { get; set; }
         public string MaxLuminance { get; set; }
+    }
+
+    public class AudioStreamData : StreamData
+    {
+        public int AudioIndex { get; set; } = -1;
+        public string CodecName { get; set; }
+        public string Descriptor { get; set; }
+        public int Channels { get; set; }
+        public string ChannelLayout { get; set; }
+        public string Language { get; set; }
+        public bool Commentary { get; set; }
+    }
+
+    public class SubtitleStreamData : StreamData
+    {
+        public int SubtitleIndex { get; set; } = -1;
+        public string Language { get; set; }
+        public string Descriptor { get; set; }
+        public bool Forced { get; set; }
     }
 }

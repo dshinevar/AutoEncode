@@ -15,7 +15,7 @@ namespace AutomatedFFmpegUtilities.Data
 
         public EncodingJobClientData(EncodingJob encodingJob)
         {
-            Name = encodingJob.Name;
+            Name = encodingJob.FileName;
             Status = encodingJob.Status;
             Paused = encodingJob.Paused;
         }

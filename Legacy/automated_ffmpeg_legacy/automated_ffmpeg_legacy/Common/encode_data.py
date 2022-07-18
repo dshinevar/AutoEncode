@@ -487,7 +487,7 @@ def build_automated_encode_data(xml_file_path, movie_full_path, animated=False):
 			# Check if we have ANY audio streams
 			if (not encode_data.audio_data) and (commentary == False):
 				channels = int(stream.get('channels'))
-				channel_layout = stream.get('channel_layout')
+				channel_layout = stream.get('channel_layout') 
 				 # audio_index should be 0 - First audio stream found
 				audio_data = create_audio_data(audio_index, codec_name, language, codec_priority, channels, channel_layout, title)
 				encode_data.audio_data.append(audio_data)

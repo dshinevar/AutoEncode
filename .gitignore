@@ -150,3 +150,5 @@ dmypy.json
 
 # Log files
 .log
+.vscode/launch.json
+.vscode/tasks.json

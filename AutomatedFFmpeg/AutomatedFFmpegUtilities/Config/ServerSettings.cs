@@ -13,5 +13,18 @@ namespace AutomatedFFmpegUtilities.Config
         public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v", ".avi" };
 
         public int ThreadSleepInMS { get; set; } = 300000; // 5 minutes
+
+        public string FFmpegDirectory { get; set; }
+
+        public LoggerSettings LoggerSettings { get; set; }
+    }
+
+    public class LoggerSettings
+    {
+        public string LogFileLocation { get; set; }
+
+        public long MaxFileSizeInBytes { get; set; }
+
+        public int BackupFileCount { get; set; }
     }
 }

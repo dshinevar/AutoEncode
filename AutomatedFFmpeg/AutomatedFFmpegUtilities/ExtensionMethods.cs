@@ -29,9 +29,14 @@ namespace AutomatedFFmpegUtilities
             }
         }
 
-        /// <summary> Remove leading slash from string if it exists (usually useful if parsing directories/files). </summary>
+        /// <summary> Remove leading slashes from string if it exists (usually useful if parsing directories/files). </summary>
         /// <param name="s"></param>
         /// <returns></returns>
-        public static string RemoveLeadingSlash(this string s) => s[0] == Path.DirectorySeparatorChar ? s.Remove(0, 1) : s;
+        public static string RemoveLeadingSlashes(this string s) => s.TrimStart(Path.DirectorySeparatorChar);
+
+        /// <summary> Remove ending slashes from string if it exists (used with directories) </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        public static string RemoveEndingSlashes(this string s) => s.TrimEnd(Path.DirectorySeparatorChar);
     }
 }
