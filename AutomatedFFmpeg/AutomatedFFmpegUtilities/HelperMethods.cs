@@ -6,5 +6,4 @@ namespace AutomatedFFmpegUtilities
     {
         public static string ConvertSecondsToTimestamp(int seconds) => TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss"); 
     }
-
 }
