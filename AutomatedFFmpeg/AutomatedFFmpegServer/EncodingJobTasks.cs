@@ -10,7 +10,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace AutomatedFFmpegServer
@@ -128,16 +130,12 @@ namespace AutomatedFFmpegServer
             using (Process ffprobeProcess = new Process())
             {
                 ffprobeProcess.StartInfo = startInfo;
-                ffprobeProcess.Start();
-
-                using (StreamReader reader = ffprobeProcess.StandardOutput)
+                ffprobeProcess.OutputDataReceived += (sender, e) =>
                 {
-                    while (reader.Peek() >= 0)
-                    {
-                        sbFfprobeOutput.Append(reader.ReadLine());
-                    }
-                }
-
+                    if (e.Data != null) sbFfprobeOutput.AppendLine(e.Data);
+                };
+                ffprobeProcess.Start();
+                ffprobeProcess.BeginOutputReadLine();
                 ffprobeProcess.WaitForExit();
             }
 
@@ -184,7 +182,8 @@ namespace AutomatedFFmpegServer
 
         private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
         {
-            string ffprobeArgs = $"-filter:v idet -frames:v 200 -an -f rawvideo -y /dev/null -i \"{sourceFullPath}\"";
+            string nullLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
+            string ffprobeArgs = $"-filter:v idet -frames:v 200 -an -f rawvideo -y {nullLocation} -i \"{sourceFullPath}\"";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
@@ -193,48 +192,41 @@ namespace AutomatedFFmpegServer
                 FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
-                RedirectStandardError = true,
+                RedirectStandardError = true
             };
 
             StringBuilder sbScan = new StringBuilder();
 
-            using (Process ffprobeProcess = new Process())
+            using (Process ffmpegProcess = new Process())
             {
-                ffprobeProcess.StartInfo = startInfo;
-                ffprobeProcess.Start();
-                ffprobeProcess.WaitForExit();
+                ffmpegProcess.StartInfo = startInfo;
+                ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null) sbScan.AppendLine(e.Data);
+                };
 
-                IEnumerable<string> frameDetections = ffprobeProcess.StandardError.ReadToEnd().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
+                ffmpegProcess.Start();
+                ffmpegProcess.BeginErrorReadLine();
+                ffmpegProcess.WaitForExit();
 
+                IEnumerable<string> frameDetections = sbScan.ToString().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
+
+                List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
                 foreach (string frame in frameDetections)
                 {
-                    //frame.SkipWhile()
+                    MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");
+                    scan.Add(new(Convert.ToInt32(matches[0].Value), Convert.ToInt32(matches[1].Value), Convert.ToInt32(matches[2].Value), Convert.ToInt32(matches[3].Value)));
                 }
-                /*using (StreamReader reader = ffprobeProcess.StandardError)
+
+                int[] frame_totals = new int[4];
+
+                foreach ((int tff, int bff, int prog, int undet) counts in scan)
                 {
-                    while (reader.Peek() >= 0)
-                    {
-                        string line = reader.ReadLine();
-                        if (line is not null)
-                        {
-                            sbScan.Append(reader.ReadLine());
-                        }
-                    }
-                }*/
-
-                Debug.WriteLine(sbScan.ToString());
-
-                
-                List<string> scan = sbScan.ToString().Trim(Environment.NewLine.ToCharArray()).Split(',').ToList();
-                int[] frame_totals = new int[3];
-
-                foreach (string frames in scan)
-                {
-                    string[] counts = frames.Split(' ');
                     // Should always be the order of: TFF, BFF, PROG
-                    frame_totals[(int)VideoScanType.INTERLACED_TFF - 1] += Convert.ToInt32(counts[0]);
-                    frame_totals[(int)VideoScanType.INTERLACED_BFF - 1] += Convert.ToInt32(counts[1]);
-                    frame_totals[(int)VideoScanType.PROGRESSIVE - 1] += Convert.ToInt32(counts[2]);
+                    frame_totals[(int)VideoScanType.UNDETERMINED] += counts.undet;
+                    frame_totals[(int)VideoScanType.INTERLACED_TFF] += counts.tff;
+                    frame_totals[(int)VideoScanType.INTERLACED_BFF] += counts.bff;
+                    frame_totals[(int)VideoScanType.PROGRESSIVE] += counts.prog;
                 }
 
                 return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
