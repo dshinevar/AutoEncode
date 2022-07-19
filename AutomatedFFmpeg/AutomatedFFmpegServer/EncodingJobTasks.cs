@@ -55,11 +55,22 @@ namespace AutomatedFFmpegServer
             // STEP 2: Get ScanType
             try
             {
-                job.SourceFileData.VideoStream.ScanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+                VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+
+                if (scanType.Equals(VideoScanType.UNDETERMINED))
+                {
+                    //logger.LogError($"Failed to determine VideoScanType for {job.FileName}.");
+                    ResetJobStatus(job);
+                    return;
+                }
+                else
+                {
+                    job.SourceFileData.VideoStream.ScanType = scanType;
+                }
             }
             catch (Exception ex)
             {
-                // TODO: Log Error
+                //logger.LogException(ex, $"Error determining VideoScanType for {job.FileName}");
                 ResetJobStatus(job);
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
                 return;
@@ -67,14 +78,25 @@ namespace AutomatedFFmpegServer
 
             CheckForCancellation(cancellationToken, job);
 
-            // STEP 3: Decide Encoding options / Determine Crop
+            // STEP 3: Determine Crop
             try
             {
                 string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
+
+                if (string.IsNullOrWhiteSpace(crop))
+                {
+                    //logger.LogError($"Failed to determine crop for {job.FileName}");
+                    ResetJobStatus(job);
+                    return;
+                }
+                else
+                {
+                    job.SourceFileData.VideoStream.Crop = crop;
+                }
             }
             catch (Exception ex)
             {
-                // TODO: Log Error
+                //logger.LogException(ex, $"Error determining crop for {job.FileName}");
                 ResetJobStatus(job);
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
                 return;
@@ -82,7 +104,10 @@ namespace AutomatedFFmpegServer
 
             CheckForCancellation(cancellationToken, job);
 
-            // STEP 4: Create FFMPEG command
+            // STEP 4: Decide Encoding Options
+
+
+            // STEP 5: Create FFMPEG command
 
             job.Status = EncodingJobStatus.ANALYZED;
         }
@@ -144,53 +169,53 @@ namespace AutomatedFFmpegServer
 
         private static string GetCrop(string sourceFullPath, string ffmpegDir, int halfwayInSeconds)
         {
-            string crop = string.Empty;
-            string ffprobeArgs = $"-i \"{sourceFullPath}\" -ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:02:00 -vf cropdetect -f null - 2>&1 | awk '/crop/ {{ print $NF }}' | tail -1";
+            string ffmpegArgs = $"-ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:05:00 -i \"{sourceFullPath}\" -vf cropdetect -f null -";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 FileName =  $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
-                Arguments = ffprobeArgs,
+                Arguments = ffmpegArgs,
                 UseShellExecute = false,
-                RedirectStandardOutput = true
+                RedirectStandardError = true
             };
 
-            StringBuilder sbCrop = new StringBuilder();
+            StringBuilder sbCrop = new();
 
-            using (Process ffprobeProcess = new Process())
+            using (Process ffmpegProcess = new())
             {
-                ffprobeProcess.StartInfo = startInfo;
-                ffprobeProcess.Start();
-
-                using (StreamReader reader = ffprobeProcess.StandardOutput)
+                ffmpegProcess.StartInfo = startInfo;
+                ffmpegProcess.ErrorDataReceived += (sender, e) =>
                 {
-                    while (reader.Peek() >= 0)
-                    {
-                        sbCrop.Append(reader.ReadLine());
-                    }
-                }
-
-                ffprobeProcess.WaitForExit();
-
-                crop = sbCrop.ToString().Trim(Environment.NewLine.ToCharArray());
+                    if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("crop=")) sbCrop.AppendLine(e.Data);
+                };
+                ffmpegProcess.Start();
+                ffmpegProcess.BeginErrorReadLine();
+                ffmpegProcess.WaitForExit();
             }
 
-            return crop;
+            IEnumerable<string> cropLines = sbCrop.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
+            List<string> crops = new List<string>();
+            foreach (string line in cropLines)
+            {
+                crops.Add(line[line.IndexOf("crop=")..]);
+            }
+            // Grab most frequent crop
+            return crops.GroupBy(x => x).MaxBy(y => y.Count()).Key;
         }
 
         private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
         {
             string nullLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
-            string ffprobeArgs = $"-filter:v idet -frames:v 200 -an -f rawvideo -y {nullLocation} -i \"{sourceFullPath}\"";
+            string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {nullLocation} -i \"{sourceFullPath}\"";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
-                Arguments = ffprobeArgs,
+                Arguments = ffmpegArgs,
                 UseShellExecute = false,
                 RedirectStandardError = true
             };
@@ -202,7 +227,7 @@ namespace AutomatedFFmpegServer
                 ffmpegProcess.StartInfo = startInfo;
                 ffmpegProcess.ErrorDataReceived += (sender, e) =>
                 {
-                    if (e.Data != null) sbScan.AppendLine(e.Data);
+                    if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("frame detection")) sbScan.AppendLine(e.Data);
                 };
 
                 ffmpegProcess.Start();
@@ -210,7 +235,7 @@ namespace AutomatedFFmpegServer
                 ffmpegProcess.WaitForExit();
             }
 
-            IEnumerable<string> frameDetections = sbScan.ToString().Split(Environment.NewLine).Where(x => x.Contains("frame detection"));
+            IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine); //.Where(x => x.Contains("frame detection"));
 
             List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
             foreach (string frame in frameDetections)
@@ -221,13 +246,13 @@ namespace AutomatedFFmpegServer
 
             int[] frame_totals = new int[4];
 
-            foreach ((int tff, int bff, int prog, int undet) counts in scan)
+            foreach ((int tff, int bff, int prog, int undet) in scan)
             {
                 // Should always be the order of: TFF, BFF, PROG
-                frame_totals[(int)VideoScanType.UNDETERMINED] += counts.undet;
-                frame_totals[(int)VideoScanType.INTERLACED_TFF] += counts.tff;
-                frame_totals[(int)VideoScanType.INTERLACED_BFF] += counts.bff;
-                frame_totals[(int)VideoScanType.PROGRESSIVE] += counts.prog;
+                frame_totals[(int)VideoScanType.INTERLACED_TFF] += tff;
+                frame_totals[(int)VideoScanType.INTERLACED_BFF] += bff;
+                frame_totals[(int)VideoScanType.PROGRESSIVE] += prog;
+                frame_totals[(int)VideoScanType.UNDETERMINED] += undet;
             }
 
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
