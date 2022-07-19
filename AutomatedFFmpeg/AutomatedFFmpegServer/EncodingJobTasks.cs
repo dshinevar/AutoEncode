@@ -207,8 +207,7 @@ namespace AutomatedFFmpegServer
 
         private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
         {
-            string nullLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
-            string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {nullLocation} -i \"{sourceFullPath}\"";
+            string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {Lookups.NullLocation} -i \"{sourceFullPath}\"";
 
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {

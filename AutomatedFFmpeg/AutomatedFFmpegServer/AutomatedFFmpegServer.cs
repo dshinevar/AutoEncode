@@ -17,15 +17,6 @@ namespace AutomatedFFmpegServer
 {
     class AutomatedFFmpegServer
     {
-#if DEBUG
-        private static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) 
-                                                    ? "./bin/Debug/net6.0/AFServerConfig.yaml"
-                                                    : "AFServerConfig.yaml";                                            
-#else
-        private static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) 
-                                                    ? "/usr/local/bin/AFServerConfig.yaml"
-                                                    : "AFServerConfig.yaml";        
-#endif
         private const string LOG_THREAD_NAME = "STARTUP";
 
         static void Main(string[] args)
@@ -41,7 +32,7 @@ namespace AutomatedFFmpegServer
 
             try
             {
-                using (var reader = new StreamReader(ConfigFileLocation))
+                using (var reader = new StreamReader(Lookups.ConfigFileLocation))
                 {
                     string str = reader.ReadToEnd();
                     var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
@@ -85,7 +76,7 @@ namespace AutomatedFFmpegServer
                     RedirectStandardOutput = true
                 };
 
-                using (Process ffprobeProcess = new Process())
+                using (Process ffprobeProcess = new())
                 {
                     ffprobeProcess.StartInfo = startInfo;
                     ffprobeProcess.Start();
