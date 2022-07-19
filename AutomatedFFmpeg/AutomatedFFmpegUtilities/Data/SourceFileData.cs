@@ -23,6 +23,7 @@ namespace AutomatedFFmpegUtilities.Data
         public HDRData HDRData { get; set; }
         public string CodecName { get; set; }
         public string PixelFormat { get; set; }
+        /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: crop=XXXX:YYYY:AA:BB </summary>
         public string Crop { get; set; }
         public string Resolution { get; set; }
         public int ResoultionInt { get; set; }
