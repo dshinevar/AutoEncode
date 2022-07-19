@@ -23,7 +23,7 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.ANALYZING;
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 1: Initial ffprobe
             try
@@ -50,7 +50,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 2: Get ScanType
             try
@@ -76,7 +76,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 3: Determine Crop
             try
@@ -102,7 +102,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 4: Decide Encoding Options
 
@@ -116,19 +116,19 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.ENCODING;
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             job.Status = EncodingJobStatus.COMPLETE;
         }
 
         #region PRIVATE FUNCTIONS
-        private static void CheckForCancellation(CancellationToken cancellationToken, EncodingJob job, [CallerMemberName] string callingFunctionName = "")
+        private static void CheckForCancellation(CancellationToken cancellationToken, EncodingJob job, Logger logger, [CallerMemberName] string callingFunctionName = "")
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 // Reset Status
                 ResetJobStatus(job);
-                // TODO: Log Cancel
+                //logger.LogInfo($"{callingFunctionName} was cancelled for {job}", callingMemberName: callingFunctionName);
                 Console.WriteLine($"{callingFunctionName} was cancelled for {job}");
                 return;
             }
@@ -140,7 +140,7 @@ namespace AutomatedFFmpegServer
         {
             string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFullPath}\"";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -150,9 +150,9 @@ namespace AutomatedFFmpegServer
                 RedirectStandardOutput = true
             };
 
-            StringBuilder sbFfprobeOutput = new StringBuilder();
+            StringBuilder sbFfprobeOutput = new();
 
-            using (Process ffprobeProcess = new Process())
+            using (Process ffprobeProcess = new())
             {
                 ffprobeProcess.StartInfo = startInfo;
                 ffprobeProcess.OutputDataReceived += (sender, e) =>
@@ -171,7 +171,7 @@ namespace AutomatedFFmpegServer
         {
             string ffmpegArgs = $"-ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:05:00 -i \"{sourceFullPath}\" -vf cropdetect -f null -";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -196,7 +196,7 @@ namespace AutomatedFFmpegServer
             }
 
             IEnumerable<string> cropLines = sbCrop.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
-            List<string> crops = new List<string>();
+            List<string> crops = new();
             foreach (string line in cropLines)
             {
                 crops.Add(line[line.IndexOf("crop=")..]);
@@ -209,7 +209,7 @@ namespace AutomatedFFmpegServer
         {
             string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {Lookups.NullLocation} -i \"{sourceFullPath}\"";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -219,7 +219,7 @@ namespace AutomatedFFmpegServer
                 RedirectStandardError = true
             };
 
-            StringBuilder sbScan = new StringBuilder();
+            StringBuilder sbScan = new();
 
             using (Process ffmpegProcess = new())
             {
@@ -234,9 +234,9 @@ namespace AutomatedFFmpegServer
                 ffmpegProcess.WaitForExit();
             }
 
-            IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine); //.Where(x => x.Contains("frame detection"));
+            IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
 
-            List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
+            List<(int tff, int bff, int prog, int undet)> scan = new();
             foreach (string frame in frameDetections)
             {
                 MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");

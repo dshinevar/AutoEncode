@@ -1,17 +1,13 @@
-﻿using AutomatedFFmpegUtilities.Config;
+﻿using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Logger;
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using System.Runtime.InteropServices;
-
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Threading;
-using AutomatedFFmpegUtilities;
-using System.Text;
 
 namespace AutomatedFFmpegServer
 {
@@ -32,13 +28,11 @@ namespace AutomatedFFmpegServer
 
             try
             {
-                using (var reader = new StreamReader(Lookups.ConfigFileLocation))
-                {
-                    string str = reader.ReadToEnd();
-                    var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
+                using StreamReader reader = new(Lookups.ConfigFileLocation);
+                string str = reader.ReadToEnd();
+                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
 
-                    serverConfig = deserializer.Deserialize<AFServerConfig>(str);
-                }
+                serverConfig = deserializer.Deserialize<AFServerConfig>(str);
             }
             catch (Exception ex)
             {
@@ -64,9 +58,9 @@ namespace AutomatedFFmpegServer
 
             try
             {
-                StringBuilder sbFfmpegVersion = new StringBuilder();
+                StringBuilder sbFfmpegVersion = new();
 
-                ProcessStartInfo startInfo = new ProcessStartInfo()
+                ProcessStartInfo startInfo = new()
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
@@ -101,7 +95,7 @@ namespace AutomatedFFmpegServer
                 //logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: "LOG_THREAD_NAME");
                 Environment.Exit(-2);
             }
-            
+
             mainThread = new AFServerMainThread(serverConfig, logger, Shutdown);
             mainThread.Start();
 

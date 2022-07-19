@@ -53,7 +53,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region Start/Stop Functions
         public void Start()
         {
-            ThreadStart threadStart = () => ThreadLoop();
+            void threadStart() => ThreadLoop();
             Thread = new Thread(threadStart)
             {
                 Name = nameof(EncodingJobFinderThread),
