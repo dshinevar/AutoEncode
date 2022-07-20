@@ -6,6 +6,8 @@ namespace AutomatedFFmpegUtilities.Data
     public class SourceFileData
     {
         public int DurationInSeconds { get; set; }
+        public string SourceFullPath { get; set; } = string.Empty;
+        public string DestinationFullPath { get; set; } = string.Empty;
         public VideoStreamData VideoStream { get; set; }
         public List<AudioStreamData> AudioStreams { get; set; } = new();
         public List<SubtitleStreamData> SubtitleStreams { get; set; } = new();

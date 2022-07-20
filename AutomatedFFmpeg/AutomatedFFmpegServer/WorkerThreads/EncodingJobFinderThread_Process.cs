@@ -134,10 +134,13 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                     };
                                     seasonData.Episodes.Add(episodeData);
                                 }
+                                seasonData.Episodes.Sort((x,y) => x.FileName.CompareTo(y.FileName));
                                 showData.Seasons.Add(seasonData);
                             }
+                            showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
                             shows.Add(showData);
                         }
+                        shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
 
                         lock (showSourceFileLock)
                         {
@@ -164,6 +167,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             };
                             movies.Add(sourceData);
                         }
+                        movies.Sort((x,y) => x.FileName.CompareTo(y.FileName));
 
                         lock (movieSourceFileLock)
                         {

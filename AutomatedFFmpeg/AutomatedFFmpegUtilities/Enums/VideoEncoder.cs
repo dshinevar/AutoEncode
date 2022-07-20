@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
-    public enum VideoEncoderType
+    public enum VideoEncoder
     {
         [Description("Unknown")]
         UNKNOWN = 0,

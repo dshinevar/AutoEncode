@@ -28,7 +28,7 @@ namespace AutomatedFFmpegServer
             // STEP 1: Initial ffprobe
             try
             {
-                ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
+                ProbeData probeData = GetProbeData(job.SourceFileData.SourceFullPath, ffmpegDir);
 
                 if (probeData is not null)
                 {
@@ -55,7 +55,7 @@ namespace AutomatedFFmpegServer
             // STEP 2: Get ScanType
             try
             {
-                VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+                VideoScanType scanType = GetVideoScan(job.SourceFileData.SourceFullPath, ffmpegDir);
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
@@ -81,7 +81,7 @@ namespace AutomatedFFmpegServer
             // STEP 3: Determine Crop
             try
             {
-                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
+                string crop = GetCrop(job.SourceFileData.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
