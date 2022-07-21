@@ -273,13 +273,23 @@ namespace AutomatedFFmpegServer
             instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
 
             List<AudioStreamEncodingInstructions> audioInstructions = new List<AudioStreamEncodingInstructions>();
-            foreach (AudioStreamData audioData in streamData.AudioStreams)
+
+            IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
+
+            foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
             {
+                audioData.Max(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
+
                 AudioStreamEncodingInstructions audioStreamEncodingInstructions = new()
                 {
                     SourceIndex = audioData.AudioIndex
                 };
             }
+
+
+
+
+            return instructions;
         }
         #endregion PRIVATE FUNCTIONS
     }
