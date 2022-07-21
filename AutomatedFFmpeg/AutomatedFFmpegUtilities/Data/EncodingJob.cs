@@ -6,16 +6,14 @@ namespace AutomatedFFmpegUtilities.Data
     public class EncodingJob
     {
         public int JobId { get; set; } = 0;
-        public string Name
-        {
-            get => Path.GetFileNameWithoutExtension(FileName);
-        }
-        public string FileName { get; set; } = string.Empty;
+        public string Name => Path.GetFileNameWithoutExtension(FileName);
+        public string FileName => Path.GetFileName(SourceFullPath);
         public string SourceFullPath { get; set; } = string.Empty;
         public string DestinationFullPath { get; set; } = string.Empty;
         public EncodingJobStatus Status { get; set; } = EncodingJobStatus.NEW;
         public bool Paused { get; set; } = false;
         public bool Cancelled { get; set; } = false;
+        public int EncodingProgress { get; set; } = 0;
         
         public SourceStreamData SourceStreamData { get; set; }
         public EncodingInstructions EncodingInstructions { get; set; }

@@ -7,7 +7,7 @@ namespace AutomatedFFmpegServer
 {
     public static class EncodingJobQueue
     {
-        private static List<EncodingJob> jobQueue = new();
+        private static readonly List<EncodingJob> jobQueue = new();
         private static readonly object jobLock = new();
         private static int _idNumber = 1;
         private static int IdNumber 
@@ -51,7 +51,6 @@ namespace AutomatedFFmpegServer
                 EncodingJob newJob = new()
                 {
                     JobId = IdNumber,
-                    FileName = videoSourceData.FileName,
                     SourceFullPath = videoSourceData.FullPath,
                     DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
                 };

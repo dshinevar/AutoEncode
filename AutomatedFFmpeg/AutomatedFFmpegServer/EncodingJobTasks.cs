@@ -256,6 +256,31 @@ namespace AutomatedFFmpegServer
 
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
         }
+
+        private static EncodingInstructions DetermineEncodingInstructions(SourceStreamData streamData)
+        {
+            EncodingInstructions instructions = new();
+
+            VideoStreamEncodingInstructions videoStreamEncodingInstructions = new()
+            {
+                VideoEncoder = streamData.VideoStream.ResoultionInt >= Lookups.MinX265ResolutionInt ? VideoEncoder.LIBX265 : VideoEncoder.LIBX264,
+                BFrames = streamData.VideoStream.Animated is true ? 8 : 6,
+                CRF = 20,
+                Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
+                HasHDR = streamData.VideoStream.HDRData is not null
+            };
+
+            instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
+
+            List<AudioStreamEncodingInstructions> audioInstructions = new List<AudioStreamEncodingInstructions>();
+            foreach (AudioStreamData audioData in streamData.AudioStreams)
+            {
+                AudioStreamEncodingInstructions audioStreamEncodingInstructions = new()
+                {
+                    SourceIndex = audioData.AudioIndex
+                };
+            }
+        }
         #endregion PRIVATE FUNCTIONS
     }
 }

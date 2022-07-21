@@ -104,7 +104,7 @@ namespace AutomatedFFmpegServer.Data
                 }
                 else if (stream.codec_type.Equals("audio"))
                 {
-                    AudioStreamData audioStream = new AudioStreamData()
+                    AudioStreamData audioStream = new()
                     {
                         StreamIndex = stream.index,
                         AudioIndex = audioIndex,
