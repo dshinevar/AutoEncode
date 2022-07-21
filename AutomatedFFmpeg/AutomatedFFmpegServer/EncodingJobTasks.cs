@@ -28,11 +28,11 @@ namespace AutomatedFFmpegServer
             // STEP 1: Initial ffprobe
             try
             {
-                ProbeData probeData = GetProbeData(job.SourceFileData.SourceFullPath, ffmpegDir);
+                ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
 
                 if (probeData is not null)
                 {
-                    job.SourceFileData = probeData.ToSourceFileData();
+                    job.SourceStreamData = probeData.ToSourceFileData();
                 }
                 else
                 {
@@ -55,7 +55,7 @@ namespace AutomatedFFmpegServer
             // STEP 2: Get ScanType
             try
             {
-                VideoScanType scanType = GetVideoScan(job.SourceFileData.SourceFullPath, ffmpegDir);
+                VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
@@ -65,7 +65,7 @@ namespace AutomatedFFmpegServer
                 }
                 else
                 {
-                    job.SourceFileData.VideoStream.ScanType = scanType;
+                    job.SourceStreamData.VideoStream.ScanType = scanType;
                 }
             }
             catch (Exception ex)
@@ -81,7 +81,7 @@ namespace AutomatedFFmpegServer
             // STEP 3: Determine Crop
             try
             {
-                string crop = GetCrop(job.SourceFileData.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
+                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceStreamData.DurationInSeconds / 2);
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
@@ -91,7 +91,7 @@ namespace AutomatedFFmpegServer
                 }
                 else
                 {
-                    job.SourceFileData.VideoStream.Crop = crop;
+                    job.SourceStreamData.VideoStream.Crop = crop;
                 }
             }
             catch (Exception ex)

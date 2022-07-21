@@ -81,9 +81,9 @@ namespace AutomatedFFmpegServer.Data
             public string duration; // seconds
         }
 
-        public SourceFileData ToSourceFileData()
+        public SourceStreamData ToSourceFileData()
         {
-            SourceFileData sourceFileData = new SourceFileData()
+            SourceStreamData sourceFileData = new()
             {
                 DurationInSeconds = Convert.ToInt32(Convert.ToDouble(format.duration))
             };

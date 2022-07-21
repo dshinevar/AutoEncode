@@ -52,11 +52,8 @@ namespace AutomatedFFmpegServer
                 {
                     JobId = IdNumber,
                     FileName = videoSourceData.FileName,
-                    SourceFileData = new SourceFileData()
-                    {
-                        SourceFullPath = videoSourceData.FullPath,
-                        DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
-                    }
+                    SourceFullPath = videoSourceData.FullPath,
+                    DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
                 };
                 lock (jobLock)
                 {
