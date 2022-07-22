@@ -105,7 +105,7 @@ namespace AutomatedFFmpegServer
             CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 4: Decide Encoding Options
-
+            DetermineEncodingInstructions(job.SourceStreamData);
 
             // STEP 5: Create FFMPEG command
 
@@ -269,25 +269,48 @@ namespace AutomatedFFmpegServer
                 Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
                 HasHDR = streamData.VideoStream.HDRData is not null
             };
-
             instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
 
-            List<AudioStreamEncodingInstructions> audioInstructions = new List<AudioStreamEncodingInstructions>();
+            List<AudioStreamEncodingInstructions> audioInstructions = new();
 
             IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
-
             foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
             {
-                audioData.Max(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
+                AudioStreamData bestQualityAudioStream = audioData.MaxBy(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
 
-                AudioStreamEncodingInstructions audioStreamEncodingInstructions = new()
+                // Just copy commentary tracks
+                if (bestQualityAudioStream.Commentary is true)
                 {
-                    SourceIndex = audioData.AudioIndex
-                };
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.COPY
+                    });
+                }
+                else if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) && bestQualityAudioStream.Channels < 2)
+                {
+                    // If ac3 and mono, go ahead and convert to AAC
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.AAC
+                    });
+                }
+                else
+                {
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.COPY
+                    });
+
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.AAC
+                    });
+                }
             }
-
-
-
 
             return instructions;
         }
