@@ -31,7 +31,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string MaxCLL { get; set; }
         public bool Animated { get; set; } = false;
         public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
-        public ChromaLocation ChromaLocation { get; set; }
+        public ChromaLocation? ChromaLocation { get; set; } = null;
     }
 
     public class HDRData

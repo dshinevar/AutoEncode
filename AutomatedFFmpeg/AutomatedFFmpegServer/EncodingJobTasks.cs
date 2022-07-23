@@ -265,10 +265,12 @@ namespace AutomatedFFmpegServer
             {
                 VideoEncoder = streamData.VideoStream.ResoultionInt >= Lookups.MinX265ResolutionInt ? VideoEncoder.LIBX265 : VideoEncoder.LIBX264,
                 BFrames = streamData.VideoStream.Animated is true ? 8 : 6,
-                CRF = 20,
                 Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
-                HasHDR = streamData.VideoStream.HDRData is not null
+                HasHDR = streamData.VideoStream.HDRData is not null,
+                Crop = true
             };
+            videoStreamEncodingInstructions.PixelFormat = videoStreamEncodingInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265) ? "yuv420p10le" : "yuv420p";
+            videoStreamEncodingInstructions.CRF = videoStreamEncodingInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265) ? 20 : 16;
             instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
 
             List<AudioStreamEncodingInstructions> audioInstructions = new();
@@ -340,9 +342,62 @@ namespace AutomatedFFmpegServer
             return instructions;
         }
 
-        private static string BuildFfmpegCommand(EncodingInstructions instructions)
+        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, string sourceFullPath, string destinationFullpath)
         {
-            StringBuilder sbCommand = new StringBuilder();
+            VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
+
+            // Format should hopefully always add space to end of append
+            const string format = "{0} ";
+            StringBuilder sbArguments = new StringBuilder();
+            sbArguments.AppendFormat(format, $"-y -i \"{sourceFullPath}\"");
+            
+            // Map Section
+            sbArguments.AppendFormat(format, "-map 0:v:0");
+            foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
+            {
+                sbArguments.AppendFormat(format, $"-map 0:a:{audioInstructions.SourceIndex}");
+            }
+            foreach (SubtitleStreamEncodingInstructions subtitleInstructions in instructions.SubtitleStreamEncodingInstructions)
+            {
+                sbArguments.AppendFormat(format , $"-map 0:s:{subtitleInstructions.SourceIndex}");
+            }
+
+            // Video Section
+            string deinterlace = videoInstructions.Deinterlace is true ? $"yadif=1:{(int)streamData.VideoStream.ScanType}:0" : string.Empty;
+            string crop = videoInstructions.Crop is true ? streamData.VideoStream.Crop : string.Empty;
+            string videoFilter = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(deinterlace) || !string.IsNullOrWhiteSpace(crop))
+            {
+                videoFilter = $"-vf \"{HelperMethods.JoinFilter(":", crop, deinterlace)}\"";
+            }
+
+            sbArguments.AppendFormat(format, $"-pix_fmt {videoInstructions.PixelFormat}");
+            if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265))
+            {
+                HDRData hdr = streamData.VideoStream.HDRData;
+                sbArguments.AppendFormat(format, "-vcodec libx265");
+                if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
+                sbArguments.Append($"-x265-params \"preset=slow:keyint=60:bframes={videoInstructions.BFrames}:repeat-headers=1:")
+                    .Append($"colorprim={streamData.VideoStream.ColorPrimaries}:transfer={streamData.VideoStream.ColorTransfer}:colormatrix={streamData.VideoStream.ColorSpace}")
+                    .Append($"{(videoInstructions.HasHDR is true ? $":hdr10-opt=1:master-display='G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'" : string.Empty)}")
+                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.MaxCLL) ? string.Empty : $":max-cll={streamData.VideoStream.MaxCLL}")}")
+                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $":chromaloc={(int)streamData.VideoStream.ChromaLocation}")}")
+                    .Append("\"").AppendFormat(format, $"-crf {videoInstructions.CRF}");
+            }
+            else if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX264))
+            {
+                sbArguments.AppendFormat(format, "-vcodec libx264");
+                if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
+                sbArguments.AppendFormat(format, $"-x264-params \"preset=veryslow:bframes=16:b-adapt=2:b-pyramid=normal:partitions=all\" -crf {videoInstructions.CRF}");
+            }
+            else
+            {
+                throw new Exception("Unknown VideoEncoder. Unable to build ffmpeg arguments.");
+            }
+
+            // Audio Section
+
         }
         #endregion PRIVATE FUNCTIONS
     }

@@ -181,7 +181,7 @@ namespace AutomatedFFmpegServer.Data
                     sourceFileData.VideoStream.ColorSpace = string.IsNullOrWhiteSpace(frame.color_space) ? "bt709" : frame.color_space;
                     sourceFileData.VideoStream.ColorTransfer = string.IsNullOrWhiteSpace(frame.color_transfer) ? "bt709" : frame.color_transfer;
 
-                    ChromaLocation chroma = ChromaLocation.LEFT_DEFAULT;
+                    ChromaLocation? chroma = null;
                     switch (frame.chroma_location)
                     {
                         case "topleft":
