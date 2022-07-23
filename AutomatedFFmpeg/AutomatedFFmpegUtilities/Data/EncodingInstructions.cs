@@ -36,6 +36,8 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public AudioCodec AudioCodec { get; set; } = AudioCodec.UNKNOWN;
         public int SourceIndex { get; set; }
+        public string Language { get; set; } // Used for sorting
+        public bool Commentary { get; set;} // Used for sorting
     }
 
     public class SubtitleStreamEncodingInstructions

@@ -105,7 +105,7 @@ namespace AutomatedFFmpegServer
             CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 4: Decide Encoding Options
-            DetermineEncodingInstructions(job.SourceStreamData);
+            job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData);
 
             // STEP 5: Create FFMPEG command
 
@@ -276,24 +276,17 @@ namespace AutomatedFFmpegServer
             IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
             foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
             {
-                AudioStreamData bestQualityAudioStream = audioData.MaxBy(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
+                AudioStreamData bestQualityAudioStream = audioData.Where(x => x.Commentary is false).MaxBy(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
+                IEnumerable<AudioStreamData> commentaryAudioStreams = audioData.Where(x => x.Commentary is true);
 
-                // Just copy commentary tracks
-                if (bestQualityAudioStream.Commentary is true)
-                {
-                    audioInstructions.Add(new()
-                    {
-                        SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.COPY
-                    });
-                }
-                else if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) && bestQualityAudioStream.Channels < 2)
+                if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) && bestQualityAudioStream.Channels < 2)
                 {
                     // If ac3 and mono, go ahead and convert to AAC
                     audioInstructions.Add(new()
                     {
                         SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.AAC
+                        AudioCodec = AudioCodec.AAC,
+                        Language = bestQualityAudioStream.Language
                     });
                 }
                 else
@@ -301,16 +294,48 @@ namespace AutomatedFFmpegServer
                     audioInstructions.Add(new()
                     {
                         SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.COPY
+                        AudioCodec = AudioCodec.COPY,
+                        Language = bestQualityAudioStream.Language
                     });
 
                     audioInstructions.Add(new()
                     {
                         SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.AAC
+                        AudioCodec = AudioCodec.AAC,
+                        Language = bestQualityAudioStream.Language
+                    });
+                }
+
+                foreach (AudioStreamData commentaryStream in commentaryAudioStreams)
+                {
+                    // Just copy all commentary streams
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = commentaryStream.AudioIndex,
+                        AudioCodec = AudioCodec.COPY,
+                        Language = commentaryStream.Language,
+                        Commentary = true
                     });
                 }
             }
+
+            instructions.AudioStreamEncodingInstructions = audioInstructions.OrderBy(x => x.Commentary) // Put commentaries at the end
+                .ThenBy(x => x.Language.Equals(Lookups.PrimaryLanguage, StringComparison.OrdinalIgnoreCase)) // Put non-primary languages first
+                .ThenBy(x => x.Language) // Not sure if needed? Make sure languages are together
+                .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY))
+                .ToList(); // Put COPY before anything else
+
+            List<SubtitleStreamEncodingInstructions> subtitleInstructions = new();
+            foreach (SubtitleStreamData stream in streamData.SubtitleStreams)
+            {
+                subtitleInstructions.Add(new()
+                {
+                    SourceIndex = stream.SubtitleIndex,
+                    Forced = stream.Forced
+                });
+            }
+
+            instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
 
             return instructions;
         }
