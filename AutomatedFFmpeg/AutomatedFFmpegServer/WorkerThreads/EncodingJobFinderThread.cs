@@ -27,10 +27,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private Thread Thread { get; set; }
         private string ThreadName => Thread?.Name ?? string.Empty;
         private int ThreadSleep { get; set; } = 5000;
-        private int ThreadDeepSleep
-        {
-            get => ThreadSleep * 5;
-        }
+        private int ThreadDeepSleep => ThreadSleep * 5;
 
         private AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
         private AFServerMainThread MainThread { get; set; }
@@ -53,7 +50,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region Start/Stop Functions
         public void Start()
         {
-            ThreadStart threadStart = () => ThreadLoop();
+            void threadStart() => ThreadLoop();
             Thread = new Thread(threadStart)
             {
                 Name = nameof(EncodingJobFinderThread),

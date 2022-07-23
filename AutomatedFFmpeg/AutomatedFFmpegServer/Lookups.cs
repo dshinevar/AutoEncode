@@ -24,6 +24,8 @@ namespace AutomatedFFmpegServer
         /// </summary>
         public static int MinX265ResolutionInt => 921600;
 
+        public static string PrimaryLanguage => "eng";
+
         /// <summary>
         /// Audio Codec Priority by "Quality".  The highest index is the best quality and preferred.
         /// <para>Note 1: Readonly for now, may want to make it change in the future. (move to config?)</para>

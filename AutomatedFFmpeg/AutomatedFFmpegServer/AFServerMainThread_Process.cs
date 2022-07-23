@@ -1,15 +1,9 @@
 ﻿using AutomatedFFmpegServer.ServerSocket;
-using AutomatedFFmpegUtilities.Config;
-using AutomatedFFmpegUtilities.Messages;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegServer.WorkerThreads;
-using AutomatedFFmpegUtilities.Logger;
+using AutomatedFFmpegUtilities.Data;
+using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Messages;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer
@@ -53,10 +47,10 @@ namespace AutomatedFFmpegServer
             switch (msg.MessageType)
             {
                 case AFMessageType.CLIENT_REQUEST:
-                    {
-                        SendClientConnectData();
-                        break;
-                    }
+                {
+                    SendClientConnectData();
+                    break;
+                }
             }
         }
 
@@ -99,8 +93,7 @@ namespace AutomatedFFmpegServer
         /// <param name="obj">Task Queue</param>
         private void OnTaskTimerElapsed(object obj)
         {
-            Action task;
-            TaskQueue.TryDequeue(out task);
+            TaskQueue.TryDequeue(out Action task);
             task?.Invoke();
         }
         #endregion Process Functions

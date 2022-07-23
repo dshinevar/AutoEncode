@@ -7,10 +7,10 @@ namespace AutomatedFFmpegServer
 {
     public static class EncodingJobQueue
     {
-        private static List<EncodingJob> jobQueue = new List<EncodingJob>();
-        private static readonly object jobLock = new object();
+        private static readonly List<EncodingJob> jobQueue = new();
+        private static readonly object jobLock = new();
         private static int _idNumber = 1;
-        private static int idNumber 
+        private static int IdNumber 
         {
             get
             {
@@ -48,10 +48,9 @@ namespace AutomatedFFmpegServer
         {
             if (!ExistsByFileName(videoSourceData.FileName))
             {
-                EncodingJob newJob = new EncodingJob()
+                EncodingJob newJob = new()
                 {
-                    JobId = idNumber,
-                    FileName = videoSourceData.FileName,
+                    JobId = IdNumber,
                     SourceFullPath = videoSourceData.FullPath,
                     DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
                 };

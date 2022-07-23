@@ -23,7 +23,7 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.ANALYZING;
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 1: Initial ffprobe
             try
@@ -32,7 +32,7 @@ namespace AutomatedFFmpegServer
 
                 if (probeData is not null)
                 {
-                    job.SourceFileData = probeData.ToSourceFileData();
+                    job.SourceStreamData = probeData.ToSourceFileData();
                 }
                 else
                 {
@@ -50,7 +50,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 2: Get ScanType
             try
@@ -65,7 +65,7 @@ namespace AutomatedFFmpegServer
                 }
                 else
                 {
-                    job.SourceFileData.VideoStream.ScanType = scanType;
+                    job.SourceStreamData.VideoStream.ScanType = scanType;
                 }
             }
             catch (Exception ex)
@@ -76,12 +76,12 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 3: Determine Crop
             try
             {
-                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceFileData.DurationInSeconds / 2);
+                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceStreamData.DurationInSeconds / 2);
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
@@ -91,7 +91,7 @@ namespace AutomatedFFmpegServer
                 }
                 else
                 {
-                    job.SourceFileData.VideoStream.Crop = crop;
+                    job.SourceStreamData.VideoStream.Crop = crop;
                 }
             }
             catch (Exception ex)
@@ -102,10 +102,10 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             // STEP 4: Decide Encoding Options
-
+            job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData);
 
             // STEP 5: Create FFMPEG command
 
@@ -116,19 +116,19 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.ENCODING;
 
-            CheckForCancellation(cancellationToken, job);
+            CheckForCancellation(cancellationToken, job, logger);
 
             job.Status = EncodingJobStatus.COMPLETE;
         }
 
         #region PRIVATE FUNCTIONS
-        private static void CheckForCancellation(CancellationToken cancellationToken, EncodingJob job, [CallerMemberName] string callingFunctionName = "")
+        private static void CheckForCancellation(CancellationToken cancellationToken, EncodingJob job, Logger logger, [CallerMemberName] string callingFunctionName = "")
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 // Reset Status
                 ResetJobStatus(job);
-                // TODO: Log Cancel
+                //logger.LogInfo($"{callingFunctionName} was cancelled for {job}", callingMemberName: callingFunctionName);
                 Console.WriteLine($"{callingFunctionName} was cancelled for {job}");
                 return;
             }
@@ -140,7 +140,7 @@ namespace AutomatedFFmpegServer
         {
             string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFullPath}\"";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -150,9 +150,9 @@ namespace AutomatedFFmpegServer
                 RedirectStandardOutput = true
             };
 
-            StringBuilder sbFfprobeOutput = new StringBuilder();
+            StringBuilder sbFfprobeOutput = new();
 
-            using (Process ffprobeProcess = new Process())
+            using (Process ffprobeProcess = new())
             {
                 ffprobeProcess.StartInfo = startInfo;
                 ffprobeProcess.OutputDataReceived += (sender, e) =>
@@ -171,7 +171,7 @@ namespace AutomatedFFmpegServer
         {
             string ffmpegArgs = $"-ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:05:00 -i \"{sourceFullPath}\" -vf cropdetect -f null -";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -196,7 +196,7 @@ namespace AutomatedFFmpegServer
             }
 
             IEnumerable<string> cropLines = sbCrop.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
-            List<string> crops = new List<string>();
+            List<string> crops = new();
             foreach (string line in cropLines)
             {
                 crops.Add(line[line.IndexOf("crop=")..]);
@@ -209,7 +209,7 @@ namespace AutomatedFFmpegServer
         {
             string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {Lookups.NullLocation} -i \"{sourceFullPath}\"";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -219,7 +219,7 @@ namespace AutomatedFFmpegServer
                 RedirectStandardError = true
             };
 
-            StringBuilder sbScan = new StringBuilder();
+            StringBuilder sbScan = new();
 
             using (Process ffmpegProcess = new())
             {
@@ -234,9 +234,9 @@ namespace AutomatedFFmpegServer
                 ffmpegProcess.WaitForExit();
             }
 
-            IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine); //.Where(x => x.Contains("frame detection"));
+            IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
 
-            List<(int tff, int bff, int prog, int undet)> scan = new List<(int tff, int bff, int prog, int undet)>();
+            List<(int tff, int bff, int prog, int undet)> scan = new();
             foreach (string frame in frameDetections)
             {
                 MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");
@@ -255,6 +255,89 @@ namespace AutomatedFFmpegServer
             }
 
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
+        }
+
+        private static EncodingInstructions DetermineEncodingInstructions(SourceStreamData streamData)
+        {
+            EncodingInstructions instructions = new();
+
+            VideoStreamEncodingInstructions videoStreamEncodingInstructions = new()
+            {
+                VideoEncoder = streamData.VideoStream.ResoultionInt >= Lookups.MinX265ResolutionInt ? VideoEncoder.LIBX265 : VideoEncoder.LIBX264,
+                BFrames = streamData.VideoStream.Animated is true ? 8 : 6,
+                CRF = 20,
+                Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
+                HasHDR = streamData.VideoStream.HDRData is not null
+            };
+            instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
+
+            List<AudioStreamEncodingInstructions> audioInstructions = new();
+
+            IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
+            foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
+            {
+                AudioStreamData bestQualityAudioStream = audioData.Where(x => x.Commentary is false).MaxBy(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
+                IEnumerable<AudioStreamData> commentaryAudioStreams = audioData.Where(x => x.Commentary is true);
+
+                if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) && bestQualityAudioStream.Channels < 2)
+                {
+                    // If ac3 and mono, go ahead and convert to AAC
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.AAC,
+                        Language = bestQualityAudioStream.Language
+                    });
+                }
+                else
+                {
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.COPY,
+                        Language = bestQualityAudioStream.Language
+                    });
+
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = bestQualityAudioStream.AudioIndex,
+                        AudioCodec = AudioCodec.AAC,
+                        Language = bestQualityAudioStream.Language
+                    });
+                }
+
+                foreach (AudioStreamData commentaryStream in commentaryAudioStreams)
+                {
+                    // Just copy all commentary streams
+                    audioInstructions.Add(new()
+                    {
+                        SourceIndex = commentaryStream.AudioIndex,
+                        AudioCodec = AudioCodec.COPY,
+                        Language = commentaryStream.Language,
+                        Commentary = true
+                    });
+                }
+            }
+
+            instructions.AudioStreamEncodingInstructions = audioInstructions.OrderBy(x => x.Commentary) // Put commentaries at the end
+                .ThenBy(x => x.Language.Equals(Lookups.PrimaryLanguage, StringComparison.OrdinalIgnoreCase)) // Put non-primary languages first
+                .ThenBy(x => x.Language) // Not sure if needed? Make sure languages are together
+                .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY))
+                .ToList(); // Put COPY before anything else
+
+            List<SubtitleStreamEncodingInstructions> subtitleInstructions = new();
+            foreach (SubtitleStreamData stream in streamData.SubtitleStreams)
+            {
+                subtitleInstructions.Add(new()
+                {
+                    SourceIndex = stream.SubtitleIndex,
+                    Forced = stream.Forced
+                });
+            }
+
+            instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
+
+            return instructions;
         }
         #endregion PRIVATE FUNCTIONS
     }

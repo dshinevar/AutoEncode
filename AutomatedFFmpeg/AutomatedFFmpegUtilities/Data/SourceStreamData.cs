@@ -1,16 +1,14 @@
-﻿using System;
+﻿using AutomatedFFmpegUtilities.Enums;
 using System.Collections.Generic;
-using System.Text;
-using AutomatedFFmpegUtilities.Enums;
 
 namespace AutomatedFFmpegUtilities.Data
 {
-    public class SourceFileData
+    public class SourceStreamData
     {
         public int DurationInSeconds { get; set; }
         public VideoStreamData VideoStream { get; set; }
-        public List<AudioStreamData> AudioStreams { get; set; } = new List<AudioStreamData>();
-        public List<SubtitleStreamData> SubtitleStreams { get; set; } = new List<SubtitleStreamData>();
+        public List<AudioStreamData> AudioStreams { get; set; } = new();
+        public List<SubtitleStreamData> SubtitleStreams { get; set; } = new();
     }
 
     public class StreamData

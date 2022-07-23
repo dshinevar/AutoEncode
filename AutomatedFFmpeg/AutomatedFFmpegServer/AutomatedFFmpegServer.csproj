@@ -26,8 +26,8 @@
 		</Compile>
 	</ItemGroup>
 	<ItemGroup>
-		<Compile Update="WorkerThreads\EncodingJobFinderThread_*.cs">
-			<DependentUpon>WorkerThreads\EncodingJobFinderThread.cs</DependentUpon>
+		<Compile Update=".\WorkerThreads\EncodingJobFinderThread_*.cs">
+			<DependentUpon>.\WorkerThreads\EncodingJobFinderThread.cs</DependentUpon>
 		</Compile>
 	</ItemGroup>
 </Project>
