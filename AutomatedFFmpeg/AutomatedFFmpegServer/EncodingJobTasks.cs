@@ -339,6 +339,11 @@ namespace AutomatedFFmpegServer
 
             return instructions;
         }
+
+        private static string BuildFfmpegCommand(EncodingInstructions instructions)
+        {
+            StringBuilder sbCommand = new StringBuilder();
+        }
         #endregion PRIVATE FUNCTIONS
     }
 }
