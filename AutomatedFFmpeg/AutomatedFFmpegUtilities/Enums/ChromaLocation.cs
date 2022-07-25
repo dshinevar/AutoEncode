@@ -1,20 +1,20 @@
-using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
     public enum ChromaLocation
     {
-        [Description("Left")]
+        [Display(Name = "Left", Description = "Left (Default)", ShortName = "Left")]
         LEFT_DEFAULT = 0,
-        [Description("Center")]
+        [Display(Name = "Center", Description = "Center", ShortName = "Center")]
         CENTER = 1,
-        [Description("Top Left")]
+        [Display(Name = "Top Left", Description = "Top Left", ShortName = "Top Left")]
         TOP_LEFT = 2,
-        [Description("Top")]
+        [Display(Name = "Top", Description = "Top", ShortName = "Top")]
         TOP = 3,
-        [Description("Bottom Left")]
+        [Display(Name = "Bottom Left", Description = "Bottom Left", ShortName = "Bottom Left")]
         BOTTOM_LEFT = 4,
-        [Description("Bottom")]
+        [Display(Name = "Bottom", Description = "Bottom", ShortName = "Bottom")]
         BOTTOM = 5
     }
 }

@@ -14,6 +14,7 @@ namespace AutomatedFFmpegUtilities.Data
     public class StreamData
     {
         public int StreamIndex { get; set; } = -1;
+        public string Title { get; set; }
     }
 
     public class VideoStreamData : StreamData
@@ -31,7 +32,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string MaxCLL { get; set; }
         public bool Animated { get; set; } = false;
         public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
-        public ChromaLocation ChromaLocation { get; set; }
+        public ChromaLocation? ChromaLocation { get; set; } = null;
     }
 
     public class HDRData

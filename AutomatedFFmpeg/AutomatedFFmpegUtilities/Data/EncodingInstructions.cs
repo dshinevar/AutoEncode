@@ -30,12 +30,16 @@ namespace AutomatedFFmpegUtilities.Data
         public bool HasHDR { get; set; }
         public int BFrames { get; set; }
         public int CRF { get; set; }
+        public string PixelFormat { get; set; }
+        public bool Crop { get; set; }
     }
 
     public class AudioStreamEncodingInstructions
     {
         public AudioCodec AudioCodec { get; set; } = AudioCodec.UNKNOWN;
         public int SourceIndex { get; set; }
+
+        public string Title { get; set; }
         public string Language { get; set; } // Used for sorting
         public bool Commentary { get; set;} // Used for sorting
     }
@@ -43,6 +47,7 @@ namespace AutomatedFFmpegUtilities.Data
     public class SubtitleStreamEncodingInstructions
     {
         public int SourceIndex { get; set; }
+        public string Title { get; set; }
         public bool Forced { get; set; }
     }
 }

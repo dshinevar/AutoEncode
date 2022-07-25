@@ -99,7 +99,8 @@ namespace AutomatedFFmpegServer.Data
                         StreamIndex = stream.index,
                         Resolution = $"{stream.width}x{stream.height}",
                         ResoultionInt = stream.width*stream.height,
-                        CodecName = stream.codec_name
+                        CodecName = stream.codec_name,
+                        Title = stream.tags.title
                     };
                 }
                 else if (stream.codec_type.Equals("audio"))
@@ -111,6 +112,7 @@ namespace AutomatedFFmpegServer.Data
                         Channels = stream.channels,
                         Language = stream.tags.language,
                         Descriptor = stream.codec_name,
+                        Title = stream.tags.title
                     };
 
                     if (string.IsNullOrWhiteSpace(stream.channel_layout) is false)
@@ -145,13 +147,14 @@ namespace AutomatedFFmpegServer.Data
                 }
                 else if (stream.codec_type.Equals("subtitle"))
                 {
-                    SubtitleStreamData subtitleStream = new SubtitleStreamData()
+                    SubtitleStreamData subtitleStream = new()
                     {
                         StreamIndex = stream.index,
                         SubtitleIndex = subIndex,
                         Descriptor = stream.codec_name,
                         Language = stream.tags.language,
-                        Forced = stream.disposition.forced == 1
+                        Forced = stream.disposition.forced == 1,
+                        Title = stream.tags.title
                     };
 
                     sourceFileData.SubtitleStreams.Add(subtitleStream);
@@ -181,7 +184,7 @@ namespace AutomatedFFmpegServer.Data
                     sourceFileData.VideoStream.ColorSpace = string.IsNullOrWhiteSpace(frame.color_space) ? "bt709" : frame.color_space;
                     sourceFileData.VideoStream.ColorTransfer = string.IsNullOrWhiteSpace(frame.color_transfer) ? "bt709" : frame.color_transfer;
 
-                    ChromaLocation chroma = ChromaLocation.LEFT_DEFAULT;
+                    ChromaLocation? chroma = null;
                     switch (frame.chroma_location)
                     {
                         case "topleft":
