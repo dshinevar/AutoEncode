@@ -14,6 +14,7 @@ namespace AutomatedFFmpegUtilities.Data
     public class StreamData
     {
         public int StreamIndex { get; set; } = -1;
+        public string Title { get; set; }
     }
 
     public class VideoStreamData : StreamData

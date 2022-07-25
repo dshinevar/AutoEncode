@@ -1,17 +1,17 @@
-﻿using System.ComponentModel;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
     public enum AudioCodec
     {
-        [Description("Unknown")]
+        [Display(Name = "Unknown", Description = "Unknown", ShortName = "Unknown")]
         UNKNOWN = 0,
         /// <summary> Copy of the source audio </summary>
-        [Description("Copy")]
+        [Display(Name = "Copy", Description = "copy", ShortName = "copy")]
         COPY = 1,
-        [Description("AAC")]
+        [Display(Name = "AAC", Description = "aac", ShortName = "aac")]
         AAC = 2,
-        [Description("Opus")]
+        [Display(Name = "Opus", Description = "opus", ShortName = "opus")]
         OPUS = 3,
     }
 }

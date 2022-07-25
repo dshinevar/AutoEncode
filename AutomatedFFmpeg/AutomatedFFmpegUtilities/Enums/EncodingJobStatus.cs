@@ -1,18 +1,18 @@
-﻿using System.ComponentModel;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
     public enum EncodingJobStatus
     {
-        [Description("New")]
+        [Display(Name = "New", Description = "New", ShortName = "New")]
         NEW = 0,
-        [Description("Analyzing")]
+        [Display(Name = "Analyzing", Description = "Analyzing", ShortName = "Analyzing")]
         ANALYZING = 1,
-        [Description("Analyzed")]
+        [Display(Name = "Analyzed", Description = "Analyzed", ShortName = "Analyzed")]
         ANALYZED = 2,
-        [Description("Encoding")]
+        [Display(Name = "Encoding", Description = "Encoding", ShortName = "Encoding")]
         ENCODING = 3,
-        [Description("Complete")]
-        COMPLETE = 4
+        [Display(Name = "Encoded", Description = "Encoded", ShortName = "Encoded")]
+        ENCODED = 4
     }
 }

@@ -1,7 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace AutomatedFFmpegUtilities
 {
@@ -38,5 +42,8 @@ namespace AutomatedFFmpegUtilities
         /// <param name="s"></param>
         /// <returns></returns>
         public static string RemoveEndingSlashes(this string s) => s.TrimEnd(Path.DirectorySeparatorChar);
+
+        public static string GetName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetName();
+        public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
     }
 }

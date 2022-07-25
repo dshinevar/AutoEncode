@@ -1,16 +1,16 @@
-using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
     public enum VideoScanType : int
     {
-        [Description("Interlaced Top Field First")]
+        [Display(Name = "Interlaced TFF", Description = "Interlaced Top Field First", ShortName = "TFF")]
         INTERLACED_TFF = 0,
-        [Description("Interlaced Bottom Field First")]
+        [Display(Name = "Interlaced BFF", Description = "Interlaced Bottom Field First", ShortName = "BFF")]
         INTERLACED_BFF = 1,
-        [Description("Progressive")]
+        [Display(Name = "Progressive", Description = "Progressive", ShortName = "Prog")]
         PROGRESSIVE = 2,
-        [Description("Undetermined")]
+        [Display(Name = "Undetermined", Description = "Undetermined", ShortName = "Undetermined")]
         UNDETERMINED = 3
     }
 }
