@@ -135,8 +135,8 @@ namespace AutomatedFFmpegServer
             catch (Exception ex)
             {
                 //logger.LogException(ex, $"Error building FFmpeg command for {job.FileName}");
-                ResetJobStatus(job);
                 Debug.WriteLine($"Error building FFmpeg command for {job.FileName}. ({ex.Message})");
+                ResetJobStatus(job);
                 return;
             }
 
@@ -148,6 +148,18 @@ namespace AutomatedFFmpegServer
             job.Status = EncodingJobStatus.ENCODING;
 
             if (CheckForCancellation(cancellationToken, job, logger)) return;
+
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+                logger.LogException(ex, $"Error encoding {job.FileName}.");
+                Debug.WriteLine($"Error encoding {job.FileName}. ({ex.Message})");
+                ResetJobStatus(job);
+                return;
+            }
 
             job.Status = EncodingJobStatus.ENCODED;
         }
