@@ -130,7 +130,7 @@ namespace AutomatedFFmpegServer
             // STEP 5: Create FFMPEG command
             try
             {
-                job.FfmpegCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
+                job.FFmpegCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
             }
             catch (Exception ex)
             {
@@ -151,7 +151,53 @@ namespace AutomatedFFmpegServer
 
             try
             {
+                ProcessStartInfo startInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
+                    Arguments = job.FFmpegCommandArguments,
+                    UseShellExecute = false,
+                    RedirectStandardError = true
+                };
 
+                StringBuilder sbCrop = new();
+                int count = 0;
+
+                using (Process ffmpegProcess = new())
+                {
+                    ffmpegProcess.StartInfo = startInfo;
+                    ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        Process proc = (Process)sender;
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            proc.CancelErrorRead();
+                            proc.Close();
+                            return;
+                        }
+
+                        // Only check output every 50 events, don't need to do this frequently
+                        if (count >= 50)
+                        {
+                            if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("time="))
+                            {
+                                string line = e.Data;
+                                string time = line.Substring(line.IndexOf("time="), 13);
+                            }
+                            count = 0;
+                        }
+                        else
+                        {
+                            count++;
+                        }
+
+
+                    };
+                    ffmpegProcess.Start();
+                    ffmpegProcess.BeginErrorReadLine();
+                    ffmpegProcess.WaitForExit();
+                }
             }
             catch (Exception ex)
             {

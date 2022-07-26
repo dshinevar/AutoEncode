@@ -17,7 +17,7 @@ namespace AutomatedFFmpegUtilities.Data
         
         public SourceStreamData SourceStreamData { get; set; }
         public EncodingInstructions EncodingInstructions { get; set; }
-        public string FfmpegCommandArguments { get; set; }
+        public string FFmpegCommandArguments { get; set; }
         
         public override string ToString() => $"({JobId}) {Name}";
     }
