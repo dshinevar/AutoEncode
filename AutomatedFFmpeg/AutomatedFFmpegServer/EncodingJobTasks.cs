@@ -149,6 +149,7 @@ namespace AutomatedFFmpegServer
 
             if (CheckForCancellation(cancellationToken, job, logger)) return;
 
+            Stopwatch stopwatch = new();
             try
             {
                 ProcessStartInfo startInfo = new()
@@ -161,7 +162,6 @@ namespace AutomatedFFmpegServer
                     RedirectStandardError = true
                 };
 
-                StringBuilder sbCrop = new();
                 int count = 0;
 
                 using (Process ffmpegProcess = new())
@@ -169,9 +169,11 @@ namespace AutomatedFFmpegServer
                     ffmpegProcess.StartInfo = startInfo;
                     ffmpegProcess.ErrorDataReceived += (sender, e) =>
                     {
-                        Process proc = (Process)sender;
-                        if (cancellationToken.IsCancellationRequested)
+                        Process proc = sender as Process;
+                        if (cancellationToken.IsCancellationRequested is true)
                         {
+                            job.EncodingProgress = 0;
+                            ResetJobStatus(job);
                             proc.CancelErrorRead();
                             proc.Close();
                             return;
@@ -184,30 +186,48 @@ namespace AutomatedFFmpegServer
                             {
                                 string line = e.Data;
                                 string time = line.Substring(line.IndexOf("time="), 13);
+                                int seconds = HelperMethods.ConvertTimestampToSeconds(time.Split('=')[1]);
+                                job.EncodingProgress = seconds / job.SourceStreamData.DurationInSeconds; // Update percent complete   
                             }
                             count = 0;
                         }
                         else
                         {
+                            proc.StandardError.DiscardBufferedData();
                             count++;
                         }
-
-
                     };
+                    ffmpegProcess.Exited += (sender, e) =>
+                    {
+                        Process proc = sender as Process;
+                        if (proc.ExitCode != 0)
+                        {
+                            ResetJobStatus(job);
+                            job.EncodingProgress = 0;
+                        }
+                    };
+                    stopwatch.Start();
                     ffmpegProcess.Start();
                     ffmpegProcess.BeginErrorReadLine();
                     ffmpegProcess.WaitForExit();
                 }
+
+                stopwatch.Stop();
             }
             catch (Exception ex)
             {
                 logger.LogException(ex, $"Error encoding {job.FileName}.");
                 Debug.WriteLine($"Error encoding {job.FileName}. ({ex.Message})");
                 ResetJobStatus(job);
+                job.EncodingProgress = 0;
                 return;
             }
 
-            job.Status = EncodingJobStatus.ENCODED;
+            if (job.EncodingProgress > 0)
+            {
+                job.Status = EncodingJobStatus.ENCODED;
+                logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
+            }
         }
 
         #region General Private Functions
