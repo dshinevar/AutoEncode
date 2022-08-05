@@ -10,7 +10,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -26,7 +25,7 @@ namespace AutomatedFFmpegServer
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         public static void BuildEncodingJob(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
         {
-            job.Status = EncodingJobStatus.ANALYZING;
+            job.Status = EncodingJobStatus.BUILDING;
 
             CheckForCancellation(cancellationToken, job, logger);
 
@@ -42,17 +41,17 @@ namespace AutomatedFFmpegServer
                 else
                 {
                     // Reset job status and exit
-                    //logger.LogError($"Failed to get probe data for {job.FileName}");
+                    logger.LogError($"Failed to get probe data for {job.FileName}");
                     Debug.WriteLine($"Error getting probe data or building SourceStreamData for {job.FileName}.");
-                    ResetJobStatus(job);
+                    job.SetError();
                     return;
                 }
             }
             catch (Exception ex)
             {
-                //logger.LogException(ex, $"Error getting probe or source file data for {job.FileName}");
-                ResetJobStatus(job);
+                logger.LogException(ex, $"Error getting probe or source file data for {job.FileName}");
                 Debug.WriteLine(ex.Message);
+                job.SetError();
                 return;
             }
 
@@ -65,9 +64,9 @@ namespace AutomatedFFmpegServer
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
-                    //logger.LogError($"Failed to determine VideoScanType for {job.FileName}.");
+                    logger.LogError($"Failed to determine VideoScanType for {job.FileName}.");
                     Debug.WriteLine($"Error getting video scan for {job.FileName}.");
-                    ResetJobStatus(job);
+                    job.SetError();
                     return;
                 }
                 else
@@ -77,8 +76,8 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                //logger.LogException(ex, $"Error determining VideoScanType for {job.FileName}");
-                ResetJobStatus(job);
+                logger.LogException(ex, $"Error determining VideoScanType for {job.FileName}");
+                job.SetError();
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
                 return;
             }
@@ -92,8 +91,8 @@ namespace AutomatedFFmpegServer
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
-                    //logger.LogError($"Failed to determine crop for {job.FileName}");
-                    ResetJobStatus(job);
+                    logger.LogError($"Failed to determine crop for {job.FileName}");
+                    job.SetError();
                     return;
                 }
                 else
@@ -103,9 +102,9 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                //logger.LogException(ex, $"Error determining crop for {job.FileName}");
-                ResetJobStatus(job);
+                logger.LogException(ex, $"Error determining crop for {job.FileName}");
                 Debug.WriteLine($"Error getting crop: {ex.Message}");
+                job.SetError();
                 return;
             }
 
@@ -119,9 +118,9 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                //logger.LogException(ex, $"Error building encoding instructions for {job.FileName}");
+                logger.LogException(ex, $"Error building encoding instructions for {job.FileName}");
                 Debug.WriteLine($"Error building encoding instructions: {ex.Message}");
-                ResetJobStatus(job);
+                job.SetError();
                 return;
             }
 
@@ -130,17 +129,18 @@ namespace AutomatedFFmpegServer
             // STEP 5: Create FFMPEG command
             try
             {
-                job.FfmpegCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
+                job.FFmpegCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
             }
             catch (Exception ex)
             {
-                //logger.LogException(ex, $"Error building FFmpeg command for {job.FileName}");
-                ResetJobStatus(job);
+                logger.LogException(ex, $"Error building FFmpeg command for {job.FileName}");
                 Debug.WriteLine($"Error building FFmpeg command for {job.FileName}. ({ex.Message})");
+                job.SetError();
                 return;
             }
 
-            job.Status = EncodingJobStatus.ANALYZED;
+            job.Status = EncodingJobStatus.BUILT;
+            logger.LogInfo($"Successfully built {job.Name} encoding job.");
         }
 
         public static void Encode(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
@@ -149,7 +149,86 @@ namespace AutomatedFFmpegServer
 
             if (CheckForCancellation(cancellationToken, job, logger)) return;
 
-            job.Status = EncodingJobStatus.ENCODED;
+            Stopwatch stopwatch = new();
+            try
+            {
+                ProcessStartInfo startInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
+                    Arguments = job.FFmpegCommandArguments,
+                    UseShellExecute = false,
+                    RedirectStandardError = true
+                };
+
+                int count = 0;
+
+                using (Process ffmpegProcess = new())
+                {
+                    ffmpegProcess.StartInfo = startInfo;
+                    ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        Process proc = sender as Process;
+                        if (cancellationToken.IsCancellationRequested is true)
+                        {
+                            job.EncodingProgress = 0;
+                            job.ResetStatus();
+                            proc.CancelErrorRead();
+                            proc.Close();
+                            return;
+                        }
+
+                        // Only check output every 50 events, don't need to do this frequently
+                        if (count >= 50)
+                        {
+                            if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("time="))
+                            {
+                                string line = e.Data;
+                                string time = line.Substring(line.IndexOf("time="), 13);
+                                int seconds = HelperMethods.ConvertTimestampToSeconds(time.Split('=')[1]);
+                                job.EncodingProgress = (int)(((double)seconds / (double)job.SourceStreamData.DurationInSeconds) * 100); // Update percent complete
+                                Debug.WriteLine(job.EncodingProgress);
+                            }
+                            count = 0;
+                        }
+                        else
+                        {
+                            count++;
+                        }
+                    };
+                    ffmpegProcess.Exited += (sender, e) =>
+                    {
+                        Process proc = sender as Process;
+                        if (proc.ExitCode != 0)
+                        {
+                            job.SetError();
+                            job.EncodingProgress = 0;
+                            logger.LogError($"Encoding process for {job.Name} ended unsuccessfully.");
+                        }
+                    };
+                    stopwatch.Start();
+                    ffmpegProcess.Start();
+                    ffmpegProcess.BeginErrorReadLine();
+                    ffmpegProcess.WaitForExit();
+                }    
+            }
+            catch (Exception ex)
+            {
+                logger.LogException(ex, $"Error encoding {job.FileName}.");
+                Debug.WriteLine($"Error encoding {job.FileName}. ({ex.Message})");
+                job.SetError();
+                return;
+            }
+
+            stopwatch.Stop();
+
+            if (job.EncodingProgress > 0)
+            {
+                job.EncodingProgress = 100;
+                job.Status = EncodingJobStatus.ENCODED;
+                logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
+            }
         }
 
         #region General Private Functions
@@ -165,17 +244,13 @@ namespace AutomatedFFmpegServer
             if (cancellationToken.IsCancellationRequested)
             {
                 // Reset Status
-                ResetJobStatus(job);
-                //logger.LogInfo($"{callingFunctionName} was cancelled for {job}", callingMemberName: callingFunctionName);
-                Console.WriteLine($"{callingFunctionName} was cancelled for {job}");
+                job.ResetStatus();
+                logger.LogInfo($"{callingFunctionName} was cancelled for {job}", callingMemberName: callingFunctionName);
+                Debug.WriteLine($"{callingFunctionName} was cancelled for {job}");
                 cancel = true;
             }
             return cancel;
         }
-
-        /// <summary> Resets a job's Status depending on its current status. </summary>
-        /// <param name="job"><see cref="EncodingJob"/> to be reset.</param>
-        private static void ResetJobStatus(EncodingJob job) => job.Status = job.Status.Equals(EncodingJobStatus.ANALYZING) ? EncodingJobStatus.NEW : EncodingJobStatus.ANALYZED;
         #endregion General Private Functions
 
         #region BuildEncodingJob Private Functions
@@ -492,7 +567,7 @@ namespace AutomatedFFmpegServer
                 else
                 {
                     sbArguments.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
-                        .AppendFormat(format, $"-ac:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
+                        .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
                         .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.Language})\"");
                 }
             }

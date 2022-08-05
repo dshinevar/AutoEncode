@@ -75,7 +75,7 @@ namespace AutomatedFFmpegServer
                 // Check if task is done (or null -- first time setup)
                 if (EncodingTask?.IsCompletedSuccessfully ?? true)
                 {
-                    EncodingJob jobToEncode = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.ANALYZED);
+                    EncodingJob jobToEncode = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
                     if (jobToEncode is not null)
                     {
                         EncodingTask = Task.Factory.StartNew(()
@@ -86,7 +86,7 @@ namespace AutomatedFFmpegServer
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
 
-            //(Logger?.CheckAndDoRollover();
+            Logger?.CheckAndDoRollover();
         }
 
         /// <summary> Task Timer: Checks, dequeues, and invokes tasks. </summary>

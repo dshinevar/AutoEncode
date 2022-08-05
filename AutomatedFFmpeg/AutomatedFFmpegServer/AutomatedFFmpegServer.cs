@@ -2,8 +2,10 @@
 using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Logger;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using YamlDotNet.Serialization;
@@ -14,13 +16,18 @@ namespace AutomatedFFmpegServer
     class AutomatedFFmpegServer
     {
         private const string LOG_THREAD_NAME = "STARTUP";
+        private const string LOG_FILENAME = "AFServer.log";
 
         static void Main(string[] args)
         {
+            string logBackupFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                                @"\var\log\AFServer" :
+                                                $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
+
             AFServerMainThread mainThread = null;
             AFServerConfig serverConfig = null;
             Logger logger = null;
-            ManualResetEvent Shutdown = new ManualResetEvent(false);
+            ManualResetEvent Shutdown = new(false);
 
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
 
@@ -42,23 +49,69 @@ namespace AutomatedFFmpegServer
 
             Debug.WriteLine("Config file loaded.");
 
-            logger = new(serverConfig.ServerSettings.LoggerSettings.LogFileLocation,
+            string LogFileLocation = serverConfig.ServerSettings.LoggerSettings.LogFileLocation;
+            try
+            {
+                DirectoryInfo directoryInfo = System.IO.Directory.CreateDirectory(serverConfig.ServerSettings.LoggerSettings.LogFileLocation);
+
+                if (directoryInfo is null)
+                {
+                    Debug.WriteLine("Failed to create/find log directory. Checking backup.");
+
+                    DirectoryInfo backupDirectoryInfo = System.IO.Directory.CreateDirectory(logBackupFileLocation);
+
+                    if (backupDirectoryInfo is null)
+                    {
+                        Debug.WriteLine("Failed to create/find backup log directory. Exiting.");
+                        Environment.Exit(-2);
+                    }
+
+                    LogFileLocation = logBackupFileLocation;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+                if (ex is UnauthorizedAccessException || ex is PathTooLongException)
+                {
+                    // Exception occurred with given directory, try the backup;  If that fails, exit.
+                    try
+                    {
+                        System.IO.Directory.CreateDirectory(logBackupFileLocation);
+                    }
+                    catch (Exception lastChanceEx)
+                    {
+                        Debug.WriteLine(lastChanceEx.ToString());
+                        Environment.Exit(-2);
+                    }
+
+                    LogFileLocation = logBackupFileLocation;
+                }
+                else
+                {
+                    // Exception we don't want to handle, exit.
+                    Environment.Exit(-2);
+                }
+            }
+
+            logger = new(LogFileLocation,
+                LOG_FILENAME,
                 serverConfig.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
                 serverConfig.ServerSettings.LoggerSettings.BackupFileCount);
 
-            /*
+            
             if (logger.CheckAndDoRollover() is false)
             {
                 Debug.WriteLine("FATAL: Error occurred when checking log file for rollover. Exiting as logging will not function.");
                 Environment.Exit(-2);
             }
-            */
+            
 
-            //logger.LogInfo("AutomatedFFmpegServer Starting Up. Config file loaded.", threadName: LOG_THREAD_NAME);
+            logger.LogInfo("AutomatedFFmpegServer Starting Up. Config file loaded.", threadName: LOG_THREAD_NAME);
 
             try
             {
-                StringBuilder sbFfmpegVersion = new();
+                List<string> ffmpegVersionLines = new List<string>();
 
                 ProcessStartInfo startInfo = new()
                 {
@@ -73,26 +126,22 @@ namespace AutomatedFFmpegServer
                 using (Process ffprobeProcess = new())
                 {
                     ffprobeProcess.StartInfo = startInfo;
-                    ffprobeProcess.Start();
-
-                    using (StreamReader reader = ffprobeProcess.StandardOutput)
+                    ffprobeProcess.OutputDataReceived += (sender, e) =>
                     {
-                        while (reader.Peek() >= 0)
-                        {
-                            sbFfmpegVersion.Append(reader.ReadLine());
-                        }
-                    }
-
+                        if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
+                    };
+                    ffprobeProcess.Start();
+                    ffprobeProcess.BeginOutputReadLine();
                     ffprobeProcess.WaitForExit();
                 }
 
-                Debug.WriteLine(sbFfmpegVersion.ToString());
-                //logger.LogInfo(sbFfmpegVersion.ToString(), threadName: LOG_THREAD_NAME);
+                foreach (string line in ffmpegVersionLines) Debug.WriteLine(line);
+                logger.LogInfo(ffmpegVersionLines, threadName: LOG_THREAD_NAME);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}");
-                //logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: "LOG_THREAD_NAME");
+                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: "LOG_THREAD_NAME");
                 Environment.Exit(-2);
             }
 
