@@ -204,7 +204,7 @@ namespace AutomatedFFmpegServer
                         {
                             job.SetError();
                             job.EncodingProgress = 0;
-                            logger.LogError($"Encoding process for {job.Name} ended unsucessfully.");
+                            logger.LogError($"Encoding process for {job.Name} ended unsuccessfully.");
                         }
                     };
                     stopwatch.Start();
