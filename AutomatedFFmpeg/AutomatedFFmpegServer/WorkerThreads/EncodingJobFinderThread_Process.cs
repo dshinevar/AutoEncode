@@ -68,8 +68,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 }
                 catch (Exception ex)
                 {
-                    // TODO Logging
+                    Logger.LogException(ex, "Error during looking for encoding jobs.");
                     Debug.WriteLine($"[{ThreadName}] ERROR: {ex.Message}");
+                    return;
                 }
             }
         }
@@ -177,7 +178,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 }
                 else
                 {
-                    // TODO Logging
+                    Logger.LogError($"{entry.Value.Source} does not exist.");
                     Console.WriteLine($"{entry.Value.Source} does not exist.");
                 }
             });
@@ -185,19 +186,23 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         private void CreateEncodingJob(VideoSourceData sourceData, string sourceDirectoryPath, string destinationDirectoryPath)
         {
-            // Only add encoding job is file is ready.
-            if (CheckFileReady(sourceData.FullPath))
+            if (EncodingJobQueue.ExistsByFileName(sourceData.FileName) is false)
             {
-                EncodingJobQueue.CreateEncodingJob(sourceData, sourceDirectoryPath, destinationDirectoryPath);
+                // Only add encoding job is file is ready.
+                if (CheckFileReady(sourceData.FullPath))
+                {
+                    EncodingJobQueue.CreateEncodingJob(sourceData, sourceDirectoryPath, destinationDirectoryPath);
+                    Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.");
+                }
             }
         }
 
         /// <summary>Check if file size is changing, if it is, it is not ready for encoding.</summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        private bool CheckFileReady(string filePath)
+        private static bool CheckFileReady(string filePath)
         {
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
 
             long beforeFileSize = fileInfo.Length;
             Thread.Sleep(2000);

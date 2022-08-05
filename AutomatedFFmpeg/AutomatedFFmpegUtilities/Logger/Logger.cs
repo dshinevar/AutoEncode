@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace AutomatedFFmpegUtilities.Logger
 {
@@ -24,14 +22,14 @@ namespace AutomatedFFmpegUtilities.Logger
 
     public class Logger
     {
-        private string LogFileLocation { get; set; }
+        private readonly string LogFileFullPath;
         private long MaxSizeInBytes { get; set; }
         private int BackupFileCount { get; set; }
-        private object FileLock = new();
+        private readonly object FileLock = new();
 
-        public Logger(string logFileLocation, long maxSizeInBytes = -1, int backupFileCount = 0)
+        public Logger(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
         {
-            LogFileLocation = logFileLocation;
+            LogFileFullPath = $@"{logFileLocation.RemoveEndingSlashes()}{Path.DirectorySeparatorChar}{logFileName}";
             MaxSizeInBytes = maxSizeInBytes;
             BackupFileCount = backupFileCount;
         }
@@ -40,16 +38,18 @@ namespace AutomatedFFmpegUtilities.Logger
         [Conditional("DEBUG")]
         public void LogDebug(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, msg, threadName, callingMemberName);
         public void LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, msg, threadName, callingMemberName);
+        public void LogInfo(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, threadName, callingMemberName);
         public void LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, msg, threadName, callingMemberName);
+        public void LogError(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, callingMemberName);
         public void LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, msg, threadName, callingMemberName);
         public void LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
-            => LogFatal($"{msg} (Exception: {ex.Message})", threadName, callingMemberName);
+            => LogError($"{msg} (Exception: {ex.Message})", threadName, callingMemberName);
 
-        private void Log(Severity severity, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
+        private void Log(Severity severity, string msg, string threadName = "", string callingMemberName = "")
         {
-            StringBuilder sbLogMsg = new StringBuilder();
+            StringBuilder sbLogMsg = new();
 
-            sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}][{Enum.GetName(typeof(Severity), (int)severity)}]");
+            sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
             if (string.IsNullOrEmpty(threadName))
             {
                 if (!string.IsNullOrEmpty(callingMemberName))
@@ -73,12 +73,56 @@ namespace AutomatedFFmpegUtilities.Logger
             {
                 lock (FileLock)
                 {
-                    File.AppendAllTextAsync(LogFileLocation, sbLogMsg.ToString());
+                    File.AppendAllTextAsync(LogFileFullPath, sbLogMsg.ToString());
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to log to file ({LogFileLocation}) : {ex.Message}");
+                Debug.WriteLine($"Failed to log to file ({LogFileFullPath}) : {ex.Message}");
+            }
+        }
+
+        private void Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
+        {
+            StringBuilder sbLogMsg = new();
+
+            sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
+            if (string.IsNullOrEmpty(threadName))
+            {
+                if (!string.IsNullOrEmpty(callingMemberName))
+                {
+                    sbLogMsg.Append($"[{callingMemberName}]");
+                }
+            }
+            else
+            {
+                sbLogMsg.Append($"[{threadName}]");
+
+                if (!string.IsNullOrEmpty(callingMemberName))
+                {
+                    sbLogMsg.Append($"[{callingMemberName}]");
+                }
+            }
+
+            sbLogMsg.Append(": ");
+            int spacing = sbLogMsg.Length;
+            sbLogMsg.Append($"{messages[0]}{Environment.NewLine}");
+
+            for (int i = 1; i < messages.Count; i++)
+            {
+                sbLogMsg.Append(' ', spacing).Append($"{messages[i]}{Environment.NewLine}");
+            }
+
+            try
+            {
+                lock (FileLock)
+                {
+                    File.AppendAllTextAsync(LogFileFullPath, sbLogMsg.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to log to file ({LogFileFullPath}) : {ex.Message}");
             }
         }
         #endregion Log Functions
@@ -91,11 +135,10 @@ namespace AutomatedFFmpegUtilities.Logger
             {
                 if (MaxSizeInBytes > -1)
                 {
-                    FileInfo fileInfo = new FileInfo(LogFileLocation);
+                    FileInfo fileInfo = new FileInfo(LogFileFullPath);
 
-                    if (fileInfo.Length >= MaxSizeInBytes)
+                    if (fileInfo.Exists && fileInfo.Length >= MaxSizeInBytes)
                     {
-
                         lock (FileLock)
                         {
                             DoRollover();
@@ -129,7 +172,7 @@ namespace AutomatedFFmpegUtilities.Logger
             {
                 for (int i = BackupFileCount; i > 0; i--)
                 {
-                    string file = $"{LogFileLocation}.{i}";
+                    string file = $"{LogFileFullPath}.{i}";
                     if (File.Exists(file))
                     {
                         if (i == BackupFileCount)
@@ -138,16 +181,16 @@ namespace AutomatedFFmpegUtilities.Logger
                         }
                         else
                         {
-                            File.Move(file, $"{LogFileLocation}.{i + 1}", true);
+                            File.Move(file, $"{LogFileFullPath}.{i + 1}", true);
                         }
                     }
                 }
 
-                File.Move(LogFileLocation, $"{LogFileLocation}.1", true);
+                File.Move(LogFileFullPath, $"{LogFileFullPath}.1", true);
             }
             else
             {
-                File.WriteAllText(LogFileLocation, string.Empty);
+                File.WriteAllText(LogFileFullPath, string.Empty);
             }
         }
         #endregion Rollover Functions

@@ -58,6 +58,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             };
 
             Debug.WriteLine($"{ThreadName} Starting");
+            Logger.LogInfo($"{ThreadName} Starting", ThreadName);
             // Update the source files initially before starting thread
             BuildSourceFiles(SearchDirectories);
             Thread.Start();
@@ -66,6 +67,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         public void Stop()
         {
             Debug.WriteLine($"{ThreadName} Shutting Down.");
+            Logger.LogInfo($"{ThreadName} Shutting Down", ThreadName);
             Shutdown = true;
 
             Wake();

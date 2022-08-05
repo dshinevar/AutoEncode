@@ -92,7 +92,7 @@ namespace AutomatedFFmpegServer
         {
             lock (jobLock)
             {
-                return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false));
+                return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false) && (x.Error is false));
             }
         }
         /// <summary>Moves encoding job at given index up one in the list.</summary>
