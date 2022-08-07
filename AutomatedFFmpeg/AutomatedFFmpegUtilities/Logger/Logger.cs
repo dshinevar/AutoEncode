@@ -35,52 +35,43 @@ namespace AutomatedFFmpegUtilities.Logger
         }
 
         #region Log Functions
+        /// <summary>Log a Debug message; Only availble in Debug builds.</summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
         [Conditional("DEBUG")]
-        public void LogDebug(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, msg, threadName, callingMemberName);
-        public void LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, msg, threadName, callingMemberName);
+        public void LogDebug(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, new string[] { msg }, threadName, callingMemberName);
+        /// <summary> Log an Info Message </summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
+        public void LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, new string[] { msg }, threadName, callingMemberName);
+        /// <summary>Log a list of info messages.</summary>
+        /// <param name="messages">Messages to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
         public void LogInfo(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, threadName, callingMemberName);
-        public void LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, msg, threadName, callingMemberName);
+        /// <summary> Log an Error Message </summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
+        public void LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, new string[] { msg }, threadName, callingMemberName);
+        /// <summary>Log a list of Error messages.</summary>
+        /// <param name="messages">Messages to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
         public void LogError(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, callingMemberName);
-        public void LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, msg, threadName, callingMemberName);
+        /// <summary> Log a Fatal Message </summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
+        public void LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, new string[] { msg }, threadName, callingMemberName);
+        /// <summary> Log an <see cref="Exception"/>. Will log both the message and Exception message. </summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
         public void LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
-            => LogError($"{msg} (Exception: {ex.Message})", threadName, callingMemberName);
-
-        private void Log(Severity severity, string msg, string threadName = "", string callingMemberName = "")
-        {
-            StringBuilder sbLogMsg = new();
-
-            sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
-            if (string.IsNullOrEmpty(threadName))
-            {
-                if (!string.IsNullOrEmpty(callingMemberName))
-                {
-                    sbLogMsg.Append($"[{callingMemberName}]");
-                }
-            }
-            else
-            {
-                sbLogMsg.Append($"[{threadName}]");
-
-                if (!string.IsNullOrEmpty(callingMemberName))
-                {
-                    sbLogMsg.Append($"[{callingMemberName}]");
-                }
-            }
-
-            sbLogMsg.Append($": {msg}{Environment.NewLine}");
-
-            try
-            {
-                lock (FileLock)
-                {
-                    File.AppendAllTextAsync(LogFileFullPath, sbLogMsg.ToString());
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to log to file ({LogFileFullPath}) : {ex.Message}");
-            }
-        }
+            => LogError(new string[] { msg, $"Exception: {ex.Message}" }, threadName, callingMemberName);
 
         private void Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
         {
@@ -106,11 +97,11 @@ namespace AutomatedFFmpegUtilities.Logger
 
             sbLogMsg.Append(": ");
             int spacing = sbLogMsg.Length;
-            sbLogMsg.Append($"{messages[0]}{Environment.NewLine}");
+            sbLogMsg.AppendLine($"{messages[0]}");
 
             for (int i = 1; i < messages.Count; i++)
             {
-                sbLogMsg.Append(' ', spacing).Append($"{messages[i]}{Environment.NewLine}");
+                sbLogMsg.Append(' ', spacing).AppendLine($"{messages[i]}");
             }
 
             try
