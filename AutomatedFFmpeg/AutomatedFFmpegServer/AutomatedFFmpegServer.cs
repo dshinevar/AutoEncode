@@ -141,7 +141,7 @@ namespace AutomatedFFmpegServer
             catch (Exception ex)
             {
                 Debug.WriteLine($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}");
-                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: "LOG_THREAD_NAME");
+                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: LOG_THREAD_NAME);
                 Environment.Exit(-2);
             }
 
