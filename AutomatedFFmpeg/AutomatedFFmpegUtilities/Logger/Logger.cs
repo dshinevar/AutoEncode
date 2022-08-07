@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -75,6 +76,8 @@ namespace AutomatedFFmpegUtilities.Logger
 
         private void Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
         {
+            if (messages.Any() is false) return;
+
             StringBuilder sbLogMsg = new();
 
             sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
@@ -108,7 +111,7 @@ namespace AutomatedFFmpegUtilities.Logger
             {
                 lock (FileLock)
                 {
-                    File.AppendAllTextAsync(LogFileFullPath, sbLogMsg.ToString());
+                    File.AppendAllText(LogFileFullPath, sbLogMsg.ToString());
                 }
             }
             catch (Exception ex)
