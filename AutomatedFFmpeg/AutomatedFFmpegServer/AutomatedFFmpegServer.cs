@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -99,15 +98,23 @@ namespace AutomatedFFmpegServer
                 serverConfig.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
                 serverConfig.ServerSettings.LoggerSettings.BackupFileCount);
 
-            
+
             if (logger.CheckAndDoRollover() is false)
             {
                 Debug.WriteLine("FATAL: Error occurred when checking log file for rollover. Exiting as logging will not function.");
                 Environment.Exit(-2);
             }
-            
 
-            logger.LogInfo("AutomatedFFmpegServer Starting Up. Config file loaded.", threadName: LOG_THREAD_NAME);
+
+            logger.LogInfo("AutomatedFFmpegServer Starting Up. Config file loaded.", LOG_THREAD_NAME);
+            List<string> configLog = new()
+            {
+                "LOADED CONFIG VALUES",
+                $"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}",
+                $"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}",
+                $"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}"
+            };
+            logger.LogInfo(configLog, LOG_THREAD_NAME);
 
             try
             {
@@ -135,8 +142,7 @@ namespace AutomatedFFmpegServer
                     ffprobeProcess.WaitForExit();
                 }
 
-                foreach (string line in ffmpegVersionLines) Debug.WriteLine(line);
-                logger.LogInfo(ffmpegVersionLines, threadName: LOG_THREAD_NAME);
+                logger.LogInfo(ffmpegVersionLines, LOG_THREAD_NAME);
             }
             catch (Exception ex)
             {
