@@ -118,7 +118,7 @@ namespace AutomatedFFmpegServer
 
             try
             {
-                List<string> ffmpegVersionLines = new List<string>();
+                List<string> ffmpegVersionLines = new();
 
                 ProcessStartInfo startInfo = new()
                 {
