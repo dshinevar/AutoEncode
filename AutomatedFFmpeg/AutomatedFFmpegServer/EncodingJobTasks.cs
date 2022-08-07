@@ -202,8 +202,8 @@ namespace AutomatedFFmpegServer
                         Process proc = sender as Process;
                         if (proc.ExitCode != 0)
                         {
+                            File.Delete(job.DestinationFullPath);
                             job.SetError();
-                            job.EncodingProgress = 0;
                             logger.LogError($"Encoding process for {job.Name} ended unsuccessfully.");
                         }
                     };
@@ -217,13 +217,14 @@ namespace AutomatedFFmpegServer
             {
                 logger.LogException(ex, $"Error encoding {job.FileName}.");
                 Debug.WriteLine($"Error encoding {job.FileName}. ({ex.Message})");
+                File.Delete(job.DestinationFullPath);
                 job.SetError();
                 return;
             }
 
             stopwatch.Stop();
 
-            if (job.EncodingProgress > 0)
+            if (job.EncodingProgress > 75)
             {
                 job.EncodingProgress = 100;
                 job.Status = EncodingJobStatus.ENCODED;
