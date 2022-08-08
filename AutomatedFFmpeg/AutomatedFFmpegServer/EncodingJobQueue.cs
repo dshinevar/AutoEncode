@@ -128,12 +128,14 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        public static void ClearCompletedJobs(int hoursSinceCompleted)
+        public static IList<string> ClearCompletedJobs(int hoursSinceCompleted)
         {
+            IList<string> jobsRemoved = new List<string>();
+
             // Handle jobs that don't need post processing
             IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
                                                                     x.CompletedEncodingDateTime is not null && 
-                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true);
+                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true).ToList();
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -141,11 +143,12 @@ namespace AutomatedFFmpegServer
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
                     RemoveEncodingJob(job);
+                    jobsRemoved.Add(job.Name);
                 }
             }
 
             // Handle jobs that need post processsing
-            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime is not null);
+            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime is not null).ToList();
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -153,8 +156,11 @@ namespace AutomatedFFmpegServer
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
                     RemoveEncodingJob(job);
+                    jobsRemoved.Add(job.Name);
                 }
             }
+
+            return jobsRemoved;
         }
 
         public static string Output()

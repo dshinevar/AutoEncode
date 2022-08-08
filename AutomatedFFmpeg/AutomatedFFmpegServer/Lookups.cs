@@ -7,10 +7,14 @@ namespace AutomatedFFmpegServer
     public static class Lookups
     {
         #region LINUX VS WINDOWS
-        public static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+        public static string ConfigFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
             "/etc/afserver/AFServerConfig.yaml" :
             $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
+
+        public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                    @"\var\log\AFServer" :
+                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
         #endregion LINUX VS WINDOWS
 
         /// <summary> 
