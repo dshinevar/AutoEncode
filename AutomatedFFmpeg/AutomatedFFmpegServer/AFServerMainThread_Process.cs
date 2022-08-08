@@ -82,6 +82,10 @@ namespace AutomatedFFmpegServer
                             => EncodingJobTasks.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
+
+                // TODO: Add PostProcessing Task
+
+                EncodingJobQueue.ClearCompletedJobs(Config.GlobalJobSettings.HoursCompletedUntilRemoval);
             }
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));

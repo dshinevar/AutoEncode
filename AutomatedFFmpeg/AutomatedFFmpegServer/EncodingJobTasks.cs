@@ -36,7 +36,7 @@ namespace AutomatedFFmpegServer
 
                 if (probeData is not null)
                 {
-                    job.SourceStreamData = probeData.ToSourceFileData();
+                    job.SourceStreamData = probeData.ToSourceStreamData();
                 }
                 else
                 {
@@ -227,6 +227,7 @@ namespace AutomatedFFmpegServer
             if (job.EncodingProgress > 75)
             {
                 job.EncodingProgress = 100;
+                job.CompletedEncodingDateTime = DateTime.Now;
                 job.Status = EncodingJobStatus.ENCODED;
                 logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
             }

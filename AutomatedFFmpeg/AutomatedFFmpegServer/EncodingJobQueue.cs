@@ -1,5 +1,6 @@
 ﻿using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -42,9 +43,11 @@ namespace AutomatedFFmpegServer
 
         /// <summary>Creates an EncodingJob and adds to queue based off the given info. </summary>
         /// <param name="videoSourceData"><see cref="VideoSourceData"/></param>
+        /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
         /// <param name="sourceDirectoryPath">Directory path of source</param>
         /// <param name="destinationDirectoryPath">Directory path of destination</param>
-        public static void CreateEncodingJob(VideoSourceData videoSourceData, string sourceDirectoryPath, string destinationDirectoryPath)
+        /// <param name="plexEnabled">Config override for PLEX post processing</param>
+        public static void CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath, bool plexEnabled)
         {
             if (!ExistsByFileName(videoSourceData.FileName))
             {
@@ -52,8 +55,10 @@ namespace AutomatedFFmpegServer
                 {
                     JobId = IdNumber,
                     SourceFullPath = videoSourceData.FullPath,
-                    DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath)
+                    DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath),
+                    PostProcessingSettings = postProcessingSettings
                 };
+                newJob.SetPostProcessingFlags(plexEnabled);
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
@@ -86,7 +91,7 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        /// <summary> Gets first EncodingJob from list with the given status. </summary>
+        /// <summary> Gets first EncodingJob (not paused or in error) from list with the given status. </summary>
         /// <param name="status">EncodingJobStatus</param>
         public static EncodingJob GetNextEncodingJobWithStatus(EncodingJobStatus status)
         {
@@ -95,7 +100,7 @@ namespace AutomatedFFmpegServer
                 return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false) && (x.Error is false));
             }
         }
-        /// <summary>Moves encoding job at given index up one in the list.</summary>
+        /// <summary>Moves encoding job with given id up one in the list.</summary>
         /// <param name="jobId">Id of job to move</param>
         public static void MoveEncodingJobForward(int jobId)
         {
@@ -108,7 +113,7 @@ namespace AutomatedFFmpegServer
                 (jobQueue[jobIndex - 1], jobQueue[jobIndex]) = (jobQueue[jobIndex], jobQueue[jobIndex - 1]);
             }
         }
-        /// <summary>Moves encoding job at given index back one in the list.</summary>
+        /// <summary>Moves encoding job with given id back one in the list.</summary>
         /// <param name="jobId">Id of job to move</param>
         public static void MoveEncodingJobBack(int jobId)
         {
@@ -120,6 +125,35 @@ namespace AutomatedFFmpegServer
             lock (jobLock)
             {
                 (jobQueue[jobIndex + 1], jobQueue[jobIndex]) = (jobQueue[jobIndex], jobQueue[jobIndex + 1]);
+            }
+        }
+
+        public static void ClearCompletedJobs(int hoursSinceCompleted)
+        {
+            // Handle jobs that don't need post processing
+            IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
+                                                                    x.CompletedEncodingDateTime is not null && 
+                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true);
+            foreach (EncodingJob job in completedJobs)
+            {
+                // If it's been completed for longer than the given number of hours, remove job
+                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedEncodingDateTime);
+                if (ts.TotalHours >= hoursSinceCompleted)
+                {
+                    RemoveEncodingJob(job);
+                }
+            }
+
+            // Handle jobs that need post processsing
+            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime is not null);
+            foreach (EncodingJob job in completedJobs)
+            {
+                // If it's been completed for longer than the given number of hours, remove job
+                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedPostProcessingTime);
+                if (ts.TotalHours >= hoursSinceCompleted)
+                {
+                    RemoveEncodingJob(job);
+                }
             }
         }
 

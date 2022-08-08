@@ -34,7 +34,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                         {
                             List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
                             bFoundEncodingJob = moviesToEncode.Any();
-                            moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                         }
 
                     }
@@ -45,7 +45,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                 .Where(episode => episode.Encoded is false).ToList();
                             bFoundEncodingJob = episodesToEncode.Any();
-                            episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                         }
                     }
 
@@ -78,7 +78,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region PRIVATE FUNCTIONS
         private void UpdateSearchDirectories(Dictionary<string, SearchDirectory> searchDirectories)
         {
-            searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
+            searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
 
             // Remove any old directories (keys) in source files
             lock (showSourceFileLock)
@@ -184,14 +184,14 @@ namespace AutomatedFFmpegServer.WorkerThreads
             });
         }
 
-        private void CreateEncodingJob(VideoSourceData sourceData, string sourceDirectoryPath, string destinationDirectoryPath)
+        private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
             if (EncodingJobQueue.ExistsByFileName(sourceData.FileName) is false)
             {
                 // Only add encoding job is file is ready.
                 if (CheckFileReady(sourceData.FullPath))
                 {
-                    EncodingJobQueue.CreateEncodingJob(sourceData, sourceDirectoryPath, destinationDirectoryPath);
+                    EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath, Config.Plex.Enabled);
                     Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.");
                 }
             }
@@ -199,7 +199,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         /// <summary>Check if file size is changing, if it is, it is not ready for encoding.</summary>
         /// <param name="filePath"></param>
-        /// <returns></returns>
+        /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
             FileInfo fileInfo = new(filePath);

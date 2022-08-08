@@ -13,6 +13,10 @@ namespace AutomatedFFmpegUtilities.Enums
         [Display(Name = "Encoding", Description = "Encoding", ShortName = "Encoding")]
         ENCODING = 3,
         [Display(Name = "Encoded", Description = "Encoded", ShortName = "Encoded")]
-        ENCODED = 4
+        ENCODED = 4,
+        [Display(Name = "Post-Processing", Description = "Post-Processing", ShortName = "Post-Processing")]
+        POST_PROCESSING = 5,
+        [Display(Name = "Post-Processed", Description = "Post-Processed", ShortName = "Post-Processed")]
+        POST_PROCESSED = 6
     }
 }

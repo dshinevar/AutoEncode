@@ -36,7 +36,7 @@ namespace AutomatedFFmpegServer
             {
                 using StreamReader reader = new(Lookups.ConfigFileLocation);
                 string str = reader.ReadToEnd();
-                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
+                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
 
                 serverConfig = deserializer.Deserialize<AFServerConfig>(str);
             }
@@ -76,7 +76,7 @@ namespace AutomatedFFmpegServer
                     // Exception occurred with given directory, try the backup;  If that fails, exit.
                     try
                     {
-                        System.IO.Directory.CreateDirectory(logBackupFileLocation);
+                        Directory.CreateDirectory(logBackupFileLocation);
                     }
                     catch (Exception lastChanceEx)
                     {
