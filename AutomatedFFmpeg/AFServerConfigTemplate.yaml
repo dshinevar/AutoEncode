@@ -11,15 +11,25 @@ ServerSettings:
         MaxFileSizeInBytes: 4098
         BackupFileCount: 3
 
+GlobalJobSettings:
+    HoursCompletedUntilRemoval: 1
+
 Directories:
     Movies:
         Source: '\\Source\Path\Movies'
         Destination: '\\Destination\Path\Movies (Encoded)'
         Automated: True
         TVShowStructure: False
+        PostProcessing:
+            CopyFilePaths: ['\\Fake\Path1', '\\Path\Fake2']
+            PlexLibraryName: 'Movies'
+            DeleteSourceFile: False
 
     TV Shows:
         Source: '\\Source\Path\TV Shows'
         Destination: '\\Source\Path\TV Shows (Encoded)'
         Automated: False
         TVShowStructure: True
+
+Plex:
+    Enabled: False

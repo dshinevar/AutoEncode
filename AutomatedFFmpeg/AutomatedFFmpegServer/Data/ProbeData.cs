@@ -81,7 +81,7 @@ namespace AutomatedFFmpegServer.Data
             public string duration; // seconds
         }
 
-        public SourceStreamData ToSourceFileData()
+        public SourceStreamData ToSourceStreamData()
         {
             SourceStreamData sourceFileData = new()
             {

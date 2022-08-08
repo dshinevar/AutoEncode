@@ -4,6 +4,8 @@ using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Messages;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer
@@ -82,6 +84,10 @@ namespace AutomatedFFmpegServer
                             => EncodingJobTasks.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
+
+                // TODO: Add PostProcessing Task
+
+                ClearCompletedJobs();
             }
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
@@ -95,6 +101,17 @@ namespace AutomatedFFmpegServer
         {
             TaskQueue.TryDequeue(out Action task);
             task?.Invoke();
+        }
+
+        private void ClearCompletedJobs()
+        {
+            var jobsRemoved = EncodingJobQueue.ClearCompletedJobs(Config.GlobalJobSettings.HoursCompletedUntilRemoval);
+            if (jobsRemoved?.Any() ?? false)
+            {
+                List<string> jobsRemovedLog = new() { "Completed Jobs Removed" };
+                jobsRemovedLog.AddRange(jobsRemoved);
+                Logger.LogInfo(jobsRemoved);
+            }
         }
         #endregion Process Functions
     }

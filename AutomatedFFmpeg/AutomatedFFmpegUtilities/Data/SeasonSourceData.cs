@@ -1,10 +1,9 @@
-﻿using AutomatedFFmpegUtilities.Interfaces;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace AutomatedFFmpegUtilities.Data
 {
-    public class SeasonSourceData : IDeepCloneable<SeasonSourceData>
+    public class SeasonSourceData
     {
         public string Season { get; set; }
         public List<VideoSourceData> Episodes { get; set; }
@@ -26,9 +25,7 @@ namespace AutomatedFFmpegUtilities.Data
         private SeasonSourceData(string season, List<VideoSourceData> episodes)
         {
             Season = season;
-            Episodes = episodes.Select(e => new VideoSourceData(e)).ToList();
+            Episodes = episodes.Select(e => e.DeepClone()).ToList();
         }
-
-        public SeasonSourceData DeepClone() => new SeasonSourceData(Season, Episodes);
     }
 }

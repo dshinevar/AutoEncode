@@ -19,9 +19,7 @@ namespace AutomatedFFmpegServer
 
         static void Main(string[] args)
         {
-            string logBackupFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                                @"\var\log\AFServer" :
-                                                $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
+
 
             AFServerMainThread mainThread = null;
             AFServerConfig serverConfig = null;
@@ -36,7 +34,7 @@ namespace AutomatedFFmpegServer
             {
                 using StreamReader reader = new(Lookups.ConfigFileLocation);
                 string str = reader.ReadToEnd();
-                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
+                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
 
                 serverConfig = deserializer.Deserialize<AFServerConfig>(str);
             }
@@ -57,7 +55,7 @@ namespace AutomatedFFmpegServer
                 {
                     Debug.WriteLine("Failed to create/find log directory. Checking backup.");
 
-                    DirectoryInfo backupDirectoryInfo = System.IO.Directory.CreateDirectory(logBackupFileLocation);
+                    DirectoryInfo backupDirectoryInfo = System.IO.Directory.CreateDirectory(Lookups.LogBackupFileLocation);
 
                     if (backupDirectoryInfo is null)
                     {
@@ -65,7 +63,7 @@ namespace AutomatedFFmpegServer
                         Environment.Exit(-2);
                     }
 
-                    LogFileLocation = logBackupFileLocation;
+                    LogFileLocation = Lookups.LogBackupFileLocation;
                 }
             }
             catch (Exception ex)
@@ -76,7 +74,7 @@ namespace AutomatedFFmpegServer
                     // Exception occurred with given directory, try the backup;  If that fails, exit.
                     try
                     {
-                        System.IO.Directory.CreateDirectory(logBackupFileLocation);
+                        Directory.CreateDirectory(Lookups.LogBackupFileLocation);
                     }
                     catch (Exception lastChanceEx)
                     {
@@ -84,7 +82,7 @@ namespace AutomatedFFmpegServer
                         Environment.Exit(-2);
                     }
 
-                    LogFileLocation = logBackupFileLocation;
+                    LogFileLocation = Lookups.LogBackupFileLocation;
                 }
                 else
                 {
@@ -118,7 +116,7 @@ namespace AutomatedFFmpegServer
 
             try
             {
-                List<string> ffmpegVersionLines = new List<string>();
+                List<string> ffmpegVersionLines = new();
 
                 ProcessStartInfo startInfo = new()
                 {

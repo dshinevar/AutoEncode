@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer
 {
     public static class Lookups
     {
         #region LINUX VS WINDOWS
-#if DEBUG
-        public static string ConfigFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "./bin/Debug/net6.0/AFServerConfig.yaml" : "AFServerConfig.yaml";
-#else
-        public static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/usr/local/bin/AFServerConfig.yaml" : "AFServerConfig.yaml";  
-#endif
+        public static string ConfigFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+            "/etc/afserver/AFServerConfig.yaml" :
+            $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
+
+        public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                    @"\var\log\AFServer" :
+                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
         #endregion LINUX VS WINDOWS
 
         /// <summary> 
@@ -26,11 +25,9 @@ namespace AutomatedFFmpegServer
 
         public static string PrimaryLanguage => "eng";
 
-        /// <summary>
-        /// Audio Codec Priority by "Quality".  The highest index is the best quality and preferred.
-        /// <para>Note 1: Readonly for now, may want to make it change in the future. (move to config?)</para>
-        /// <para>Note 2: Lookup should be done with a ToLower(). Only lowercase forms are in the list (avoids duplicates).</para>
-        /// </summary>
+        /// <summary> Audio Codec Priority by "Quality".  The highest index is the best quality and preferred.</summary>
+        /// <remarks>Note 1: Readonly for now, may want to make it change in the future. (move to config?)
+        /// <para>Note 2: Lookup should be done with a ToLower(). Only lowercase forms are in the list (avoids duplicates).</para></remarks>
         public static readonly IList<string> AudioCodecPriority = new List<string>()
         {
             "ac3",

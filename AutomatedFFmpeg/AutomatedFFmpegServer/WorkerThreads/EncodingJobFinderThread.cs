@@ -2,6 +2,7 @@
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
+using AutomatedFFmpegUtilities;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,7 +17,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private bool DirectoryUpdate = false;
         private ManualResetEvent ShutdownMRE { get; set; }
         private AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
-
 
         private readonly object movieSourceFileLock = new();
         private readonly object showSourceFileLock = new();
@@ -44,7 +44,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             Logger = logger;
             ShutdownMRE = shutdownMRE;
             ThreadSleep = Config.ServerSettings.ThreadSleepInMS;
-            SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => (SearchDirectory)x.Value.Clone());
+            SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
         }
 
         #region Start/Stop Functions
@@ -112,7 +112,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         {
             lock (movieSourceFileLock)
             {
-                return MovieSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => new VideoSourceData(v)).ToList());
+                return MovieSourceFiles.ToDictionary(x => x.Key, x => x.Value.Select(v => v.DeepClone()).ToList());
             }
         }
 

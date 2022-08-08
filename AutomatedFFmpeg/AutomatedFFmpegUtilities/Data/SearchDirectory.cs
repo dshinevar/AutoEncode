@@ -1,14 +1,22 @@
-﻿using System;
+﻿using System.Collections.Generic;
 
 namespace AutomatedFFmpegUtilities.Data
 {
-    public class SearchDirectory : ICloneable
+    public class SearchDirectory
     {
         public string Source { get; set; }
         public string Destination { get; set; }
         public bool Automated { get; set; }
         public bool TVShowStructure { get; set; }
+        public PostProcessingSettings PostProcessing { get; set; }
+    }
 
-        public object Clone() => this.MemberwiseClone();
+    public class PostProcessingSettings
+    {
+        public List<string> CopyFilePaths { get; set; }
+
+        public string PlexLibraryName { get; set; }
+
+        public bool DeleteSourceFile { get; set; }
     }
 }
