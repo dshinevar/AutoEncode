@@ -8,8 +8,8 @@ namespace AutomatedFFmpegServer
     {
         #region LINUX VS WINDOWS
         public static string ConfigFileLocation = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-            "/usr/local/bin/AFServerConfig.yaml" :
-            $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
+            "/etc/afserver/AFServerConfig.yaml" :
+            $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
         #endregion LINUX VS WINDOWS
 
