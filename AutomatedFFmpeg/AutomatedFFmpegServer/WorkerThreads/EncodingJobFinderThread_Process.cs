@@ -179,7 +179,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 else
                 {
                     Logger.LogError($"{entry.Value.Source} does not exist.");
-                    Console.WriteLine($"{entry.Value.Source} does not exist.");
+                    Debug.WriteLine($"{entry.Value.Source} does not exist.");
                 }
             });
         }
@@ -192,7 +192,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 if (CheckFileReady(sourceData.FullPath))
                 {
                     EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath, Config.Plex.Enabled);
-                    Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.");
+                    Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.", ThreadName);
                 }
             }
         }
