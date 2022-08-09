@@ -70,7 +70,7 @@ namespace AutomatedFFmpegServer
                     if (jobToBuild is not null)
                     {
                         EncodingJobBuilderTask = Task.Factory.StartNew(()
-                            => EncodingJobTasks.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                            => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
 
@@ -81,11 +81,19 @@ namespace AutomatedFFmpegServer
                     if (jobToEncode is not null)
                     {
                         EncodingTask = Task.Factory.StartNew(()
-                            => EncodingJobTasks.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                            => EncodingJobTaskFactory.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
 
-                // TODO: Add PostProcessing Task
+                if (EncodingJobPostProcessingTask?.IsCompletedSuccessfully ?? true)
+                {
+                    EncodingJob jobToPostProcess = EncodingJobQueue.GetNextEncodingJobForPostProcessing();
+                    if (jobToPostProcess is not null)
+                    {
+                        EncodingJobPostProcessingTask = Task.Factory.StartNew(()
+                            => EncodingJobTaskFactory.EncodingJobPostProcessing(jobToPostProcess, Config.Plex, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
+                    }
+                }
 
                 ClearCompletedJobs();
             }

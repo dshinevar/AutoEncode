@@ -18,6 +18,9 @@ namespace AutomatedFFmpegServer
         private Task EncodingTask { get; set; }
         private CancellationTokenSource EncodingCancellationToken { get; set; } = new CancellationTokenSource();
 
+        private Task EncodingJobPostProcessingTask { get; set; }
+        private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; } = new CancellationTokenSource();
+
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private ManualResetEvent EncodingJobShutdown { get; set; } = new ManualResetEvent(false);
 

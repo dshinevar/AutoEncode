@@ -51,14 +51,9 @@ namespace AutomatedFFmpegServer
         {
             if (!ExistsByFileName(videoSourceData.FileName))
             {
-                EncodingJob newJob = new()
-                {
-                    JobId = IdNumber,
-                    SourceFullPath = videoSourceData.FullPath,
-                    DestinationFullPath = videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath),
-                    PostProcessingSettings = postProcessingSettings
-                };
-                newJob.SetPostProcessingFlags(plexEnabled);
+                EncodingJob newJob = new(IdNumber, videoSourceData.FullPath,
+                                            videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath), 
+                                            postProcessingSettings, plexEnabled);
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
@@ -67,11 +62,11 @@ namespace AutomatedFFmpegServer
         }
         /// <summary>Removes an encoding job from the list.</summary>
         /// <param name="job">EncodingJob</param>
-        public static void RemoveEncodingJob(EncodingJob job)
+        public static bool RemoveEncodingJob(EncodingJob job)
         {
             lock (jobLock)
             {
-                jobQueue.Remove(job);
+                return jobQueue.Remove(job);
             }
         }
 
@@ -93,6 +88,7 @@ namespace AutomatedFFmpegServer
 
         /// <summary> Gets first EncodingJob (not paused or in error) from list with the given status. </summary>
         /// <param name="status">EncodingJobStatus</param>
+        /// <returns><see cref="EncodingJob"/></returns>
         public static EncodingJob GetNextEncodingJobWithStatus(EncodingJobStatus status)
         {
             lock (jobLock)
@@ -100,6 +96,20 @@ namespace AutomatedFFmpegServer
                 return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false) && (x.Error is false));
             }
         }
+
+        /// <summary> Gets first Encoding Job (not paused or in error) from list that has finished encoding and needs post-processing </summary>
+        /// <returns><see cref="EncodingJob"/></returns>
+        public static EncodingJob GetNextEncodingJobForPostProcessing()
+        {
+            lock (jobLock)
+            {
+                return jobQueue.Find(x => x.Status.Equals(EncodingJobStatus.ENCODED) &&
+                                            x.CompletedEncodingDateTime.HasValue &&
+                                            !x.PostProcessingFlags.Equals(PostProcessingFlags.None) &&
+                                            (x.Paused is false) && (x.Error is false));
+            }
+        }
+
         /// <summary>Moves encoding job with given id up one in the list.</summary>
         /// <param name="jobId">Id of job to move</param>
         public static void MoveEncodingJobForward(int jobId)
@@ -134,7 +144,7 @@ namespace AutomatedFFmpegServer
 
             // Handle jobs that don't need post processing
             IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
-                                                                    x.CompletedEncodingDateTime is not null && 
+                                                                    x.CompletedEncodingDateTime.HasValue && 
                                                                     x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true).ToList();
             foreach (EncodingJob job in completedJobs)
             {
@@ -142,21 +152,21 @@ namespace AutomatedFFmpegServer
                 TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedEncodingDateTime);
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
-                    RemoveEncodingJob(job);
-                    jobsRemoved.Add(job.Name);
+                    bool success = RemoveEncodingJob(job);
+                    if (success) jobsRemoved.Add(job.Name);
                 }
             }
 
             // Handle jobs that need post processsing
-            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime is not null).ToList();
+            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue).ToList();
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
                 TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedPostProcessingTime);
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
-                    RemoveEncodingJob(job);
-                    jobsRemoved.Add(job.Name);
+                    bool success = RemoveEncodingJob(job);
+                    if (success) jobsRemoved.Add(job.Name);
                 }
             }
 

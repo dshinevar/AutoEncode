@@ -19,8 +19,6 @@ namespace AutomatedFFmpegServer
 
         static void Main(string[] args)
         {
-
-
             AFServerMainThread mainThread = null;
             AFServerConfig serverConfig = null;
             Logger logger = null;
