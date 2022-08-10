@@ -13,6 +13,7 @@ ServerSettings:
 
 GlobalJobSettings:
     HoursCompletedUntilRemoval: 1
+    HoursErroredUntilRemoval: 2
 
 Directories:
     Movies:

@@ -173,6 +173,26 @@ namespace AutomatedFFmpegServer
             return jobsRemoved;
         }
 
+        public static IList<string> ClearErroredJobs(int hoursSinceErrored)
+        {
+            IList<string> jobsRemoved = new List<string>();
+
+            // Handle jobs that don't need post processing
+            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true).ToList();
+
+            foreach (EncodingJob job in erroredJobs)
+            {
+                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.ErrorTime);
+                if (ts.TotalHours >= hoursSinceErrored)
+                {
+                    bool success = RemoveEncodingJob(job);
+                    if (success) jobsRemoved.Add(job.Name);
+                }
+            }
+
+            return jobsRemoved;
+        }
+
         public static string Output()
         { 
             string output = string.Empty;
