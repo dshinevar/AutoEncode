@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -100,8 +101,8 @@ namespace AutomatedFFmpegServer
                 Environment.Exit(-2);
             }
 
-
-            logger.LogInfo("AutomatedFFmpegServer Starting Up. Config file loaded.", LOG_THREAD_NAME);
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            logger.LogInfo($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.", LOG_THREAD_NAME);
             List<string> configLog = new()
             {
                 "LOADED CONFIG VALUES",
