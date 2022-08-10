@@ -96,6 +96,7 @@ namespace AutomatedFFmpegServer
                 }
 
                 ClearCompletedJobs();
+                ClearErroredJobs();
             }
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));
@@ -118,7 +119,18 @@ namespace AutomatedFFmpegServer
             {
                 List<string> jobsRemovedLog = new() { "Completed Jobs Removed" };
                 jobsRemovedLog.AddRange(jobsRemoved);
-                Logger.LogInfo(jobsRemoved);
+                Logger.LogInfo(jobsRemovedLog);
+            }
+        }
+
+        private void ClearErroredJobs()
+        {
+            var jobsRemoved = EncodingJobQueue.ClearErroredJobs(Config.GlobalJobSettings.HoursErroredUntilRemoval);
+            if (jobsRemoved?.Any() ?? false)
+            {
+                List<string> jobsRemovedLog = new() { "Errored Jobs Removed" };
+                jobsRemovedLog.AddRange(jobsRemoved);
+                Logger.LogInfo(jobsRemovedLog);
             }
         }
         #endregion Process Functions

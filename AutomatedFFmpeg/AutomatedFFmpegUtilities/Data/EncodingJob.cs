@@ -50,6 +50,7 @@ namespace AutomatedFFmpegUtilities.Data
         }
         public DateTime? CompletedEncodingDateTime { get; set; } = null;
         public DateTime? CompletedPostProcessingTime { get; set; } = null;
+        public DateTime? ErrorTime { get; set; } = null;
         #endregion Status
 
         #region Processing Data
@@ -68,11 +69,13 @@ namespace AutomatedFFmpegUtilities.Data
         {
             Error = false;
             LastErrorMessage = string.Empty;
+            ErrorTime = null;
         }
         public void SetError(string errorMsg)
         {
             Error = true;
             LastErrorMessage = errorMsg;
+            ErrorTime = DateTime.Now;
             if (Status.Equals(EncodingJobStatus.ENCODING)) EncodingProgress = 0;
             ResetStatus();
         }
