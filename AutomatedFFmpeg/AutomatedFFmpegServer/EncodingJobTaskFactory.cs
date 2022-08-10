@@ -42,17 +42,19 @@ namespace AutomatedFFmpegServer
                 else
                 {
                     // Reset job status and exit
-                    logger.LogError($"Failed to get probe data for {job.FileName}");
-                    Debug.WriteLine($"Error getting probe data or building SourceStreamData for {job.FileName}.");
-                    job.SetError();
+                    string msg = $"Failed to get probe data for {job.FileName}";
+                    logger.LogError(msg);
+                    Debug.WriteLine(msg);
+                    job.SetError(msg);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error getting probe or source file data for {job.FileName}");
-                Debug.WriteLine(ex.Message);
-                job.SetError();
+                string msg = $"Error getting probe or source file data for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 return;
             }
 
@@ -65,9 +67,10 @@ namespace AutomatedFFmpegServer
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
-                    logger.LogError($"Failed to determine VideoScanType for {job.FileName}.");
-                    Debug.WriteLine($"Error getting video scan for {job.FileName}.");
-                    job.SetError();
+                    string msg = $"Failed to determine VideoScanType for {job.FileName}.";
+                    logger.LogError(msg);
+                    Debug.WriteLine(msg);
+                    job.SetError(msg);
                     return;
                 }
                 else
@@ -77,9 +80,10 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error determining VideoScanType for {job.FileName}");
-                job.SetError();
-                Debug.WriteLine($"Error getting crop: {ex.Message}");
+                string msg = $"Error determining VideoScanType for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 return;
             }
 
@@ -92,8 +96,9 @@ namespace AutomatedFFmpegServer
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
-                    logger.LogError($"Failed to determine crop for {job.FileName}");
-                    job.SetError();
+                    string msg = $"Failed to determine crop for {job.FileName}";
+                    logger.LogError(msg);
+                    job.SetError(msg);
                     return;
                 }
                 else
@@ -103,9 +108,10 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error determining crop for {job.FileName}");
-                Debug.WriteLine($"Error getting crop: {ex.Message}");
-                job.SetError();
+                string msg = $"Error determining crop for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 return;
             }
 
@@ -119,9 +125,10 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error building encoding instructions for {job.FileName}");
-                Debug.WriteLine($"Error building encoding instructions: {ex.Message}");
-                job.SetError();
+                string msg = $"Error building encoding instructions for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 return;
             }
 
@@ -134,9 +141,10 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error building FFmpeg command for {job.FileName}");
-                Debug.WriteLine($"Error building FFmpeg command for {job.FileName}. ({ex.Message})");
-                job.SetError();
+                string msg = $"Error building FFmpeg command for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 return;
             }
 
@@ -209,8 +217,9 @@ namespace AutomatedFFmpegServer
                         if (proc.ExitCode != 0)
                         {
                             File.Delete(job.DestinationFullPath);
-                            job.SetError();
-                            logger.LogError($"Encoding process for {job.Name} ended unsuccessfully.");
+                            string msg = $"Encoding process for {job.Name} ended unsuccessfully.";
+                            job.SetError(msg);
+                            logger.LogError(msg);
                         }
                     };
                     stopwatch.Start();
@@ -221,10 +230,11 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                logger.LogException(ex, $"Error encoding {job.FileName}.");
-                Debug.WriteLine($"Error encoding {job.FileName}. ({ex.Message})");
+                string msg = $"Error encoding {job.FileName}.";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
                 File.Delete(job.DestinationFullPath);
-                job.SetError();
                 return;
             }
 
@@ -264,9 +274,10 @@ namespace AutomatedFFmpegServer
                 }
                 catch (Exception ex)
                 {
-                    logger.LogException(ex, $"Error copying output file to other locations for {job.Name}");
-                    Debug.WriteLine($"Error copying output file to other locations for {job.Name}. ({ex.Message})");
-                    job.SetError();
+                    string msg = $"Error copying output file to other locations for {job.Name}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
                     return;
                 }
             }
@@ -297,9 +308,10 @@ namespace AutomatedFFmpegServer
                 }
                 catch (Exception ex)
                 {
-                    logger.LogException(ex, $"Error deleting source file for {job.Name}");
-                    Debug.WriteLine($"Error deleting source file for {job.Name}. ({ex.Message})");
-                    job.SetError();
+                    string msg = $"Error deleting source file for {job.Name}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
                     return;
                 }
             }

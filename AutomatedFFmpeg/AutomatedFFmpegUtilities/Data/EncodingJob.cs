@@ -34,6 +34,7 @@ namespace AutomatedFFmpegUtilities.Data
         #region Status
         public EncodingJobStatus Status { get; set; } = EncodingJobStatus.NEW;
         public bool Error { get; set; } = false;
+        public string LastErrorMessage { get; set; } = string.Empty;
         public bool Paused { get; set; } = false;
         public bool Cancelled { get; set; } = false;
         private int _encodingProgress = 0;
@@ -63,10 +64,15 @@ namespace AutomatedFFmpegUtilities.Data
         public override string ToString() => $"({JobId}) {Name}";
         public void SetPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags |= flag;
         public void ClearPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags &= ~flag;
-        public void ClearError() => Error = false;
-        public void SetError()
+        public void ClearError()
+        {
+            Error = false;
+            LastErrorMessage = string.Empty;
+        }
+        public void SetError(string errorMsg)
         {
             Error = true;
+            LastErrorMessage = errorMsg;
             if (Status.Equals(EncodingJobStatus.ENCODING)) EncodingProgress = 0;
             ResetStatus();
         }
