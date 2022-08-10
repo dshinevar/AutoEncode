@@ -13,7 +13,7 @@ namespace AutomatedFFmpegServer
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
 
         public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                    @"\var\log\AFServer" :
+                                    @"\var\log\afserver" :
                                     $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
         #endregion LINUX VS WINDOWS
 

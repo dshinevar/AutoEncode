@@ -7,6 +7,24 @@ namespace AutomatedFFmpegUtilities.Data
 {
     public class EncodingJob
     {
+        /// <summary> Default Constructor </summary>
+        public EncodingJob() { }
+
+        /// <summary> Preferred Constructor </summary>
+        /// <param name="jobId">JobId assigned by EncodingJobQueue on the server.</param>
+        /// <param name="sourceFullPath">Full path of the source file.</param>
+        /// <param name="destinationFullPath">Full path of the expected destination file.</param>
+        /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
+        /// <param name="plexEnabled">Is Plex functionality enabled; Determines PostProcessingFlags override</param>
+        public EncodingJob(int jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings, bool plexEnabled)
+        {
+            JobId = jobId;
+            SourceFullPath = sourceFullPath;
+            DestinationFullPath = destinationFullPath;
+            PostProcessingSettings = postProcessingSettings;
+            SetPostProcessingFlags(plexEnabled);
+        }
+
         public int JobId { get; set; } = 0;
         public string Name => Path.GetFileNameWithoutExtension(FileName);
         public string FileName => Path.GetFileName(SourceFullPath);
@@ -41,9 +59,44 @@ namespace AutomatedFFmpegUtilities.Data
         public string FFmpegCommandArguments { get; set; }
         #endregion Processing Data
 
-        #region Functions
-        #region PostProcesssingFlags
-        public void SetPostProcessingFlags(bool plexEnabled)
+        #region Public Functions
+        public override string ToString() => $"({JobId}) {Name}";
+        public void SetPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags |= flag;
+        public void ClearPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags &= ~flag;
+        public void ClearError() => Error = false;
+        public void SetError()
+        {
+            Error = true;
+            if (Status.Equals(EncodingJobStatus.ENCODING)) EncodingProgress = 0;
+            ResetStatus();
+        }
+
+        public void ResetStatus()
+        {
+            switch (Status)
+            {
+                case EncodingJobStatus.BUILDING:
+                {
+                    Status = EncodingJobStatus.NEW;
+                    break;
+                }
+                case EncodingJobStatus.ENCODING:
+                {
+                    Status = EncodingJobStatus.BUILT;
+                    break;
+                }
+                case EncodingJobStatus.POST_PROCESSING:
+                {
+                    Status = EncodingJobStatus.ENCODED;
+                    break;
+                }
+                default: break;
+            }
+        }
+        #endregion Public Functions
+
+        #region Private Functions
+        private void SetPostProcessingFlags(bool plexEnabled)
         {
             if (PostProcessingSettings is null)
             {
@@ -76,8 +129,7 @@ namespace AutomatedFFmpegUtilities.Data
                 ClearPostProcessingFlag(PostProcessingFlags.PlexLibraryUpdate);
             }
 
-
-            if (PostProcessingSettings.DeleteSourceFile is true) 
+            if (PostProcessingSettings.DeleteSourceFile is true)
             {
                 SetPostProcessingFlag(PostProcessingFlags.DeleteSourceFile);
             }
@@ -86,41 +138,6 @@ namespace AutomatedFFmpegUtilities.Data
                 ClearPostProcessingFlag(PostProcessingFlags.DeleteSourceFile);
             }
         }
-        public void SetPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags |= flag;
-        public void ClearPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags &= ~flag;
-        #endregion PostProcessingFlags
-
-        public override string ToString() => $"({JobId}) {Name}";
-        public void ClearError() => Error = false;
-        public void SetError()
-        {
-            Error = true;
-            if (Status.Equals(EncodingJobStatus.ENCODING)) EncodingProgress = 0;
-            ResetStatus();
-        }
-
-        public void ResetStatus()
-        {
-            switch (Status)
-            {
-                case EncodingJobStatus.BUILDING:
-                {
-                    Status = EncodingJobStatus.NEW;
-                    break;
-                }
-                case EncodingJobStatus.ENCODING:
-                {
-                    Status = EncodingJobStatus.BUILT;
-                    break;
-                }
-                case EncodingJobStatus.POST_PROCESSING:
-                {
-                    Status = EncodingJobStatus.ENCODED;
-                    break;
-                }
-                default: break;
-            }
-        }
-        #endregion Functions
+        #endregion Private Functions
     }
 }

@@ -68,7 +68,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, "Error during looking for encoding jobs.");
+                    Logger.LogException(ex, "Error during looking for encoding jobs.", ThreadName);
                     Debug.WriteLine($"[{ThreadName}] ERROR: {ex.Message}");
                     return;
                 }
@@ -178,8 +178,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 }
                 else
                 {
-                    Logger.LogError($"{entry.Value.Source} does not exist.");
-                    Console.WriteLine($"{entry.Value.Source} does not exist.");
+                    Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
+                    Debug.WriteLine($"{entry.Value.Source} does not exist.");
                 }
             });
         }
@@ -192,7 +192,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 if (CheckFileReady(sourceData.FullPath))
                 {
                     EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath, Config.Plex.Enabled);
-                    Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.");
+                    Logger.LogInfo($"{sourceData.FileName} added to encoding job queue.", ThreadName);
                 }
             }
         }

@@ -1,5 +1,6 @@
 using AutomatedFFmpegServer.Data;
 using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
@@ -16,7 +17,7 @@ using System.Threading;
 
 namespace AutomatedFFmpegServer
 {
-    public static class EncodingJobTasks
+    public static class EncodingJobTaskFactory
     {
         /// <summary>Builds out an <see cref="EncodingJob"/> by analyzing the file's streams, building encoding instructions, and building FFmpeg arguments.</summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be filled out.</param>
@@ -27,7 +28,7 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.BUILDING;
 
-            CheckForCancellation(cancellationToken, job, logger);
+            CheckForCancellation(job, logger, cancellationToken);
 
             // STEP 1: Initial ffprobe
             try
@@ -55,7 +56,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            if (CheckForCancellation(cancellationToken, job, logger)) return;
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             // STEP 2: Get ScanType
             try
@@ -82,7 +83,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            if (CheckForCancellation(cancellationToken, job, logger)) return;
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             // STEP 3: Determine Crop
             try
@@ -108,7 +109,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            if (CheckForCancellation(cancellationToken, job, logger)) return;
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             // STEP 4: Decide Encoding Options
             // Not sure what would throw an exception but we'll wrap in try/catch just in case.
@@ -124,7 +125,7 @@ namespace AutomatedFFmpegServer
                 return;
             }
 
-            if (CheckForCancellation(cancellationToken, job, logger)) return;
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             // STEP 5: Create FFMPEG command
             try
@@ -143,11 +144,16 @@ namespace AutomatedFFmpegServer
             logger.LogInfo($"Successfully built {job.Name} encoding job.");
         }
 
+        /// <summary> Calls ffmpeg to do encoding; Handles output from ffmpeg </summary>
+        /// <param name="job">The <see cref="EncodingJob"/> to be encoded.</param>
+        /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
+        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         public static void Encode(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.ENCODING;
 
-            if (CheckForCancellation(cancellationToken, job, logger)) return;
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             Stopwatch stopwatch = new();
             try
@@ -233,6 +239,76 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Runs post-processing tasks marked for the encoding job. </summary>
+        /// <param name="job">The <see cref="EncodingJob"/> to be post-processed.</param>
+        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+        public static void EncodingJobPostProcessing(EncodingJob job, PlexSettings plexSettings, Logger logger, CancellationToken cancellationToken)
+        {
+            // Double-check to ensure we don't post-process a job that shouldn't be
+            if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;
+
+            job.Status = EncodingJobStatus.POST_PROCESSING;
+
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
+
+            // COPY FILES
+            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.Copy))
+            {
+                try
+                {
+                    foreach (string path in job.PostProcessingSettings.CopyFilePaths)
+                    {
+                        File.Copy(job.DestinationFullPath, Path.Combine(path, Path.GetFileName(job.DestinationFullPath)), true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogException(ex, $"Error copying output file to other locations for {job.Name}");
+                    Debug.WriteLine($"Error copying output file to other locations for {job.Name}. ({ex.Message})");
+                    job.SetError();
+                    return;
+                }
+            }
+
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
+
+            // UPDATE PLEX LIBRARY
+            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.PlexLibraryUpdate))
+            {
+                try
+                {
+                    // TODO: Create plex integration
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"IMPOSSIBLE: {ex.Message}");
+                }
+            }
+
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
+
+            // DELETE SOURCE FILE
+            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.DeleteSourceFile))
+            {
+                try
+                {
+                    File.Delete(job.SourceFullPath);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogException(ex, $"Error deleting source file for {job.Name}");
+                    Debug.WriteLine($"Error deleting source file for {job.Name}. ({ex.Message})");
+                    job.SetError();
+                    return;
+                }
+            }
+
+            job.Status = EncodingJobStatus.POST_PROCESSED;
+            job.CompletedPostProcessingTime = DateTime.Now;
+            logger.LogInfo($"Successfully post-processed {job.Name} encoding job.");
+        }
+
         #region General Private Functions
         /// <summary>Checks for a cancellation token. Returns true if task was cancelled. </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
@@ -240,7 +316,7 @@ namespace AutomatedFFmpegServer
         /// <param name="logger"><see cref="Logger"/></param>
         /// <param name="callingFunctionName">Calling method name.</param>
         /// <returns>True if cancelled; False otherwise.</returns>
-        private static bool CheckForCancellation(CancellationToken cancellationToken, EncodingJob job, Logger logger, [CallerMemberName] string callingFunctionName = "")
+        private static bool CheckForCancellation(EncodingJob job, Logger logger, CancellationToken cancellationToken, [CallerMemberName] string callingFunctionName = "")
         {
             bool cancel = false;
             if (cancellationToken.IsCancellationRequested)
@@ -489,11 +565,11 @@ namespace AutomatedFFmpegServer
         /// <param name="streamData"><see cref="StreamData"/></param>
         /// <param name="title">The final title to set in the file metadata</param>
         /// <param name="sourceFullPath">Full path of the source file</param>
-        /// <param name="destinationFullpath">Full path for the expected destination file</param>
+        /// <param name="destinationFullPath">Full path for the expected destination file</param>
         /// <returns>A string of the FFmpeg arguments</returns>
         /// <exception cref="Exception">Something went wrong/invalid instructions.</exception>
         /// <exception cref="NotImplementedException">Potentially unimplemented instructions.</exception>
-        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, string title, string sourceFullPath, string destinationFullpath)
+        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
         {
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
 
@@ -588,7 +664,7 @@ namespace AutomatedFFmpegServer
                 }
             }
 
-            sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{title}\" \"{destinationFullpath}\"");
+            sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{title}\" \"{destinationFullPath}\"");
 
             return sbArguments.ToString();
         }
