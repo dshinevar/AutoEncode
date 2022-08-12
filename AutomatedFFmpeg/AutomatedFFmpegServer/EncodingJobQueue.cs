@@ -70,6 +70,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Checks to see if a job exists by the given filename. </summary>
+        /// <param name="filename"></param>
+        /// <returns>True if a job exists with that filename; False, otherwise.</returns>
         public static bool ExistsByFileName(string filename)
         {
             lock (jobLock)
@@ -78,6 +81,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Checks to see if a job exists by the given id. </summary>
+        /// <param name="id"></param>
+        /// <returns>True if a job exists by that job id; False, otherwise.</returns>
         public static bool ExistsById(int id)
         {
             lock (jobLock)
@@ -138,6 +144,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Clears completed jobs </summary>
+        /// <param name="hoursSinceCompleted">The number of hours a job needs to have been marked completed before removal.</param>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearCompletedJobs(int hoursSinceCompleted)
         {
             IList<string> jobsRemoved = new List<string>();
@@ -145,7 +154,7 @@ namespace AutomatedFFmpegServer
             // Handle jobs that don't need post processing
             IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
                                                                     x.CompletedEncodingDateTime.HasValue && 
-                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true).ToList();
+                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true);
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -158,7 +167,7 @@ namespace AutomatedFFmpegServer
             }
 
             // Handle jobs that need post processsing
-            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue).ToList();
+            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue);
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -173,12 +182,15 @@ namespace AutomatedFFmpegServer
             return jobsRemoved;
         }
 
+        /// <summary> Clears errored jobs </summary>
+        /// <param name="hoursSinceErrored">The number of hours a job needs to have been marked in error before removal.</param>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearErroredJobs(int hoursSinceErrored)
         {
             IList<string> jobsRemoved = new List<string>();
 
             // Handle jobs that don't need post processing
-            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true).ToList();
+            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true);
 
             foreach (EncodingJob job in erroredJobs)
             {

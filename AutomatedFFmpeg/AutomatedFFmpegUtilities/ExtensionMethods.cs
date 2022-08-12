@@ -46,16 +46,6 @@ namespace AutomatedFFmpegUtilities
             }
         }
 
-        /// <summary> Remove leading slashes from string if it exists (usually useful if parsing directories/files). </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
-        public static string RemoveLeadingSlashes(this string s) => s.TrimStart(Path.DirectorySeparatorChar);
-
-        /// <summary> Remove ending slashes from string if it exists (used with directories) </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
-        public static string RemoveEndingSlashes(this string s) => s.TrimEnd(Path.DirectorySeparatorChar);
-
         public static string GetName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetName();
         public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
     }

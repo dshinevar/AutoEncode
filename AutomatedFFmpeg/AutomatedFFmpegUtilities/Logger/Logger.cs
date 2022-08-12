@@ -30,7 +30,7 @@ namespace AutomatedFFmpegUtilities.Logger
 
         public Logger(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
         {
-            LogFileFullPath = $@"{logFileLocation.RemoveEndingSlashes()}{Path.DirectorySeparatorChar}{logFileName}";
+            LogFileFullPath = Path.Combine(logFileLocation, logFileName);
             MaxSizeInBytes = maxSizeInBytes;
             BackupFileCount = backupFileCount;
         }

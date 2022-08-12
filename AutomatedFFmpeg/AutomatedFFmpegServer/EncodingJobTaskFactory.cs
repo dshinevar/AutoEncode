@@ -170,7 +170,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
+                    FileName = Path.Combine(ffmpegDir, "ffmpeg"),
                     Arguments = job.FFmpegCommandArguments,
                     UseShellExecute = false,
                     RedirectStandardError = true
@@ -356,7 +356,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffprobe",
+                FileName = Path.Combine(ffmpegDir, "ffprobe"),
                 Arguments = ffprobeArgs,
                 UseShellExecute = false,
                 RedirectStandardOutput = true
@@ -393,7 +393,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName =  $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
+                FileName = Path.Combine(ffmpegDir, "ffmpeg"),
                 Arguments = ffmpegArgs,
                 UseShellExecute = false,
                 RedirectStandardError = true
@@ -435,7 +435,7 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = $@"{ffmpegDir.RemoveEndingSlashes()}{Path.AltDirectorySeparatorChar}ffmpeg",
+                FileName = Path.Combine(ffmpegDir, "ffmpeg"),
                 Arguments = ffmpegArgs,
                 UseShellExecute = false,
                 RedirectStandardError = true
