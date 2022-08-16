@@ -156,12 +156,21 @@ namespace AutomatedFFmpegServer
             {
                 if (File.Exists(Lookups.PreviouslyEncodingTempFile))
                 {
-                    string fileToDelete = File.ReadLines(Lookups.PreviouslyEncodingTempFile).First();
+                    string fileToDelete = File.ReadLines(Lookups.PreviouslyEncodingTempFile).First().Trim();
+
+                    if (File.Exists(fileToDelete))
+                    {
+                        File.Delete(fileToDelete);
+                    }
+
+                    File.Delete(Lookups.PreviouslyEncodingTempFile);
                 }
             }
             catch (Exception ex)
             {
-
+                // Can continue if an error occurs here
+                Debug.WriteLine($"Failed to delete previously encoding file or temp file. Exception: {ex.Message}");
+                logger.LogException(ex, "Failed to delete previously encoding file or temp file.", threadName: LOG_THREAD_NAME);
             }
 
             mainThread = new AFServerMainThread(serverConfig, logger, Shutdown);
