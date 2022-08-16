@@ -1,0 +1,49 @@
+# AutomatedFFmpegServer Config
+---
+# General Server Settings
+ServerSettings:
+    IP: 127.0.0.1
+    Port: 39000
+    VideoFileExtensions: ['.mkv', '.m4v', '.avi']
+    ThreadSleepInMS: 300000
+    # Directory of FFmpeg that AFServer will use
+    FFmpegDirectory: ''
+    LoggerSettings:
+        LogFileLocation: '\Fake\Path'
+        MaxFileSizeInBytes: 4098
+        BackupFileCount: 3
+
+# Settings that apply to all jobs
+GlobalJobSettings:
+    # Number of hours a job will sit completed before removed from the queue
+    HoursCompletedUntilRemoval: 1
+    # Number of hours a job will sit in error before removed from the queue
+    HoursErroredUntilRemoval: 2
+
+# Directories AFServer will be aware of
+Directories:
+    # Directory key (multiple movie/TV directories are allowed)
+    Movies:
+        Source: '\\Source\Path\Movies'
+        Destination: '\\Destination\Path\Movies (Encoded)'
+        # Mark automated for automatic encoding; If False, AFServer will build out the source files, but will not encode
+        Automated: True
+        TVShowStructure: False
+        # PostProcessing section can be omitted if wanting to skip
+        PostProcessing:
+            # Other directories to copy encoded file to
+            CopyFilePaths: ['\\Fake\Path1', '\\Path\Fake2']
+            # If tied to a plex server directory, tell plex to update the given library to find the file
+            PlexLibraryName: 'Movies'
+            # Delete the source file when done encoding (occurs last in PostProcessing)
+            DeleteSourceFile: False
+
+    TV Shows:
+        Source: '\\Source\Path\TV Shows'
+        Destination: '\\Source\Path\TV Shows (Encoded)'
+        Automated: False
+        # Marking TVShowStructure True tells AFServer to look in each Show directory for seasons and then looks in the season folders for episodes
+        TVShowStructure: True
+
+Plex:
+    Enabled: False

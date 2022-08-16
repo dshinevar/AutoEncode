@@ -70,6 +70,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Checks to see if a job exists by the given filename. </summary>
+        /// <param name="filename"></param>
+        /// <returns>True if a job exists with that filename; False, otherwise.</returns>
         public static bool ExistsByFileName(string filename)
         {
             lock (jobLock)
@@ -78,6 +81,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Checks to see if a job exists by the given id. </summary>
+        /// <param name="id"></param>
+        /// <returns>True if a job exists by that job id; False, otherwise.</returns>
         public static bool ExistsById(int id)
         {
             lock (jobLock)
@@ -138,6 +144,9 @@ namespace AutomatedFFmpegServer
             }
         }
 
+        /// <summary> Clears completed jobs </summary>
+        /// <param name="hoursSinceCompleted">The number of hours a job needs to have been marked completed before removal.</param>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearCompletedJobs(int hoursSinceCompleted)
         {
             IList<string> jobsRemoved = new List<string>();
@@ -173,6 +182,9 @@ namespace AutomatedFFmpegServer
             return jobsRemoved;
         }
 
+        /// <summary> Clears errored jobs </summary>
+        /// <param name="hoursSinceErrored">The number of hours a job needs to have been marked in error before removal.</param>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearErroredJobs(int hoursSinceErrored)
         {
             IList<string> jobsRemoved = new List<string>();

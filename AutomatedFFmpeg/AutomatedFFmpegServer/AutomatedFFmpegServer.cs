@@ -120,7 +120,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = $@"{serverConfig.ServerSettings.FFmpegDirectory.RemoveEndingSlashes()}/ffmpeg",
+                    FileName = Path.Combine(serverConfig.ServerSettings.FFmpegDirectory, "ffmpeg"),
                     Arguments = "-version",
                     UseShellExecute = false,
                     RedirectStandardOutput = true

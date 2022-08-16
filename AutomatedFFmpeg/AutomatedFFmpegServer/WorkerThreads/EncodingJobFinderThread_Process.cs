@@ -99,7 +99,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <param name="searchDirectories">Search Directories</param>
         private void BuildSourceFiles(Dictionary<string, SearchDirectory> searchDirectories)
         {
-            Parallel.ForEach(searchDirectories.ToList(), entry =>
+            Parallel.ForEach(searchDirectories, entry =>
             {
                 if (Directory.Exists(entry.Value.Source))
                 {
@@ -107,29 +107,27 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     if (entry.Value.TVShowStructure)
                     {
                         List<ShowSourceData> shows = new();
-                        List<string> sourceShows = Directory.GetDirectories(entry.Value.Source).ToList();
-                        List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories).ToList()
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
+                        IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
+                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         // Show
                         foreach (string showPath in sourceShows)
                         {
-                            string showName = showPath.Replace(entry.Value.Source, "").RemoveLeadingSlashes();
+                            string showName = new DirectoryInfo(showPath).Name;
                             ShowSourceData showData = new(showName);
-                            List<string> seasons = Directory.GetDirectories(showPath).ToList();
+                            IEnumerable<string> seasons = Directory.GetDirectories(showPath);
                             // Season
                             foreach (string seasonPath in seasons)
                             {
-                                string season = seasonPath.Replace(showPath, "").RemoveLeadingSlashes();
+                                string season = new DirectoryInfo(seasonPath).Name;
                                 SeasonSourceData seasonData = new(season);
-                                List<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                    .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
+                                IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
+                                    .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
                                 // Episode
                                 foreach (string episodePath in episodes)
                                 {
-                                    string episode = episodePath.Replace(seasonPath, "").RemoveLeadingSlashes();
                                     VideoSourceData episodeData = new()
                                     {
-                                        FileName = episode,
                                         FullPath = episodePath,
                                         Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
                                     };
@@ -151,18 +149,14 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     else
                     {
                         List<VideoSourceData> movies = new();
-                        List<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).ToList();
-                        List<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file)).ToList();
+                        IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
+                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         foreach (string sourceFile in sourceFiles)
                         {
-                            // Handles files in subdirectories
-                            string filename = sourceFile.Replace(entry.Value.Source, "").RemoveLeadingSlashes();
-
                             VideoSourceData sourceData = new()
                             {
-                                FileName = filename,
                                 FullPath = sourceFile,
                                 Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
                             };

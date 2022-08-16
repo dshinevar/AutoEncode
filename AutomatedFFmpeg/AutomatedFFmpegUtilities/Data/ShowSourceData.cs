@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace AutomatedFFmpegUtilities.Data
 {
     public class ShowSourceData
     {
         public string ShowName { get; set; }
-        public List<SeasonSourceData> Seasons { get; set; } = new List<SeasonSourceData>();
+        public List<SeasonSourceData> Seasons { get; set; }
 
         /// <summary>Default Constructor </summary>
         public ShowSourceData() { }
@@ -17,15 +16,6 @@ namespace AutomatedFFmpegUtilities.Data
         {
             ShowName = showName;
             Seasons = new List<SeasonSourceData>();
-        }
-
-        /// <summary>Private Constructor used for DeepClone</summary>
-        /// <param name="show"></param>
-        /// <param name="seasons"></param>
-        private ShowSourceData(string show, List<SeasonSourceData> seasons)
-        {
-            ShowName = show;
-            Seasons = seasons.Select(s => s.DeepClone()).ToList();
         }
     }
 }
