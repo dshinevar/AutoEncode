@@ -154,7 +154,7 @@ namespace AutomatedFFmpegServer
             // Handle jobs that don't need post processing
             IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
                                                                     x.CompletedEncodingDateTime.HasValue && 
-                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true);
+                                                                    x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true).ToList();
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -167,7 +167,7 @@ namespace AutomatedFFmpegServer
             }
 
             // Handle jobs that need post processsing
-            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue);
+            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue).ToList();
             foreach (EncodingJob job in completedJobs)
             {
                 // If it's been completed for longer than the given number of hours, remove job
@@ -190,7 +190,7 @@ namespace AutomatedFFmpegServer
             IList<string> jobsRemoved = new List<string>();
 
             // Handle jobs that don't need post processing
-            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true);
+            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true).ToList();
 
             foreach (EncodingJob job in erroredJobs)
             {
