@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using YamlDotNet.Serialization;
@@ -15,7 +16,7 @@ namespace AutomatedFFmpegServer
     class AutomatedFFmpegServer
     {
         private const string LOG_THREAD_NAME = "STARTUP";
-        private const string LOG_FILENAME = "AFServer.log";
+        private const string LOG_FILENAME = "afserver.log";
 
         static void Main(string[] args)
         {
@@ -27,7 +28,7 @@ namespace AutomatedFFmpegServer
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
 
             Debug.WriteLine("AutomatedFFmpegServer Starting Up.");
-
+            // LOAD CONFIG FILE
             try
             {
                 using StreamReader reader = new(Lookups.ConfigFileLocation);
@@ -44,6 +45,7 @@ namespace AutomatedFFmpegServer
 
             Debug.WriteLine("Config file loaded.");
 
+            // CREATE LOG FILE DIRECTORY
             string LogFileLocation = serverConfig.ServerSettings.LoggerSettings.LogFileLocation;
             try
             {
@@ -101,6 +103,7 @@ namespace AutomatedFFmpegServer
                 Environment.Exit(-2);
             }
 
+            // GET AND LOG VERSION
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             logger.LogInfo($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.", LOG_THREAD_NAME);
             List<string> configLog = new()
@@ -112,6 +115,7 @@ namespace AutomatedFFmpegServer
             };
             logger.LogInfo(configLog, LOG_THREAD_NAME);
 
+            // CHECK FOR FFMPEG AND LOG VERSION
             try
             {
                 List<string> ffmpegVersionLines = new();
@@ -145,6 +149,19 @@ namespace AutomatedFFmpegServer
                 Debug.WriteLine($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}");
                 logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: LOG_THREAD_NAME);
                 Environment.Exit(-2);
+            }
+
+            // CHECK FOR TEMP FILE OF UNFINISHED ENCODING JOB AND DELETE
+            try
+            {
+                if (File.Exists(Lookups.PreviouslyEncodingTempFile))
+                {
+                    string fileToDelete = File.ReadLines(Lookups.PreviouslyEncodingTempFile).First();
+                }
+            }
+            catch (Exception ex)
+            {
+
             }
 
             mainThread = new AFServerMainThread(serverConfig, logger, Shutdown);
