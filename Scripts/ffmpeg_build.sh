@@ -48,7 +48,7 @@ get_libx265 () {
   wget -O x265.tar.bz2 https://bitbucket.org/multicoreware/x265_git/get/master.tar.bz2 && \
   tar xjvf x265.tar.bz2 && \
   cd multicoreware*/build/linux && \
-  PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED=off -DHIGH_BIT_DEPTH=on -DNATIVE_BUILD=on ../../source  && \
+  PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED=off -DENABLE_HDR10_PLUS=on -DHIGH_BIT_DEPTH=on -DNATIVE_BUILD=on ../../source  && \
   PATH="$HOME/bin:$PATH" make && \
   make -j4 install
 }

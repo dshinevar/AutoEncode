@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace AutomatedFFmpegServer
@@ -13,8 +14,12 @@ namespace AutomatedFFmpegServer
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
 
         public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                    @"\var\log\afserver" :
+                                    @"/var/log/afserver" :
                                     $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
+
+        public static string PreviouslyEncodingTempFile => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                    $"{Path.GetTempPath()}afserver.tmp" :
+                                    $"{Path.GetTempPath()}AFServer.tmp";
         #endregion LINUX VS WINDOWS
 
         /// <summary> 

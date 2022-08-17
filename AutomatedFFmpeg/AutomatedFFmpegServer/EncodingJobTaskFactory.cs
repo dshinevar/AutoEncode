@@ -222,6 +222,8 @@ namespace AutomatedFFmpegServer
                             logger.LogError(msg);
                         }
                     };
+
+                    File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
                     stopwatch.Start();
                     ffmpegProcess.Start();
                     ffmpegProcess.BeginErrorReadLine();
@@ -234,18 +236,36 @@ namespace AutomatedFFmpegServer
                 logger.LogException(ex, msg);
                 Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
-                File.Delete(job.DestinationFullPath);
-                return;
             }
 
             stopwatch.Stop();
 
-            if (job.EncodingProgress > 75)
+            try
             {
-                job.EncodingProgress = 100;
-                job.CompletedEncodingDateTime = DateTime.Now;
-                job.Status = EncodingJobStatus.ENCODED;
-                logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
+                // SUCCESS
+                if (job.EncodingProgress >= 75)
+                {
+                    job.EncodingProgress = 100;
+                    job.CompletedEncodingDateTime = DateTime.Now;
+                    job.Status = EncodingJobStatus.ENCODED;
+                    File.Delete(Lookups.PreviouslyEncodingTempFile);
+                    logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
+                }
+                // FAILURE
+                else if (job.EncodingProgress < 75 || job.Error is true)
+                {
+                    // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
+                    File.Delete(job.DestinationFullPath);
+                    File.Delete(Lookups.PreviouslyEncodingTempFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Most likely an exception from File.Delete
+                string msg = $"Error cleaning up encoding job.";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                // Don't error the job for now
             }
         }
 
