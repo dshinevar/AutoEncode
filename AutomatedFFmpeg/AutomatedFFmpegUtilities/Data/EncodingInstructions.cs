@@ -1,9 +1,5 @@
-﻿using System;
+﻿using AutomatedFFmpegUtilities.Enums;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AutomatedFFmpegUtilities.Enums;
 
 namespace AutomatedFFmpegUtilities.Data
 {
@@ -27,7 +23,9 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public VideoEncoder VideoEncoder { get; set; } = VideoEncoder.UNKNOWN;
         public bool Deinterlace { get; set; }
-        public bool HasHDR { get; set; }
+        public HDRType HDRType { get; set; }
+        public bool HasHDR => !HDRType.Equals(HDRType.NONE);
+        public string DynamicHDRMetadataFullPath { get; set; }
         public int BFrames { get; set; }
         public int CRF { get; set; }
         public string PixelFormat { get; set; }
@@ -41,7 +39,7 @@ namespace AutomatedFFmpegUtilities.Data
 
         public string Title { get; set; }
         public string Language { get; set; } // Used for sorting
-        public bool Commentary { get; set;} // Used for sorting
+        public bool Commentary { get; set; } // Used for sorting
     }
 
     public class SubtitleStreamEncodingInstructions

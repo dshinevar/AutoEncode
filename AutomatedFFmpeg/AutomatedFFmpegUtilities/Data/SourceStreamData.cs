@@ -1,4 +1,5 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Interfaces;
 using System.Collections.Generic;
 
 namespace AutomatedFFmpegUtilities.Data
@@ -19,7 +20,9 @@ namespace AutomatedFFmpegUtilities.Data
 
     public class VideoStreamData : StreamData
     {
-        public HDRData HDRData { get; set; }
+        public IHDRData HDRData { get; set; }
+        public bool IsHDR => !HDRData?.HDRType.Equals(HDRType.NONE) ?? false;
+        public bool IsDynamicHDR => (HDRData is IDynamicHDRData) && ((HDRData?.HDRType.Equals(HDRType.HDR10PLUS) ?? false) || (HDRData?.HDRType.Equals(HDRType.DOLBY_VISION) ?? false));
         public string CodecName { get; set; }
         public string PixelFormat { get; set; }
         /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: crop=XXXX:YYYY:AA:BB </summary>
@@ -29,14 +32,14 @@ namespace AutomatedFFmpegUtilities.Data
         public string ColorSpace { get; set; }
         public string ColorPrimaries { get; set; }
         public string ColorTransfer { get; set; }
-        public string MaxCLL { get; set; }
         public bool Animated { get; set; } = false;
         public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
         public ChromaLocation? ChromaLocation { get; set; } = null;
     }
 
-    public class HDRData
+    public class HDR10Data : IHDRData
     {
+        public HDRType HDRType { get; set; } = HDRType.HDR10;
         public string Red_X { get; set; }
         public string Red_Y { get; set; }
         public string Green_X { get; set; }
@@ -47,6 +50,12 @@ namespace AutomatedFFmpegUtilities.Data
         public string WhitePoint_Y { get; set; }
         public string MinLuminance { get; set; }
         public string MaxLuminance { get; set; }
+        public string MaxCLL { get; set; }
+    }
+
+    public class DynamicHDRData : HDR10Data, IDynamicHDRData
+    {
+        public string MetadataFullPath { get; set; }
     }
 
     public class AudioStreamData : StreamData

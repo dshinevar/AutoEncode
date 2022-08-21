@@ -70,7 +70,7 @@ namespace AutomatedFFmpegServer
                     if (jobToBuild is not null)
                     {
                         EncodingJobBuilderTask = Task.Factory.StartNew(()
-                            => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                            => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Config.ServerSettings.HDR10PlusExtractorFullPath, Config.ServerSettings.DolbyVisionExtractorFullPath, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
 

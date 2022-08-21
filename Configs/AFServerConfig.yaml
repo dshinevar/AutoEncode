@@ -8,6 +8,9 @@ ServerSettings:
     ThreadSleepInMS: 300000
     # Directory of FFmpeg that AFServer will use
     FFmpegDirectory: ''
+    # Currently built around using hdr10plus_tool and dovi_tool; Will need to install manually
+    HDR10PlusExtractorFullPath: '\Dir\To\hdr10plus_tool'
+    DolbyVisionExtractorFullPath: '\Dir\To\dovi_tool'
     LoggerSettings:
         LogFileLocation: '\Fake\Path'
         MaxFileSizeInBytes: 4098
