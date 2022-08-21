@@ -573,25 +573,28 @@ namespace AutomatedFFmpegServer
                 CreateNoWindow = true,
                 FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bash" : "cmd",
                 Arguments = ffmpegArgs,
-                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
             using (Process ffmpegProcess = new())
             {
                 ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    if (string.IsNullOrWhiteSpace(e.Data) is false) Debug.WriteLine(e.Data);
-                };
                 ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
                 ffmpegProcess.WaitForExit();
             }
 
             if (File.Exists(metadataOutputFile))
             {
-                return metadataOutputFile;
+                FileInfo metadataFileInfo = new(metadataOutputFile);
+
+                if (metadataFileInfo.Length > 0)
+                {
+                    return metadataOutputFile;
+                }
+                else
+                {
+                    throw new Exception("HDR Metadata file was created but is empty.");
+                }
             }
             else
             {
