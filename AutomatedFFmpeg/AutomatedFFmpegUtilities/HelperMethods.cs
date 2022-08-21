@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace AutomatedFFmpegUtilities
 {
@@ -27,5 +28,8 @@ namespace AutomatedFFmpegUtilities
                 return string.Join(separator, nonEmptyStrings);
             }
         }
+
+        public static bool IsAnyNullOrWhitespace(object obj) => obj.GetType().GetProperties().Where(pi => pi.PropertyType == typeof(string))
+                                                                            .Select(pi => (string)pi.GetValue(obj)).Any(value => string.IsNullOrWhiteSpace(value));
     }
 }

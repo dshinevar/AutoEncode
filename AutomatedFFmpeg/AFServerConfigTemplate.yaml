@@ -6,6 +6,8 @@ ServerSettings:
     VideoFileExtensions: ['.mkv', '.m4v', '.avi']
     ThreadSleepInMS: 300000
     FFmpegDirectory: ''
+    HDR10PlusExtractorFullPath: ''
+    DolbyVisionExtractorFullPath: ''
     LoggerSettings:
         LogFileLocation: '\Fake\Path'
         MaxFileSizeInBytes: 4098

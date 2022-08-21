@@ -15,10 +15,12 @@ namespace AutomatedFFmpegUtilities.Logger
         DEBUG = 0,
         [Description("Info")]
         INFO = 1,
+        [Description("Warning")]
+        WARNING,
         [Description("Error")]
-        ERROR = 2,
+        ERROR = 3,
         [Description("Fatal")]
-        FATAL = 3
+        FATAL = 4
     }
 
     public class Logger
@@ -57,6 +59,16 @@ namespace AutomatedFFmpegUtilities.Logger
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
         public void LogInfo(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, threadName, callingMemberName);
+        /// <summary> Log a Warning Message </summary>
+        /// <param name="msg">Message to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
+        public void LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, new string[] { msg }, threadName, callingMemberName);
+        /// <summary>Log a list of warning messages.</summary>
+        /// <param name="messages">Messages to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="callingMemberName">Calling function.</param>
+        public void LogWarning(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, messages, threadName, callingMemberName);
         /// <summary> Log an Error Message </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>

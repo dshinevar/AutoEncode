@@ -4,6 +4,7 @@ using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
+using AutomatedFFmpegUtilities.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace AutomatedFFmpegServer
 {
@@ -22,9 +24,11 @@ namespace AutomatedFFmpegServer
         /// <summary>Builds out an <see cref="EncodingJob"/> by analyzing the file's streams, building encoding instructions, and building FFmpeg arguments.</summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be filled out.</param>
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
+        /// <param name="hdr10plusExtractorPath">The full path of the hdr10plus extractor program (hdr10plus_tool)</param>
+        /// <param name="dolbyVisionExtractorPath">The full path of the dolby vision extractor program (dovi_tool)</param>
         /// <param name="logger"><see cref="Logger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void BuildEncodingJob(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
+        public static void BuildEncodingJob(EncodingJob job, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.BUILDING;
 
@@ -117,6 +121,54 @@ namespace AutomatedFFmpegServer
 
             if (CheckForCancellation(job, logger, cancellationToken)) return;
 
+            // OPTIONAL STEP: Create HDR metadata file if needed
+            try
+            {
+                if (job.SourceStreamData?.VideoStream?.IsDynamicHDR ?? false)
+                {
+                    HDRType hdrType = job.SourceStreamData.VideoStream.HDRData.HDRType;
+                    if (hdrType.Equals(HDRType.HDR10PLUS))
+                    {
+                        // If we aren't given a path, skip this step;  It will be treated as HDR10
+                        if (!string.IsNullOrWhiteSpace(hdr10plusExtractorPath))
+                        {
+                            ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPath = CreateHDRMetadataFile(job.SourceFullPath, hdrType, ffmpegDir, hdr10plusExtractorPath);
+                        }
+                        else
+                        {
+                            logger.LogWarning($"No HDR Metadata Extractor given for {job.Name}. Will be treated as HDR10 instead of Dynamic HDR.");
+                            Debug.WriteLine($"No HDR Metadata Extractor given for {job.Name}. Will be treated as HDR10 instead of Dynamic HDR.");
+                        }
+                    }
+                    else if (hdrType.Equals(HDRType.DOLBY_VISION))
+                    {
+                        // If we aren't given a path, skip this step;  It will be treated as HDR10
+                        if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
+                        {
+                            ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPath = CreateHDRMetadataFile(job.SourceFullPath, hdrType, ffmpegDir, dolbyVisionExtractorPath);
+
+                        }
+                        else
+                        {
+                            logger.LogWarning($"No HDR Metadata Extractor given for {job.Name}. Will be treated as HDR10 instead of Dynamic HDR.");
+                            Debug.WriteLine($"No HDR Metadata Extractor given for {job.Name}. Will be treated as HDR10 instead of Dynamic HDR.");
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported or unknown HDRType.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string msg = $"Error creating HDR metadata file for {job.FileName}";
+                logger.LogException(ex, msg);
+                Debug.WriteLine($"{msg} : {ex.Message}");
+                job.SetError(msg);
+                return;
+            }
+
             // STEP 4: Decide Encoding Options
             // Not sure what would throw an exception but we'll wrap in try/catch just in case.
             try
@@ -137,7 +189,7 @@ namespace AutomatedFFmpegServer
             // STEP 5: Create FFMPEG command
             try
             {
-                job.FFmpegCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
+                job.FFmpegEncodingCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
             }
             catch (Exception ex)
             {
@@ -171,7 +223,7 @@ namespace AutomatedFFmpegServer
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
                     FileName = Path.Combine(ffmpegDir, "ffmpeg"),
-                    Arguments = job.FFmpegCommandArguments,
+                    Arguments = job.FFmpegEncodingCommandArguments,
                     UseShellExecute = false,
                     RedirectStandardError = true
                 };
@@ -249,6 +301,7 @@ namespace AutomatedFFmpegServer
                     job.CompletedEncodingDateTime = DateTime.Now;
                     job.Status = EncodingJobStatus.ENCODED;
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
+                    if (job.SourceStreamData.VideoStream.IsDynamicHDR) File.Delete(((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPath);
                     logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
                 }
                 // FAILURE
@@ -499,6 +552,53 @@ namespace AutomatedFFmpegServer
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
         }
 
+        /// <summary>Creates the Dynamic HDR Metadata file (.json or .bin) for ffmpeg to ingest when encoding</summary>
+        /// <param name="sourceFullPath">Full path of source file.</param>
+        /// <param name="hdrType"><see cref="HDRType"/></param>
+        /// <param name="ffmpegDir"></param>
+        /// <param name="extractorFullPath">Full path of dynamic hdr data extractor to use.</param>
+        /// <returns>Full path of created metadata file.</returns>
+        /// <exception cref="Exception">Thrown if metadata file not created.</exception>
+        private static string CreateHDRMetadataFile(string sourceFullPath, HDRType hdrType, string ffmpegDir, string extractorFullPath)
+        {
+            string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath)}{(hdrType.Equals(HDRType.HDR10PLUS) ? ".json" : ".RPU.bin")}";
+            string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"\"{extractorFullPath}\" extract -o \"{metadataOutputFile}\" -" :
+                                                                        $"\"{extractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
+            string ffmpegArgs = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"-c {Path.Combine(ffmpegDir, "ffmpeg")} -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}" :
+                                $"/C {Path.Combine(ffmpegDir, "ffmpeg")} - i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}";
+
+            ProcessStartInfo startInfo = new()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bash" : "cmd",
+                Arguments = ffmpegArgs,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using (Process ffmpegProcess = new())
+            {
+                ffmpegProcess.StartInfo = startInfo;
+                ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                {
+                    if (string.IsNullOrWhiteSpace(e.Data) is false) Debug.WriteLine(e.Data);
+                };
+                ffmpegProcess.Start();
+                ffmpegProcess.BeginErrorReadLine();
+                ffmpegProcess.WaitForExit();
+            }
+
+            if (File.Exists(metadataOutputFile))
+            {
+                return metadataOutputFile;
+            }
+            else
+            {
+                throw new Exception("HDR Metadata file was not created/does not exist.");
+            }
+        }
+
         /// <summary> Determines/Builds <see cref="EncodingInstructions"/> for the given stream data. </summary>
         /// <param name="streamData"><see cref="SourceStreamData"/></param>
         /// <returns><see cref="EncodingInstructions"/></returns>
@@ -511,9 +611,27 @@ namespace AutomatedFFmpegServer
                 VideoEncoder = streamData.VideoStream.ResoultionInt >= Lookups.MinX265ResolutionInt ? VideoEncoder.LIBX265 : VideoEncoder.LIBX264,
                 BFrames = streamData.VideoStream.Animated is true ? 8 : 6,
                 Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
-                HasHDR = streamData.VideoStream.HDRData is not null,
                 Crop = true
             };
+
+            if (streamData.VideoStream.IsDynamicHDR)
+            {
+                // If the data is dynamic hdr but we don't have a metadata file, treat as normal HDR10
+                if (string.IsNullOrWhiteSpace(((IDynamicHDRData)streamData.VideoStream.HDRData).MetadataFullPath))
+                {
+                    videoStreamEncodingInstructions.HDRType = HDRType.HDR10;
+                }
+                else
+                {
+                    videoStreamEncodingInstructions.HDRType = streamData.VideoStream.HDRData.HDRType;
+                    videoStreamEncodingInstructions.DynamicHDRMetadataFullPath = ((IDynamicHDRData)streamData.VideoStream.HDRData).MetadataFullPath;
+                }
+            }
+            else
+            {
+                videoStreamEncodingInstructions.HDRType = streamData.VideoStream.IsHDR ? streamData.VideoStream.HDRData.HDRType : HDRType.NONE;
+            }
+
             videoStreamEncodingInstructions.PixelFormat = videoStreamEncodingInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265) ? "yuv420p10le" : "yuv420p";
             videoStreamEncodingInstructions.CRF = videoStreamEncodingInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265) ? 20 : 16;
             instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
@@ -634,15 +752,32 @@ namespace AutomatedFFmpegServer
             sbArguments.AppendFormat(format, $"-pix_fmt {videoInstructions.PixelFormat}");
             if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265))
             {
-                HDRData hdr = streamData.VideoStream.HDRData;
-                sbArguments.AppendFormat(format, "-vcodec libx265");
+                IHDRData hdr = streamData.VideoStream.HDRData;
+                sbArguments.AppendFormat(format, "-vcodec libx265").AppendFormat(format, $"-crf {videoInstructions.CRF}");
                 if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
                 sbArguments.Append($"-x265-params \"preset=slow:keyint=60:bframes={videoInstructions.BFrames}:repeat-headers=1:")
                     .Append($"colorprim={streamData.VideoStream.ColorPrimaries}:transfer={streamData.VideoStream.ColorTransfer}:colormatrix={streamData.VideoStream.ColorSpace}")
-                    .Append($"{(videoInstructions.HasHDR is true ? $":hdr10-opt=1:master-display='G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'" : string.Empty)}")
-                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.MaxCLL) ? string.Empty : $":max-cll={streamData.VideoStream.MaxCLL}")}")
-                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $":chromaloc={(int)streamData.VideoStream.ChromaLocation}")}")
-                    .AppendFormat(format, '"').AppendFormat(format, $"-crf {videoInstructions.CRF}");
+                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $":chromaloc={(int)streamData.VideoStream.ChromaLocation}")}");
+
+                if (videoInstructions.HasHDR)
+                {
+                    // HDR10 data; Always add
+                    sbArguments.Append($":master-display='G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})':max-cll={streamData.VideoStream.HDRData.MaxCLL}");
+                    switch (videoInstructions.HDRType)
+                    {
+                        case HDRType.HDR10PLUS:
+                        {
+                            sbArguments.Append($":dhdr10-info='{videoInstructions.DynamicHDRMetadataFullPath}'");
+                            break;
+                        }
+                        case HDRType.DOLBY_VISION:
+                        {
+                            sbArguments.Append($":dolby-vision-rpu={videoInstructions.DynamicHDRMetadataFullPath}:dolby-vision-profile=8.1");
+                            break;
+                        }
+                    }
+                }
+                sbArguments.AppendFormat(format, '"');
             }
             else if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX264))
             {

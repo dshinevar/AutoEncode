@@ -54,11 +54,16 @@ namespace AutomatedFFmpegUtilities.Data
         #endregion Status
 
         #region Processing Data
+        /// <summary>The raw stream (video, audio subtitle) data </summary>
         public SourceStreamData SourceStreamData { get; set; }
+        /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         public EncodingInstructions EncodingInstructions { get; set; }
+        /// <summary>Marks what PostProcessing functions should be done to this job. </summary>
         public PostProcessingFlags PostProcessingFlags { get; private set; } = PostProcessingFlags.None;
+        /// <summary>Settings for PostProcessing; Initially copied over from AFServerConfig file. </summary>
         public PostProcessingSettings PostProcessingSettings { get; set; }
-        public string FFmpegCommandArguments { get; set; }
+        /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
+        public string FFmpegEncodingCommandArguments { get; set; }
         #endregion Processing Data
 
         #region Public Functions

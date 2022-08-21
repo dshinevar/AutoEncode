@@ -1,8 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using AutomatedFFmpegUtilities.Data;
+﻿using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AutomatedFFmpegServer.Data
 {
@@ -81,6 +82,9 @@ namespace AutomatedFFmpegServer.Data
             public string duration; // seconds
         }
 
+        /// <summary> Converts to a <see cref="SourceStreamData"/> object</summary>
+        /// <returns><see cref="SourceStreamData"/></returns>
+        /// <exception cref="Exception">Throws if hdr data is supposedly found but is null or empty</exception>
         public SourceStreamData ToSourceStreamData()
         {
             SourceStreamData sourceFileData = new()
@@ -98,9 +102,9 @@ namespace AutomatedFFmpegServer.Data
                     {
                         StreamIndex = stream.index,
                         Resolution = $"{stream.width}x{stream.height}",
-                        ResoultionInt = stream.width*stream.height,
+                        ResoultionInt = stream.width * stream.height,
                         CodecName = stream.codec_name,
-                        Title = stream.tags.title
+                        Title = string.IsNullOrWhiteSpace(stream.tags.title) ? "Video" : stream.tags.title
                     };
                 }
                 else if (stream.codec_type.Equals("audio"))
@@ -221,29 +225,56 @@ namespace AutomatedFFmpegServer.Data
                     }
                     sourceFileData.VideoStream.ChromaLocation = chroma;
 
-                    HDRData hdrData = null;
-                    foreach (SideData sideData in frame.side_data_list)
+                    // Usually should have something in here
+                    if (frame.side_data_list.Any())
                     {
-                        if (sideData.side_data_type.Equals("Mastering display metadata"))
+                        // Should only be one of both of these
+                        SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata"));
+                        SideData contentLightLevelMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Content light level metadata"));
+
+                        // Has HDR; Otherwise, we can't do HDR so don't do anything more
+                        if (masteringDisplayMetadata is not null && contentLightLevelMetadata is not null)
                         {
-                            if (hdrData is null) hdrData = new HDRData();
-                            hdrData.Blue_X = string.IsNullOrWhiteSpace(sideData.blue_x) ? string.Empty : sideData.blue_x.Split("/")[0];
-                            hdrData.Blue_Y = string.IsNullOrWhiteSpace(sideData.blue_y) ? string.Empty : sideData.blue_y.Split("/")[0];
-                            hdrData.Green_X = string.IsNullOrWhiteSpace(sideData.green_x) ? string.Empty : sideData.green_x.Split("/")[0];
-                            hdrData.Green_Y = string.IsNullOrWhiteSpace(sideData.green_y) ? string.Empty : sideData.green_y.Split("/")[0];
-                            hdrData.Red_X = string.IsNullOrWhiteSpace(sideData.red_x) ? string.Empty : sideData.red_x.Split("/")[0];
-                            hdrData.Red_Y = string.IsNullOrWhiteSpace(sideData.red_y) ? string.Empty : sideData.red_y.Split("/")[0];
-                            hdrData.WhitePoint_X = string.IsNullOrWhiteSpace(sideData.white_point_x) ? string.Empty : sideData.white_point_x.Split("/")[0];
-                            hdrData.WhitePoint_Y = string.IsNullOrWhiteSpace(sideData.white_point_y) ? string.Empty : sideData.white_point_y.Split("/")[0];
-                            hdrData.MaxLuminance = string.IsNullOrWhiteSpace(sideData.max_luminance) ? string.Empty : sideData.max_luminance.Split("/")[0];
-                            hdrData.MinLuminance = string.IsNullOrWhiteSpace(sideData.min_luminance) ? string.Empty : sideData.min_luminance.Split("/")[0];
-                        }
-                        else if (sideData.side_data_type.Equals("Content light level metadata"))
-                        {
-                            sourceFileData.VideoStream.MaxCLL = $"{sideData.max_content},{sideData.max_average}";
+                            IHDRData hdrData;
+                            // Check if HDR10+ or DolbyVision
+                            if (frame.side_data_list.Any(x => x.side_data_type.Contains("Dolby Vision")))
+                            {
+                                hdrData = new DynamicHDRData()
+                                {
+                                    HDRType = HDRType.DOLBY_VISION
+                                };
+                            }
+                            else if (frame.side_data_list.Any(x => x.side_data_type.Contains("HDR Dynamic Metadata") || x.side_data_type.Contains("HDR10+")))
+                            {
+                                hdrData = new DynamicHDRData()
+                                {
+                                    HDRType = HDRType.HDR10PLUS
+                                };
+                            }
+                            else
+                            {
+                                hdrData = new HDR10Data()
+                                {
+                                    HDRType = HDRType.HDR10
+                                };
+                            }
+
+                            hdrData.Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_x.Split("/")[0];
+                            hdrData.Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_y.Split("/")[0];
+                            hdrData.Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_x.Split("/")[0];
+                            hdrData.Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_y.Split("/")[0];
+                            hdrData.Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_x.Split("/")[0];
+                            hdrData.Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_y.Split("/")[0];
+                            hdrData.WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_x.Split("/")[0];
+                            hdrData.WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0];
+                            hdrData.MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0];
+                            hdrData.MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0];
+
+                            hdrData.MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}";
+
+                            sourceFileData.VideoStream.HDRData = hdrData;
                         }
                     }
-                    sourceFileData.VideoStream.HDRData = hdrData;
                 }
             }
 
