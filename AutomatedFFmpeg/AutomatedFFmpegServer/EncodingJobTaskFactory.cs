@@ -562,9 +562,9 @@ namespace AutomatedFFmpegServer
         private static string CreateHDRMetadataFile(string sourceFullPath, HDRType hdrType, string ffmpegDir, string extractorFullPath)
         {
             string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath)}{(hdrType.Equals(HDRType.HDR10PLUS) ? ".json" : ".RPU.bin")}";
-            string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"\"{extractorFullPath}\" extract -o \"{metadataOutputFile}\" -" :
+            string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
                                                                         $"\"{extractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
-            string ffmpegArgs = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"-c '{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}'" :
+            string ffmpegArgs = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"" :
                                 $"/C {Path.Combine(ffmpegDir, "ffmpeg")} -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}";
 
             Console.WriteLine(ffmpegArgs);
@@ -573,15 +573,21 @@ namespace AutomatedFFmpegServer
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bash" : "cmd",
+                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
                 Arguments = ffmpegArgs,
+                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
             using (Process ffmpegProcess = new())
             {
                 ffmpegProcess.StartInfo = startInfo;
+                ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data is not null) Debug.WriteLine(e.Data);
+                };
                 ffmpegProcess.Start();
+                ffmpegProcess.BeginErrorReadLine();
                 ffmpegProcess.WaitForExit();
             }
 

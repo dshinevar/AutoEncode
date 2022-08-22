@@ -2,7 +2,7 @@
 {
     public class GlobalJobSettings
     {
-        public int HoursCompletedUntilRemoval { get; set; }
-        public int HoursErroredUntilRemoval { get; set; }
+        public int HoursCompletedUntilRemoval { get; set; } = 1;
+        public int HoursErroredUntilRemoval { get; set; } = 2;
     }
 }
