@@ -567,6 +567,8 @@ namespace AutomatedFFmpegServer
             string ffmpegArgs = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"-c '{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}'" :
                                 $"/C {Path.Combine(ffmpegDir, "ffmpeg")} -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}";
 
+            Console.WriteLine(ffmpegArgs);
+
             ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
