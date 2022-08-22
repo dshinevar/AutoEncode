@@ -562,12 +562,25 @@ namespace AutomatedFFmpegServer
         private static string CreateHDRMetadataFile(string sourceFullPath, HDRType hdrType, string ffmpegDir, string extractorFullPath)
         {
             string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath)}{(hdrType.Equals(HDRType.HDR10PLUS) ? ".json" : ".RPU.bin")}";
-            string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
-                                                                        $"\"{extractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
-            string ffmpegArgs = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"" :
-                                $"/C {Path.Combine(ffmpegDir, "ffmpeg")} -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}";
 
-            Console.WriteLine(ffmpegArgs);
+            string ffmpegArgs = string.Empty;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
+                                                                        $"'{extractorFullPath}' extract-rpu - -o '{metadataOutputFile}'";
+
+                ffmpegArgs = $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
+            }
+            else
+            {
+                string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"\"{extractorFullPath}\" extract -o \"{metadataOutputFile}\" - " :
+                                                                        $"\"{extractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
+
+                ffmpegArgs = $"/C \"\"{Path.Combine(ffmpegDir, "ffmpeg")}\" -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
+            }
+
+            Debug.WriteLine(ffmpegArgs);
 
             ProcessStartInfo startInfo = new()
             {
