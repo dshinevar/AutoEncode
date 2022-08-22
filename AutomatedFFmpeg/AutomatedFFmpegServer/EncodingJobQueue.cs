@@ -47,8 +47,10 @@ namespace AutomatedFFmpegServer
         /// <param name="sourceDirectoryPath">Directory path of source</param>
         /// <param name="destinationDirectoryPath">Directory path of destination</param>
         /// <param name="plexEnabled">Config override for PLEX post processing</param>
-        public static void CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath, bool plexEnabled)
+        /// <returns>True if job created; False, otherwise.</returns>
+        public static bool CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath, bool plexEnabled)
         {
+            bool created = false;
             if (!ExistsByFileName(videoSourceData.FileName))
             {
                 EncodingJob newJob = new(IdNumber, videoSourceData.FullPath,
@@ -57,8 +59,11 @@ namespace AutomatedFFmpegServer
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
+                    created = true;
                 }
             }
+
+            return created;
         }
         /// <summary>Removes an encoding job from the list.</summary>
         /// <param name="job">EncodingJob</param>
