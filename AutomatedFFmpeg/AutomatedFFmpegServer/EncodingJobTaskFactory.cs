@@ -580,27 +580,19 @@ namespace AutomatedFFmpegServer
                 ffmpegArgs = $"/C \"\"{Path.Combine(ffmpegDir, "ffmpeg")}\" -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
 
-            Debug.WriteLine(ffmpegArgs);
-
             ProcessStartInfo startInfo = new()
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
                 Arguments = ffmpegArgs,
-                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
             using (Process ffmpegProcess = new())
             {
                 ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    if (e.Data is not null) Debug.WriteLine(e.Data);
-                };
                 ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
                 ffmpegProcess.WaitForExit();
             }
 
