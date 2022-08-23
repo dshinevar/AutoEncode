@@ -146,7 +146,6 @@ namespace AutomatedFFmpegServer
                         if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
                         {
                             ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPath = CreateHDRMetadataFile(job.SourceFullPath, hdrType, ffmpegDir, dolbyVisionExtractorPath);
-
                         }
                         else
                         {
@@ -561,7 +560,7 @@ namespace AutomatedFFmpegServer
         /// <exception cref="Exception">Thrown if metadata file not created.</exception>
         private static string CreateHDRMetadataFile(string sourceFullPath, HDRType hdrType, string ffmpegDir, string extractorFullPath)
         {
-            string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath)}{(hdrType.Equals(HDRType.HDR10PLUS) ? ".json" : ".RPU.bin")}";
+            string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath).Replace('\'', ' ')}{(hdrType.Equals(HDRType.HDR10PLUS) ? ".json" : ".RPU.bin")}";
 
             string ffmpegArgs = string.Empty;
 
