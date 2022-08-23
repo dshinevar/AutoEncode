@@ -32,8 +32,6 @@ namespace AutomatedFFmpegServer
         {
             job.Status = EncodingJobStatus.BUILDING;
 
-            CreateHDRMetadataFile(job.SourceFullPath, HDRType.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath);
-
             CheckForCancellation(job, logger, cancellationToken);
 
             // STEP 1: Initial ffprobe
