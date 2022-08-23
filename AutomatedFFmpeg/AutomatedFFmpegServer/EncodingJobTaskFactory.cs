@@ -569,7 +569,7 @@ namespace AutomatedFFmpegServer
                 string extractorArgs = hdrType.Equals(HDRType.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
                                                                         $"'{extractorFullPath}' extract-rpu - -o '{metadataOutputFile}'";
 
-                ffmpegArgs = $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
+                ffmpegArgs = $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath.Replace("'", "'\\''")}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
             else
             {
