@@ -1,5 +1,4 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Config;
+﻿using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.Collections.Generic;
@@ -49,13 +48,13 @@ namespace AutomatedFFmpegServer
             string LogFileLocation = serverConfig.ServerSettings.LoggerSettings.LogFileLocation;
             try
             {
-                DirectoryInfo directoryInfo = System.IO.Directory.CreateDirectory(serverConfig.ServerSettings.LoggerSettings.LogFileLocation);
+                DirectoryInfo directoryInfo = Directory.CreateDirectory(serverConfig.ServerSettings.LoggerSettings.LogFileLocation);
 
                 if (directoryInfo is null)
                 {
                     Debug.WriteLine("Failed to create/find log directory. Checking backup.");
 
-                    DirectoryInfo backupDirectoryInfo = System.IO.Directory.CreateDirectory(Lookups.LogBackupFileLocation);
+                    DirectoryInfo backupDirectoryInfo = Directory.CreateDirectory(Lookups.LogBackupFileLocation);
 
                     if (backupDirectoryInfo is null)
                     {
@@ -113,6 +112,8 @@ namespace AutomatedFFmpegServer
                 $"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}",
                 $"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}"
             };
+            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) configLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath}");
+            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath)) configLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath}");
             logger.LogInfo(configLog, LOG_THREAD_NAME);
 
             // CHECK FOR FFMPEG AND LOG VERSION

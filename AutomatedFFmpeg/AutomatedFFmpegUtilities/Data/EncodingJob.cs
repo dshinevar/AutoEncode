@@ -15,29 +15,39 @@ namespace AutomatedFFmpegUtilities.Data
         /// <param name="sourceFullPath">Full path of the source file.</param>
         /// <param name="destinationFullPath">Full path of the expected destination file.</param>
         /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
-        /// <param name="plexEnabled">Is Plex functionality enabled; Determines PostProcessingFlags override</param>
-        public EncodingJob(int jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings, bool plexEnabled)
+        public EncodingJob(int jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
         {
-            JobId = jobId;
+            Id = jobId;
             SourceFullPath = sourceFullPath;
             DestinationFullPath = destinationFullPath;
             PostProcessingSettings = postProcessingSettings;
-            SetPostProcessingFlags(plexEnabled);
+            SetPostProcessingFlags();
         }
 
-        public int JobId { get; set; } = 0;
+        /// <summary>Unique job identifier </summary>
+        public int Id { get; } = 0;
+        /// <summary>Name of job (FileName without extension) </summary>
         public string Name => Path.GetFileNameWithoutExtension(FileName);
+        /// <summary>FileName of Job </summary>
         public string FileName => Path.GetFileName(SourceFullPath);
-        public string SourceFullPath { get; set; } = string.Empty;
-        public string DestinationFullPath { get; set; } = string.Empty;
+        /// <summary>Full Path of the job's Source File </summary>
+        public string SourceFullPath { get; private set; } = string.Empty;
+        /// <summary>Full Path of the job's expected Destination File </summary>
+        public string DestinationFullPath { get; private set; } = string.Empty;
 
         #region Status
+        /// <summary>Overall Status of the Job </summary>
         public EncodingJobStatus Status { get; set; } = EncodingJobStatus.NEW;
-        public bool Error { get; set; } = false;
-        public string LastErrorMessage { get; set; } = string.Empty;
+        /// <summary>Flag showing if a job is in error </summary>
+        public bool Error { get; private set; } = false;
+        /// <summary>Error message from when a job was last marked in error. </summary>
+        public string LastErrorMessage { get; private set; } = string.Empty;
+        /// <summary> Flag showing if a job is paused </summary>
         public bool Paused { get; set; } = false;
+        /// <summary> Flag showing if a job is cancelled </summary>
         public bool Cancelled { get; set; } = false;
         private int _encodingProgress = 0;
+        /// <summary>Encoding Progress Percentage </summary>
         public int EncodingProgress
         {
             get => _encodingProgress;
@@ -48,9 +58,14 @@ namespace AutomatedFFmpegUtilities.Data
                 else _encodingProgress = value;
             }
         }
-        public DateTime? CompletedEncodingDateTime { get; set; } = null;
-        public DateTime? CompletedPostProcessingTime { get; set; } = null;
-        public DateTime? ErrorTime { get; set; } = null;
+        /// <summary>Amount of time spent encoding. </summary>
+        public TimeSpan? ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
+        /// <summary> DateTime when encoding was completed </summary>
+        public DateTime? CompletedEncodingDateTime { get; private set; } = null;
+        /// <summary> DateTime when postprocessing was completed </summary>
+        public DateTime? CompletedPostProcessingTime { get; private set; } = null;
+        /// <summary> DateTime when job was errored </summary>
+        public DateTime? ErrorTime { get; private set; } = null;
         #endregion Status
 
         #region Processing Data
@@ -67,50 +82,79 @@ namespace AutomatedFFmpegUtilities.Data
         #endregion Processing Data
 
         #region Public Functions
-        public override string ToString() => $"({JobId}) {Name}";
+        public override string ToString() => $"(JobID: {Id}) {Name}";
+        /// <summary>Marks the job as completed encoding </summary>
+        /// <param name="timeCompleted"></param>
+        public void CompleteEncoding(TimeSpan timeElapsed)
+        {
+            Status = EncodingJobStatus.ENCODED;
+            CompletedEncodingDateTime = DateTime.Now;
+            ElapsedEncodingTime = timeElapsed;
+            EncodingProgress = 100;
+        }
+        /// <summary> Resets encoding status and progress </summary>
+        public void ResetEncoding()
+        {
+            EncodingProgress = 0;
+            CompletedEncodingDateTime = null;
+            ElapsedEncodingTime = TimeSpan.Zero;
+            Status = EncodingJobStatus.BUILT;
+        }
+        /// <summary>Marks the job as completed post processing </summary>
+        /// <param name="timeCompleted"></param>
+        public void CompletePostProcessing()
+        {
+            Status = EncodingJobStatus.POST_PROCESSED;
+            CompletedPostProcessingTime = DateTime.Now;
+        }
+        /// <summary>Sets the given PostProcessingFlag for the job </summary>
+        /// <param name="flag"><see cref="PostProcessingFlags"/></param>
         public void SetPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags |= flag;
+        /// <summary>Clears the job of the given PostProcessingFlag </summary>
+        /// <param name="flag"><see cref="PostProcessingFlags"/></param>
         public void ClearPostProcessingFlag(PostProcessingFlags flag) => PostProcessingFlags &= ~flag;
+        /// <summary>Clears the job of error and wipes error message. </summary>
         public void ClearError()
         {
             Error = false;
             LastErrorMessage = string.Empty;
             ErrorTime = null;
         }
+        /// <summary>Marks the job in error and saves the given error message; Resets Status </summary>
+        /// <param name="errorMsg"></param>
         public void SetError(string errorMsg)
         {
             Error = true;
             LastErrorMessage = errorMsg;
             ErrorTime = DateTime.Now;
-            if (Status.Equals(EncodingJobStatus.ENCODING)) EncodingProgress = 0;
-            ResetStatus();
-        }
 
-        public void ResetStatus()
-        {
             switch (Status)
             {
-                case EncodingJobStatus.BUILDING:
-                {
-                    Status = EncodingJobStatus.NEW;
-                    break;
-                }
                 case EncodingJobStatus.ENCODING:
                 {
-                    Status = EncodingJobStatus.BUILT;
+                    ResetEncoding();
                     break;
                 }
-                case EncodingJobStatus.POST_PROCESSING:
+                default:
                 {
-                    Status = EncodingJobStatus.ENCODED;
+                    ResetStatus();
                     break;
                 }
-                default: break;
+            }
+        }
+
+        /// <summary>Sets the <see cref="EncodingJobStatus"/> to the previous status (unless it's marked New)</summary>
+        public void ResetStatus()
+        {
+            if (Status > EncodingJobStatus.NEW)
+            {
+                Status -= 1;
             }
         }
         #endregion Public Functions
 
         #region Private Functions
-        private void SetPostProcessingFlags(bool plexEnabled)
+        private void SetPostProcessingFlags()
         {
             if (PostProcessingSettings is null)
             {
@@ -118,7 +162,7 @@ namespace AutomatedFFmpegUtilities.Data
                 return;
             }
 
-            if ((PostProcessingSettings.CopyFilePaths?.Any() ?? false) is true)
+            if ((PostProcessingSettings?.CopyFilePaths?.Any() ?? false) is true)
             {
                 SetPostProcessingFlag(PostProcessingFlags.Copy);
             }
@@ -127,23 +171,7 @@ namespace AutomatedFFmpegUtilities.Data
                 ClearPostProcessingFlag(PostProcessingFlags.Copy);
             }
 
-            if (plexEnabled is true)
-            {
-                if (string.IsNullOrWhiteSpace(PostProcessingSettings.PlexLibraryName) is false)
-                {
-                    SetPostProcessingFlag(PostProcessingFlags.PlexLibraryUpdate);
-                }
-                else
-                {
-                    ClearPostProcessingFlag(PostProcessingFlags.PlexLibraryUpdate);
-                }
-            }
-            else
-            {
-                ClearPostProcessingFlag(PostProcessingFlags.PlexLibraryUpdate);
-            }
-
-            if (PostProcessingSettings.DeleteSourceFile is true)
+            if ((PostProcessingSettings?.DeleteSourceFile ?? false) is true)
             {
                 SetPostProcessingFlag(PostProcessingFlags.DeleteSourceFile);
             }

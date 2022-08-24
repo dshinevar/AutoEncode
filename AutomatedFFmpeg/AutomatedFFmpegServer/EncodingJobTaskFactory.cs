@@ -244,6 +244,8 @@ namespace AutomatedFFmpegServer
                             return;
                         }
 
+                        job.ElapsedEncodingTime = stopwatch.Elapsed;
+
                         // Only check output every 50 events, don't need to do this frequently
                         if (count >= 50)
                         {
@@ -296,9 +298,7 @@ namespace AutomatedFFmpegServer
                 // SUCCESS
                 if (job.EncodingProgress >= 75)
                 {
-                    job.EncodingProgress = 100;
-                    job.CompletedEncodingDateTime = DateTime.Now;
-                    job.Status = EncodingJobStatus.ENCODED;
+                    job.CompleteEncoding(stopwatch.Elapsed);
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
                     if (job.SourceStreamData.VideoStream.IsDynamicHDR) File.Delete(((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPath);
                     logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
@@ -309,6 +309,7 @@ namespace AutomatedFFmpegServer
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     File.Delete(job.DestinationFullPath);
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
+                    job.ResetEncoding();
                 }
             }
             catch (Exception ex)
@@ -325,7 +326,7 @@ namespace AutomatedFFmpegServer
         /// <param name="job">The <see cref="EncodingJob"/> to be post-processed.</param>
         /// <param name="logger"><see cref="Logger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void EncodingJobPostProcessing(EncodingJob job, PlexSettings plexSettings, Logger logger, CancellationToken cancellationToken)
+        public static void EncodingJobPostProcessing(EncodingJob job, Logger logger, CancellationToken cancellationToken)
         {
             // Double-check to ensure we don't post-process a job that shouldn't be
             if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;
@@ -356,21 +357,6 @@ namespace AutomatedFFmpegServer
 
             if (CheckForCancellation(job, logger, cancellationToken)) return;
 
-            // UPDATE PLEX LIBRARY
-            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.PlexLibraryUpdate))
-            {
-                try
-                {
-                    // TODO: Create plex integration
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"IMPOSSIBLE: {ex.Message}");
-                }
-            }
-
-            if (CheckForCancellation(job, logger, cancellationToken)) return;
-
             // DELETE SOURCE FILE
             if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.DeleteSourceFile))
             {
@@ -388,8 +374,7 @@ namespace AutomatedFFmpegServer
                 }
             }
 
-            job.Status = EncodingJobStatus.POST_PROCESSED;
-            job.CompletedPostProcessingTime = DateTime.Now;
+            job.CompletePostProcessing();
             logger.LogInfo($"Successfully post-processed {job.Name} encoding job.");
         }
 

@@ -183,7 +183,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             // Only add encoding job is file is ready.
             if (CheckFileReady(sourceData.FullPath))
             {
-                int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath, Config.Plex?.Enabled ?? false);
+                int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
                 if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
             }
         }
