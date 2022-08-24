@@ -36,8 +36,6 @@ Directories:
         PostProcessing:
             # Other directories to copy encoded file to
             CopyFilePaths: ['\\Fake\Path1', '\\Path\Fake2']
-            # If tied to a plex server directory, tell plex to update the given library to find the file
-            PlexLibraryName: 'Movies'
             # Delete the source file when done encoding (occurs last in PostProcessing)
             DeleteSourceFile: False
 
@@ -47,6 +45,3 @@ Directories:
         Automated: False
         # Marking TVShowStructure True tells AFServer to look in each Show directory for seasons and then looks in the season folders for episodes
         TVShowStructure: True
-
-Plex:
-    Enabled: False

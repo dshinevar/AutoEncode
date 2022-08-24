@@ -91,7 +91,7 @@ namespace AutomatedFFmpegServer
                     if (jobToPostProcess is not null)
                     {
                         EncodingJobPostProcessingTask = Task.Factory.StartNew(()
-                            => EncodingJobTaskFactory.EncodingJobPostProcessing(jobToPostProcess, Config.Plex, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
+                            => EncodingJobTaskFactory.EncodingJobPostProcessing(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
                     }
                 }
 

@@ -46,20 +46,19 @@ namespace AutomatedFFmpegServer
         /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
         /// <param name="sourceDirectoryPath">Directory path of source</param>
         /// <param name="destinationDirectoryPath">Directory path of destination</param>
-        /// <param name="plexEnabled">Config override for PLEX post processing</param>
         /// <returns>The JobId of the newly created job; -1, otherwise.</returns>
-        public static int CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath, bool plexEnabled)
+        public static int CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
             int jobId = -1;
             if (!ExistsByFileName(videoSourceData.FileName))
             {
                 EncodingJob newJob = new(IdNumber, videoSourceData.FullPath,
                                             videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath), 
-                                            postProcessingSettings, plexEnabled);
+                                            postProcessingSettings);
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
-                    jobId = newJob.JobId;
+                    jobId = newJob.Id;
                 }
             }
 
@@ -93,7 +92,7 @@ namespace AutomatedFFmpegServer
         {
             lock (jobLock)
             {
-                return jobQueue.Exists(x => x.JobId == id);
+                return jobQueue.Exists(x => x.Id == id);
             }
         }
 
@@ -125,7 +124,7 @@ namespace AutomatedFFmpegServer
         /// <param name="jobId">Id of job to move</param>
         public static void MoveEncodingJobForward(int jobId)
         {
-            int jobIndex = jobQueue.FindIndex(x => x.JobId == jobId);
+            int jobIndex = jobQueue.FindIndex(x => x.Id == jobId);
             // Already at the front of the list or not found
             if (jobIndex == 0 || jobIndex == -1) return;
 
@@ -138,7 +137,7 @@ namespace AutomatedFFmpegServer
         /// <param name="jobId">Id of job to move</param>
         public static void MoveEncodingJobBack(int jobId)
         {
-            int jobIndex = jobQueue.FindIndex(x => x.JobId == jobId);
+            int jobIndex = jobQueue.FindIndex(x => x.Id == jobId);
 
             // Already at the back of the list or not found
             if (jobIndex == (jobQueue.Count - 1) || jobIndex == -1) return;
@@ -167,7 +166,7 @@ namespace AutomatedFFmpegServer
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
                     bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.Name);
+                    if (success) jobsRemoved.Add(job.ToString());
                 }
             }
 
@@ -180,7 +179,7 @@ namespace AutomatedFFmpegServer
                 if (ts.TotalHours >= hoursSinceCompleted)
                 {
                     bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.Name);
+                    if (success) jobsRemoved.Add(job.ToString());
                 }
             }
 
@@ -203,7 +202,7 @@ namespace AutomatedFFmpegServer
                 if (ts.TotalHours >= hoursSinceErrored)
                 {
                     bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.Name);
+                    if (success) jobsRemoved.Add(job.ToString());
                 }
             }
 
@@ -215,7 +214,7 @@ namespace AutomatedFFmpegServer
             string output = string.Empty;
             foreach (EncodingJob job in jobQueue)
             {
-                output += $"{job.JobId} - {job.FileName} ";
+                output += $"{job.Id} - {job.FileName} ";
             }
             return output;
         }

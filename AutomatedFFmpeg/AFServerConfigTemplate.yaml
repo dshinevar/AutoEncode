@@ -25,7 +25,6 @@ Directories:
         TVShowStructure: False
         PostProcessing:
             CopyFilePaths: ['\\Fake\Path1', '\\Path\Fake2']
-            PlexLibraryName: 'Movies'
             DeleteSourceFile: False
 
     TV Shows:
@@ -33,6 +32,3 @@ Directories:
         Destination: '\\Source\Path\TV Shows (Encoded)'
         Automated: False
         TVShowStructure: True
-
-Plex:
-    Enabled: False

@@ -15,8 +15,6 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public List<string> CopyFilePaths { get; set; }
 
-        public string PlexLibraryName { get; set; }
-
         public bool DeleteSourceFile { get; set; }
     }
 }
