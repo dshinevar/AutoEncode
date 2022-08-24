@@ -150,7 +150,7 @@ namespace AutomatedFFmpegServer
 
         /// <summary> Clears completed jobs </summary>
         /// <param name="hoursSinceCompleted">The number of hours a job needs to have been marked completed before removal.</param>
-        /// <returns>A <see cref="IList{T}"/> of (int, strings) tuples (ID, Name) of the removed jobs.</returns>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearCompletedJobs(int hoursSinceCompleted)
         {
             IList<string> jobsRemoved = new List<string>();
@@ -188,7 +188,7 @@ namespace AutomatedFFmpegServer
 
         /// <summary> Clears errored jobs </summary>
         /// <param name="hoursSinceErrored">The number of hours a job needs to have been marked in error before removal.</param>
-        /// <returns>A <see cref="IList{T}"/> of (int, strings) tuples (ID, Name) of the removed jobs.</returns>
+        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
         public static IList<string> ClearErroredJobs(int hoursSinceErrored)
         {
             IList<string> jobsRemoved = new List<string>();
