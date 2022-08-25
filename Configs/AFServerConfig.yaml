@@ -18,6 +18,8 @@ ServerSettings:
 
 # Settings that apply to all jobs
 GlobalJobSettings:
+    # Maximum number of jobs allowed in the queue; Will not even check for jobs if at max
+    MaxNumberOfJobsInQueue: 20
     # Number of hours a job will sit completed before removed from the queue
     HoursCompletedUntilRemoval: 1
     # Number of hours a job will sit in error before removed from the queue
