@@ -25,27 +25,32 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
                     bool bFoundEncodingJob = false;
-                    BuildSourceFiles(SearchDirectories);
 
-                    // Add encoding jobs for automated search directories and files not encoded
-                    foreach (KeyValuePair<string, List<VideoSourceData>> entry in MovieSourceFiles)
+                    // Don't do anything if the queue is full
+                    if (EncodingJobQueue.Count < Config.GlobalJobSettings.MaxNumberOfJobsInQueue)
                     {
-                        if (SearchDirectories[entry.Key].Automated is true)
+                        BuildSourceFiles(SearchDirectories);
+
+                        // Add encoding jobs for automated search directories and files not encoded
+                        foreach (KeyValuePair<string, List<VideoSourceData>> entry in MovieSourceFiles)
                         {
-                            List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                            bFoundEncodingJob = moviesToEncode.Any();
-                            moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            if (SearchDirectories[entry.Key].Automated is true)
+                            {
+                                List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
+                                bFoundEncodingJob = moviesToEncode.Any();
+                                moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            }
+
                         }
-
-                    }
-                    foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
-                    {
-                        if (SearchDirectories[entry.Key].Automated is true)
+                        foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
                         {
-                            List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
-                                .Where(episode => episode.Encoded is false).ToList();
-                            bFoundEncodingJob = episodesToEncode.Any();
-                            episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            if (SearchDirectories[entry.Key].Automated is true)
+                            {
+                                List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
+                                    .Where(episode => episode.Encoded is false).ToList();
+                                bFoundEncodingJob = episodesToEncode.Any();
+                                episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                            }
                         }
                     }
 
@@ -180,11 +185,15 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
-            // Only add encoding job is file is ready.
-            if (CheckFileReady(sourceData.FullPath))
+            // Don't create encoding job if we are at max count
+            if (EncodingJobQueue.Count < Config.GlobalJobSettings.MaxNumberOfJobsInQueue)
             {
-                int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
-                if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                // Only add encoding job is file is ready.
+                if (CheckFileReady(sourceData.FullPath))
+                {
+                    int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
+                    if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                }
             }
         }
 

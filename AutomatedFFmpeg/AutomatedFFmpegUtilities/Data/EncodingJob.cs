@@ -73,6 +73,8 @@ namespace AutomatedFFmpegUtilities.Data
         public SourceStreamData SourceStreamData { get; set; }
         /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         public EncodingInstructions EncodingInstructions { get; set; }
+        /// <summary>Determines if the job needs PostProcessing</summary>
+        public bool NeedsPostProcessing => !PostProcessingFlags.Equals(PostProcessingFlags.None) && PostProcessingSettings is not null;
         /// <summary>Marks what PostProcessing functions should be done to this job. </summary>
         public PostProcessingFlags PostProcessingFlags { get; private set; } = PostProcessingFlags.None;
         /// <summary>Settings for PostProcessing; Initially copied over from AFServerConfig file. </summary>

@@ -23,6 +23,8 @@ namespace AutomatedFFmpegServer
 
         public static bool Any() => jobQueue.Any();
 
+        public static int Count => jobQueue.Count;
+
         /// <summary>Gets current list of encoding jobs. </summary>
         /// <returns>EncodingJob list</returns>
         public static List<EncodingJob> GetEncodingJobs()
@@ -115,7 +117,7 @@ namespace AutomatedFFmpegServer
             {
                 return jobQueue.Find(x => x.Status.Equals(EncodingJobStatus.ENCODED) &&
                                             x.CompletedEncodingDateTime.HasValue &&
-                                            !x.PostProcessingFlags.Equals(PostProcessingFlags.None) &&
+                                            x.NeedsPostProcessing &&
                                             (x.Paused is false) && (x.Error is false));
             }
         }
