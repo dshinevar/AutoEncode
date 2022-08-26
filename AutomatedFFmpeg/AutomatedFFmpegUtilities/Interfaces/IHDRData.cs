@@ -1,10 +1,11 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
+using System.Collections.Generic;
 
 namespace AutomatedFFmpegUtilities.Interfaces
 {
     public interface IHDRData
     {
-        HDRType HDRType { get; }
+        HDRFlags HDRFlags { get; }
         string Red_X { get; set; }
         string Red_Y { get; set; }
         string Green_X { get; set; }
@@ -20,6 +21,6 @@ namespace AutomatedFFmpegUtilities.Interfaces
 
     public interface IDynamicHDRData : IHDRData
     {
-        string MetadataFullPath { get; set; }
+        Dictionary<HDRFlags, string> MetadataFullPaths { get; set; }
     }
 }

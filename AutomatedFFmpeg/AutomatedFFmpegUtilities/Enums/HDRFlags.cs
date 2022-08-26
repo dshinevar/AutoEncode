@@ -1,8 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AutomatedFFmpegUtilities.Enums
 {
-    public enum HDRType
+    [Flags]
+    public enum HDRFlags
     {
         [Display(Name = "None", Description = "No HDR", ShortName = "None")]
         NONE = 0,
@@ -11,6 +13,6 @@ namespace AutomatedFFmpegUtilities.Enums
         [Display(Name = "HDR10+", Description = "HDR10+", ShortName = "HDR10+")]
         HDR10PLUS = 2,
         [Display(Name = "Dolby Vision", Description = "Dolby Vision", ShortName = "DV")]
-        DOLBY_VISION = 3
+        DOLBY_VISION = 4
     }
 }

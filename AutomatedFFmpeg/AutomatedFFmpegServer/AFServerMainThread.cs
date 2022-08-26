@@ -12,6 +12,7 @@ namespace AutomatedFFmpegServer
 {
     public partial class AFServerMainThread
     {
+        private string ThreadName => "MainThread";
         private Task EncodingJobBuilderTask { get; set; }
         private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; } = new CancellationTokenSource();
 
@@ -72,6 +73,7 @@ namespace AutomatedFFmpegServer
             EncodingJobFinderThread?.Stop();
             EncodingJobBuilderCancellationToken.Cancel();
             EncodingCancellationToken.Cancel();
+            EncodingJobPostProcessingCancellationToken.Cancel();
 
             // Stop socket and timers
             ServerSocket.Disconnect(false);
@@ -90,6 +92,7 @@ namespace AutomatedFFmpegServer
             EncodingJobShutdown.WaitOne();
             EncodingJobBuilderTask?.Wait();
             EncodingTask?.Wait();
+            EncodingJobPostProcessingTask?.Wait();
             ShutdownMRE.Set();
         }
         #endregion START/SHUTDOWN FUNCTIONS

@@ -119,7 +119,7 @@ namespace AutomatedFFmpegServer
             {
                 List<string> jobsRemovedLog = new() { "Completed Jobs Removed" };
                 jobsRemovedLog.AddRange(jobsRemoved);
-                Logger.LogInfo(jobsRemovedLog);
+                Logger.LogInfo(jobsRemovedLog, ThreadName);
             }
         }
 
@@ -130,7 +130,7 @@ namespace AutomatedFFmpegServer
             {
                 List<string> jobsRemovedLog = new() { "Errored Jobs Removed" };
                 jobsRemovedLog.AddRange(jobsRemoved);
-                Logger.LogInfo(jobsRemovedLog);
+                Logger.LogInfo(jobsRemovedLog, ThreadName);
             }
         }
         #endregion Process Functions
