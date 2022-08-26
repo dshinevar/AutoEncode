@@ -1,5 +1,6 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AutomatedFFmpegUtilities.Data
 {
@@ -23,9 +24,9 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public VideoEncoder VideoEncoder { get; set; } = VideoEncoder.UNKNOWN;
         public bool Deinterlace { get; set; }
-        public HDRType HDRType { get; set; }
-        public bool HasHDR => !HDRType.Equals(HDRType.NONE);
-        public string DynamicHDRMetadataFullPath { get; set; }
+        public HDRFlags HDRFlags { get; set; }
+        public bool HasHDR => !HDRFlags.Equals(HDRFlags.NONE) && (DynamicHDRMetadataFullPaths?.Any() ?? false);
+        public Dictionary<HDRFlags, string> DynamicHDRMetadataFullPaths { get; set; }
         public int BFrames { get; set; }
         public int CRF { get; set; }
         public string PixelFormat { get; set; }

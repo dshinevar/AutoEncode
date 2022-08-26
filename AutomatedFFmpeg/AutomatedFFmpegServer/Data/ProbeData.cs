@@ -235,27 +235,31 @@ namespace AutomatedFFmpegServer.Data
                         // Has HDR; Otherwise, we can't do HDR so don't do anything more
                         if (masteringDisplayMetadata is not null && contentLightLevelMetadata is not null)
                         {
-                            IHDRData hdrData;
+                            IHDRData hdrData = null;
+                            HDRFlags hdrFlags = HDRFlags.HDR10;
                             // Check if HDR10+ or DolbyVision
                             if (frame.side_data_list.Any(x => x.side_data_type.Contains("Dolby Vision")))
                             {
-                                hdrData = new DynamicHDRData()
-                                {
-                                    HDRType = HDRType.DOLBY_VISION
-                                };
+                                hdrFlags |= HDRFlags.DOLBY_VISION;
                             }
-                            else if (frame.side_data_list.Any(x => x.side_data_type.Contains("HDR Dynamic Metadata") || x.side_data_type.Contains("HDR10+")))
+
+                            if (frame.side_data_list.Any(x => x.side_data_type.Contains("HDR Dynamic Metadata") || x.side_data_type.Contains("HDR10+")))
+                            {
+                                hdrFlags |= HDRFlags.HDR10PLUS;
+                            }
+
+                            if (hdrFlags.HasFlag(HDRFlags.DOLBY_VISION) || hdrFlags.HasFlag(HDRFlags.HDR10PLUS))
                             {
                                 hdrData = new DynamicHDRData()
                                 {
-                                    HDRType = HDRType.HDR10PLUS
+                                    HDRFlags = hdrFlags
                                 };
                             }
                             else
                             {
                                 hdrData = new HDR10Data()
                                 {
-                                    HDRType = HDRType.HDR10
+                                    HDRFlags = hdrFlags
                                 };
                             }
 
