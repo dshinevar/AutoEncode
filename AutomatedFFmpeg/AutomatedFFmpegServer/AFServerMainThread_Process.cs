@@ -6,6 +6,7 @@ using AutomatedFFmpegUtilities.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutomatedFFmpegServer
@@ -69,6 +70,7 @@ namespace AutomatedFFmpegServer
                     EncodingJob jobToBuild = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
                     if (jobToBuild is not null)
                     {
+                        EncodingCancellationToken = new CancellationTokenSource();
                         EncodingJobBuilderTask = Task.Factory.StartNew(()
                             => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Config.ServerSettings.HDR10PlusExtractorFullPath, Config.ServerSettings.DolbyVisionExtractorFullPath, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
@@ -80,6 +82,7 @@ namespace AutomatedFFmpegServer
                     EncodingJob jobToEncode = EncodingJobQueue.GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
                     if (jobToEncode is not null)
                     {
+                        EncodingJobBuilderCancellationToken = new CancellationTokenSource();
                         EncodingTask = Task.Factory.StartNew(()
                             => EncodingJobTaskFactory.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
@@ -90,6 +93,7 @@ namespace AutomatedFFmpegServer
                     EncodingJob jobToPostProcess = EncodingJobQueue.GetNextEncodingJobForPostProcessing();
                     if (jobToPostProcess is not null)
                     {
+                        EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
                         EncodingJobPostProcessingTask = Task.Factory.StartNew(()
                             => EncodingJobTaskFactory.EncodingJobPostProcessing(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
                     }
