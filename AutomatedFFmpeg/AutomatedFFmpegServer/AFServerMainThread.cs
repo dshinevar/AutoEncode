@@ -71,9 +71,9 @@ namespace AutomatedFFmpegServer
 
             // Stop threads
             EncodingJobFinderThread?.Stop();
-            EncodingJobBuilderCancellationToken.Cancel();
-            EncodingCancellationToken.Cancel();
-            EncodingJobPostProcessingCancellationToken.Cancel();
+            EncodingJobBuilderCancellationToken?.Cancel();
+            EncodingCancellationToken?.Cancel();
+            EncodingJobPostProcessingCancellationToken?.Cancel();
 
             // Stop socket and timers
             ServerSocket.Disconnect(false);
