@@ -283,7 +283,7 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                string msg = $"Error encoding {job.FileName}.";
+                string msg = $"Error encoding {job}.";
                 logger.LogException(ex, msg);
                 Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
@@ -294,7 +294,7 @@ namespace AutomatedFFmpegServer
             try
             {
                 // SUCCESS
-                if (job.EncodingProgress >= 75)
+                if (job.EncodingProgress >= 75 && job.Error is false)
                 {
                     job.CompleteEncoding(stopwatch.Elapsed);
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
@@ -303,15 +303,25 @@ namespace AutomatedFFmpegServer
                         // Delete all possible HDRMetadata files
                         ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
-                    logger.LogInfo($"Successfully encoded {job.Name}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
+                    logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {stopwatch.Elapsed:hh\\:mm\\:ss}");
                 }
-                // CANCELLED OR DIDN'T FINISH 
-                else if (job.Error is false && (job.EncodingProgress < 75 || cancellationToken.IsCancellationRequested is true))
+                // CANCELLED
+                else if (cancellationToken.IsCancellationRequested is true)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     File.Delete(job.DestinationFullPath);
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
+                    logger.LogError($"{job} was cancelled.");
+                }
+                // DIDN'T FINISH 
+                else if (job.Error is false && job.EncodingProgress < 75)
+                {
+                    // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
+                    File.Delete(job.DestinationFullPath);
+                    File.Delete(Lookups.PreviouslyEncodingTempFile);
+                    job.ResetEncoding();
+                    logger.LogError($"{job} encoding job ended prematurely.");
                 }
                 // JOB ERRORED
                 else if (job.Error is true)
@@ -319,6 +329,7 @@ namespace AutomatedFFmpegServer
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     File.Delete(job.DestinationFullPath);
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
+                    // Log occurred in catch
                 }
             }
             catch (Exception ex)
@@ -792,7 +803,7 @@ namespace AutomatedFFmpegServer
                         videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string metadataPath);
                         if (!string.IsNullOrWhiteSpace(metadataPath))
                         {
-                            sbArguments.Append($":dolby-vision-rpu={metadataPath}:dolby-vision-profile=8.1");
+                            sbArguments.Append($":dolby-vision-rpu='{metadataPath}':dolby-vision-profile=8.1");
                         }
                     }
                 }

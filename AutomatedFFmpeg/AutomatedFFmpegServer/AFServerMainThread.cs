@@ -12,15 +12,15 @@ namespace AutomatedFFmpegServer
 {
     public partial class AFServerMainThread
     {
-        private string ThreadName => "MainThread";
+        private static string ThreadName => "MainThread";
         private Task EncodingJobBuilderTask { get; set; }
-        private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; } = new CancellationTokenSource();
+        private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; }
 
         private Task EncodingTask { get; set; }
-        private CancellationTokenSource EncodingCancellationToken { get; set; } = new CancellationTokenSource();
+        private CancellationTokenSource EncodingCancellationToken { get; set; }
 
         private Task EncodingJobPostProcessingTask { get; set; }
-        private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; } = new CancellationTokenSource();
+        private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; }
 
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private ManualResetEvent EncodingJobShutdown { get; set; } = new ManualResetEvent(false);
