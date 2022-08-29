@@ -145,6 +145,9 @@ if [ "$file_missing" = true ]; then
   echo "!! Output files missing. Will not copy to /usr/local/bin. Check log file at $LOG !!"
 else
   echo -e "######## Copying files to /usr/local/bin"
-  sudo cp ~/bin/* /usr/local/bin/
+  for file in ${output_files[*]}
+  do
+    sudo cp $file /usr/local/bin
+  done
 fi
 cd $PWD
