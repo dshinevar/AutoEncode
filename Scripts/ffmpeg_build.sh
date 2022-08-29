@@ -130,7 +130,7 @@ get_libopus > /dev/null 2>> "$LOG"
 echo -e "#######\t Downloading/Building ffmpeg" | tee -a "$LOG"
 build_ffmpeg > /dev/null 2>> "$LOG"
 
-output_files=("$HOME/bin/ffmpeg" "$HOME/bin/ffprobe" "$HOME/bin/lame" "$HOME/bin/x264")
+output_files=("$HOME/bin/ffmpeg" "$HOME/bin/ffprobe" "$HOME/bin/lame" "$HOME/bin/x264" "$HOME/ffmpeg_build/bin/x265")
 file_missing=false
 
 for file in ${output_files[*]}
