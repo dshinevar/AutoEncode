@@ -745,7 +745,7 @@ namespace AutomatedFFmpegServer
         }
 
         private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, 
-            string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265Directory)
+            string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265FullPath)
         {
             const string format = "{0} ";
 
@@ -760,7 +760,7 @@ namespace AutomatedFFmpegServer
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
             sbVideo.AppendFormat(format, $"-c \"{Path.Combine(ffmpegDirectory, "ffmpeg")} -i '{sourceFullPath}' -f yuv4mpegpipe -strict -1 -pix_fmt yuv420p10le - |")
-            .AppendFormat(format, $"{Path.Combine(x265Directory, "x265")} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
+            .AppendFormat(format, $"{x265FullPath} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
             .AppendFormat(format, $"--repeat-headers")
             .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
             .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix bt2020nc --colorprim bt2020 --transfer smpte2084")
