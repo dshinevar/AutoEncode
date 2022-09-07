@@ -171,7 +171,7 @@ namespace AutomatedFFmpegServer
             // STEP 4: Decide Encoding Options
             try
             {
-                job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.FileName);
+                job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
             }
             catch (Exception ex)
             {
