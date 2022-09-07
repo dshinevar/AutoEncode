@@ -60,7 +60,10 @@ namespace AutomatedFFmpegServer
                         }
                         job.ElapsedEncodingTime = stopwatch.Elapsed;
 
-                        HandleEncodingOutput(e.Data, job, ref count);
+                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                        {
+                            HandleEncodingOutput(e.Data, job, ref count);
+                        }
                     }; 
                     ffmpegProcess.Exited += (sender, e) =>
                     {
@@ -187,7 +190,10 @@ namespace AutomatedFFmpegServer
 
                     job.ElapsedEncodingTime = stopwatch.Elapsed;
 
-                    HandleEncodingOutput(e.Data, job, ref count);
+                    if (string.IsNullOrWhiteSpace(e.Data) is false)
+                    {
+                        HandleEncodingOutput(e.Data, job, ref count);
+                    }
                 }; 
                 videoEncodeProcess.Exited += (sender, e) =>
                 {
@@ -196,9 +202,6 @@ namespace AutomatedFFmpegServer
                     {
                         encodingToken.Cancel();
                         File.Delete(job.EncodingInstructions.EncodedVideoFullPath);
-                        //string msg = $"Video encoding process for {job.Name} ended unsuccessfully.";
-                        //job.SetError(msg);
-                        //logger.LogError(msg);
                     }
                     else if (File.Exists(job.EncodingInstructions.EncodedVideoFullPath) is false)
                     {
@@ -439,12 +442,12 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        private static void HandleEncodingOutput(string? data, EncodingJob job, ref int count)
+        private static void HandleEncodingOutput(string data, EncodingJob job, ref int count)
         {
             // Only check output every 50 events, don't need to do this frequently
             if (count >= 50)
             {
-                if (string.IsNullOrWhiteSpace(data) is false && data.Contains("time="))
+                if (data.Contains("time="))
                 {
                     string line = data;
                     string time = line.Substring(line.IndexOf("time="), 13);
