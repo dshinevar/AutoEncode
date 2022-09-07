@@ -320,7 +320,7 @@ namespace AutomatedFFmpegServer
                         if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
                     };
                     x265Process.Start();
-                    x265Process.BeginOutputReadLine();
+                    x265Process.BeginErrorReadLine();
                     x265Process.WaitForExit();
                 }
 
