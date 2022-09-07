@@ -309,13 +309,13 @@ namespace AutomatedFFmpegServer
                     FileName = x265FullPath,
                     Arguments = "--version",
                     UseShellExecute = false,
-                    RedirectStandardOutput = true
+                    RedirectStandardError = true
                 };
 
                 using (Process x265Process = new())
                 {
                     x265Process.StartInfo = startInfo;
-                    x265Process.OutputDataReceived += (sender, e) =>
+                    x265Process.ErrorDataReceived += (sender, e) =>
                     {
                         if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
                     };
