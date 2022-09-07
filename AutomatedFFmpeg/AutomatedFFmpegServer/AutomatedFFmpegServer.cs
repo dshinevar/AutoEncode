@@ -296,7 +296,7 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        static List<string> Getx265Version(string x265Directory)
+        static List<string> Getx265Version(string x265FullPath)
         {
             try
             {
@@ -306,7 +306,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = "mkvmerge",
+                    FileName = x265FullPath,
                     Arguments = "--version",
                     UseShellExecute = false,
                     RedirectStandardOutput = true
