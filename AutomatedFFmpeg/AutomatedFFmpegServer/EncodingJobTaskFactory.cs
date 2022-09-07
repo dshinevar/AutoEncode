@@ -200,6 +200,7 @@ namespace AutomatedFFmpegServer
                     }
                     else
                     {
+                        logger.LogInfo(videoEncodingCommandArguments); // TEMP
                         job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
                         {
                             VideoEncodingCommandArguments = videoEncodingCommandArguments,
@@ -758,23 +759,23 @@ namespace AutomatedFFmpegServer
             IHDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
-            sbVideo.AppendFormat(format, $"-c {Path.Combine(ffmpegDirectory, "ffmpeg")} -i \"{sourceFullPath}\" -f yuv4mpegpipe -strict -1 -pix_fmt yuv420p10le - |")
+            sbVideo.AppendFormat(format, $"-c \"{Path.Combine(ffmpegDirectory, "ffmpeg")} -i '{sourceFullPath}' -f yuv4mpegpipe -strict -1 -pix_fmt yuv420p10le - |")
             .AppendFormat(format, $"{Path.Combine(x265Directory, "x265")} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
             .AppendFormat(format, $"--repeat-headers")
-            .AppendFormat(format, $"--master-display \"G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})\"")
-            .AppendFormat(format, $"--max-cll \"{streamData.VideoStream.HDRData.MaxCLL}\" --colormatrix bt2020nc --colorprim bt2020 --transfer smpte2084")
-            .AppendFormat(format, $"--dolby-vision-rpu \"{dolbyVisionMetadataPath}\" --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-bufsize 140000");
+            .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
+            .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix bt2020nc --colorprim bt2020 --transfer smpte2084")
+            .AppendFormat(format, $"--dolby-vision-rpu '{dolbyVisionMetadataPath}' --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-bufsize 140000");
 
             if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
             {
                 videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.HDR10PLUS, out string hdr10PlusMetadataPath);
                 if (!string.IsNullOrWhiteSpace(hdr10PlusMetadataPath))
                 {
-                    sbVideo.Append($"--dhdr10-info \"{hdr10PlusMetadataPath}\"");
+                    sbVideo.Append($"--dhdr10-info '{hdr10PlusMetadataPath}'");
                 }
             }
 
-            sbVideo.Append($"\"{instructions.EncodedVideoFullPath}\"");
+            sbVideo.Append($"'{instructions.EncodedVideoFullPath}'\"");
             arguments.videoEncodingCommandArguments = sbVideo.ToString();
 
             // Audio/Sub extraction/encoding
