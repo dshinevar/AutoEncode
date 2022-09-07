@@ -764,7 +764,7 @@ namespace AutomatedFFmpegServer
             .AppendFormat(format, $"--repeat-headers")
             .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
             .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix bt2020nc --colorprim bt2020 --transfer smpte2084")
-            .AppendFormat(format, $"--dolby-vision-rpu '{dolbyVisionMetadataPath}' --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-bufsize 140000");
+            .AppendFormat(format, $"--dolby-vision-rpu '{dolbyVisionMetadataPath}' --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-maxrate 140000");
 
             if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
             {
