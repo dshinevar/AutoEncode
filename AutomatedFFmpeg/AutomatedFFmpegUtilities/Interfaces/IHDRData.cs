@@ -6,21 +6,21 @@ namespace AutomatedFFmpegUtilities.Interfaces
     public interface IHDRData
     {
         HDRFlags HDRFlags { get; }
-        string Red_X { get; set; }
-        string Red_Y { get; set; }
-        string Green_X { get; set; }
-        string Green_Y { get; set; }
-        string Blue_X { get; set; }
-        string Blue_Y { get; set; }
-        string WhitePoint_X { get; set; }
-        string WhitePoint_Y { get; set; }
-        string MinLuminance { get; set; }
-        string MaxLuminance { get; set; }
-        string MaxCLL { get; set; }
+        string Red_X { get; }
+        string Red_Y { get; }
+        string Green_X { get; }
+        string Green_Y { get; }
+        string Blue_X { get; }
+        string Blue_Y { get; }
+        string WhitePoint_X { get; }
+        string WhitePoint_Y { get; }
+        string MinLuminance { get; }
+        string MaxLuminance { get; }
+        string MaxCLL { get; }
     }
 
     public interface IDynamicHDRData : IHDRData
     {
-        Dictionary<HDRFlags, string> MetadataFullPaths { get; set; }
+        Dictionary<HDRFlags, string> MetadataFullPaths { get; }
     }
 }

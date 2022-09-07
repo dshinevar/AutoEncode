@@ -1,4 +1,5 @@
-﻿using AutomatedFFmpegUtilities.Config;
+﻿using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Logger;
 using System;
 using System.Collections.Generic;
@@ -20,9 +21,11 @@ namespace AutomatedFFmpegServer
         static void Main(string[] args)
         {
             AFServerMainThread mainThread = null;
-            AFServerConfig serverConfig = null;
+            AFServerConfig serverConfig = null; // As loaded from file
+            AFServerConfig serverState = null; // State after startup checks
             Logger logger = null;
             ManualResetEvent Shutdown = new(false);
+            List<string> startupLog = new();
 
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
 
@@ -35,6 +38,7 @@ namespace AutomatedFFmpegServer
                 var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
 
                 serverConfig = deserializer.Deserialize<AFServerConfig>(str);
+                serverState = serverConfig.DeepClone();
             }
             catch (Exception ex)
             {
@@ -102,55 +106,77 @@ namespace AutomatedFFmpegServer
                 Environment.Exit(-2);
             }
 
-            // GET AND LOG VERSION
-            Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            logger.LogInfo($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.", LOG_THREAD_NAME);
-            List<string> configLog = new()
-            {
-                "LOADED CONFIG VALUES",
-                $"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}",
-                $"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}",
-                $"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}"
-            };
-            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) configLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath}");
-            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath)) configLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath}");
-            logger.LogInfo(configLog, LOG_THREAD_NAME);
-
-            // CHECK FOR FFMPEG AND LOG VERSION
+            // CHECK FOR FFMPEG
+            List<string> ffmpegVersion = null;
             try
             {
-                List<string> ffmpegVersionLines = new();
-
-                ProcessStartInfo startInfo = new()
+                ffmpegVersion = GetFFmpegVersion(serverConfig.ServerSettings.FFmpegDirectory);
+                if (ffmpegVersion?.Any() is false)
                 {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = Path.Combine(serverConfig.ServerSettings.FFmpegDirectory, "ffmpeg"),
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                };
-
-                using (Process ffprobeProcess = new())
-                {
-                    ffprobeProcess.StartInfo = startInfo;
-                    ffprobeProcess.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
-                    };
-                    ffprobeProcess.Start();
-                    ffprobeProcess.BeginOutputReadLine();
-                    ffprobeProcess.WaitForExit();
+                    throw new Exception("No ffmpeg version returned.");
                 }
-
-                logger.LogInfo(ffmpegVersionLines, LOG_THREAD_NAME);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}");
-                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", threadName: LOG_THREAD_NAME);
+                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", LOG_THREAD_NAME);
                 Environment.Exit(-2);
             }
+
+            // DOLBY VISION: CHECK FOR MKVMERGE AND X265
+            string mkvmergeVersion = string.Empty;
+            List<string> x265Version = null;
+            if (serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled is true)
+            {
+                try
+                {
+                    mkvmergeVersion = GetMKVMergeVersion();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to find/call mkvmerge. DolbyVision disabled. Exception: {ex.Message}");
+                    logger.LogException(ex, "Failed to find/call mkvmerge. DolbyVision disabled.", LOG_THREAD_NAME);
+                }
+
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(serverConfig.ServerSettings.X265FullPath) is false)
+                    {
+                        x265Version = Getx265Version(serverConfig.ServerSettings.X265FullPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to find/call x265. DolbyVision disabled. Exception: {ex.Message}");
+                    logger.LogException(ex, "Failed to find/call x265. DolbyVision disabled.", LOG_THREAD_NAME);
+                }
+            }
+
+            bool dolbyVisionEnabled = serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled &&
+                                        !string.IsNullOrWhiteSpace(mkvmergeVersion) &&
+                                        x265Version?.Any() is true &&
+                                        !string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath);
+            serverState.GlobalJobSettings.DolbyVisionEncodingEnabled = dolbyVisionEnabled;
+
+            // GET AND LOG STARTUP AND VERSION
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            startupLog.Add($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.");
+            startupLog.Add("LOADED CONFIG VALUES");
+            startupLog.Add($"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}");
+            startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}");
+            startupLog.Add($"DOLBY VISION: {(dolbyVisionEnabled ? "ENABLED" : "DISABLED")}");
+
+            if (dolbyVisionEnabled)
+            {
+                startupLog.AddRange(x265Version);
+                startupLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath}");
+            }
+            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath}");
+            startupLog.Add($"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}");
+            startupLog.AddRange(ffmpegVersion);
+            startupLog.Add(mkvmergeVersion);
+
+            logger.LogInfo(startupLog, LOG_THREAD_NAME);
 
             // CHECK FOR TEMP FILE OF UNFINISHED ENCODING JOB AND DELETE
             try
@@ -174,7 +200,7 @@ namespace AutomatedFFmpegServer
                 logger.LogException(ex, "Failed to delete previously encoding file or temp file.", threadName: LOG_THREAD_NAME);
             }
 
-            mainThread = new AFServerMainThread(serverConfig, logger, Shutdown);
+            mainThread = new AFServerMainThread(serverState, serverConfig, logger, Shutdown);
             mainThread.Start();
 
             Shutdown.WaitOne();
@@ -190,6 +216,119 @@ namespace AutomatedFFmpegServer
             {
                 mainThread.Shutdown();
                 shutdownMRE.WaitOne();
+            }
+        }
+
+        /// <summary>Gets FFmpeg version/Checks to make sure FFmpeg is accessible </summary>
+        /// <param name="ffmpegDirectory">FFmpeg directory from config</param>
+        /// <returns>List of strings from version output (for logging)</returns>
+        static List<string> GetFFmpegVersion(string ffmpegDirectory)
+        {
+            try
+            {
+                List<string> ffmpegVersionLines = new();
+
+                ProcessStartInfo startInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = Path.Combine(ffmpegDirectory, "ffmpeg"),
+                    Arguments = "-version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+
+                using (Process ffprobeProcess = new())
+                {
+                    ffprobeProcess.StartInfo = startInfo;
+                    ffprobeProcess.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
+                    };
+                    ffprobeProcess.Start();
+                    ffprobeProcess.BeginOutputReadLine();
+                    ffprobeProcess.WaitForExit();
+                }
+
+                return ffmpegVersionLines;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>Gets mkvmerge version </summary>
+        /// <returns>mkvmerge version string</returns>
+        static string GetMKVMergeVersion()
+        {
+            try
+            {
+                string mkvMergeVersion = string.Empty;
+
+                ProcessStartInfo startInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = "mkvmerge",
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+
+                using (Process mkvMergeProcess = new())
+                {
+                    mkvMergeProcess.StartInfo = startInfo;
+                    mkvMergeProcess.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(e.Data)) mkvMergeVersion = e.Data; // Only expecting one line
+                    };
+                    mkvMergeProcess.Start();
+                    mkvMergeProcess.BeginOutputReadLine();
+                    mkvMergeProcess.WaitForExit();
+                }
+
+                return mkvMergeVersion;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        static List<string> Getx265Version(string x265Directory)
+        {
+            try
+            {
+                List<string> x265Version = new();
+
+                ProcessStartInfo startInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = "mkvmerge",
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+
+                using (Process x265Process = new())
+                {
+                    x265Process.StartInfo = startInfo;
+                    x265Process.OutputDataReceived += (sender, e) =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
+                    };
+                    x265Process.Start();
+                    x265Process.BeginOutputReadLine();
+                    x265Process.WaitForExit();
+                }
+
+                return x265Version;
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
     }

@@ -18,6 +18,11 @@ namespace AutomatedFFmpegUtilities.Data
         /// <para>The number of subtitle stream encoding instructions should match the number of subtitle streams in the output file.</para>
         /// </summary>
         public List<SubtitleStreamEncodingInstructions> SubtitleStreamEncodingInstructions { get; set; }
+
+        /// <summary>Used for DolbyVision only where the source file gets split </summary>
+        public string EncodedVideoFullPath { get; set; }
+        /// <summary>Used for DolbyVision only where the source file gets split </summary>
+        public string EncodedAudioSubsFullPath { get; set; }
     }
 
     public class VideoStreamEncodingInstructions
@@ -25,7 +30,9 @@ namespace AutomatedFFmpegUtilities.Data
         public VideoEncoder VideoEncoder { get; set; } = VideoEncoder.UNKNOWN;
         public bool Deinterlace { get; set; }
         public HDRFlags HDRFlags { get; set; }
-        public bool HasHDR => !HDRFlags.Equals(HDRFlags.NONE) && (DynamicHDRMetadataFullPaths?.Any() ?? false);
+        public bool HasHDR => !HDRFlags.Equals(HDRFlags.NONE);
+        public bool HasDynamicHDR => HasDolbyVision || (HDRFlags.HasFlag(HDRFlags.HDR10PLUS) && DynamicHDRMetadataFullPaths.ContainsKey(HDRFlags.HDR10PLUS));
+        public bool HasDolbyVision => HDRFlags.HasFlag(HDRFlags.DOLBY_VISION) && DynamicHDRMetadataFullPaths.ContainsKey(HDRFlags.DOLBY_VISION);
         public Dictionary<HDRFlags, string> DynamicHDRMetadataFullPaths { get; set; }
         public int BFrames { get; set; }
         public int CRF { get; set; }

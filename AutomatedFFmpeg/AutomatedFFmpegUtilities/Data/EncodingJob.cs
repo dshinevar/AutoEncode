@@ -1,4 +1,5 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
+using AutomatedFFmpegUtilities.Interfaces;
 using System;
 using System.IO;
 using System.Linq;
@@ -32,6 +33,8 @@ namespace AutomatedFFmpegUtilities.Data
         public string FileName => Path.GetFileName(SourceFullPath);
         /// <summary>Full Path of the job's Source File </summary>
         public string SourceFullPath { get; private set; } = string.Empty;
+        /// <summary>Directory of destination file full path </summary>
+        public string DestinationDirectory => Path.GetDirectoryName(DestinationFullPath);
         /// <summary>Full Path of the job's expected Destination File </summary>
         public string DestinationFullPath { get; private set; } = string.Empty;
 
@@ -80,7 +83,7 @@ namespace AutomatedFFmpegUtilities.Data
         /// <summary>Settings for PostProcessing; Initially copied over from AFServerConfig file. </summary>
         public PostProcessingSettings PostProcessingSettings { get; set; }
         /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
-        public string FFmpegEncodingCommandArguments { get; set; }
+        public IEncodingCommandArguments EncodingCommandArguments { get; set; }
         #endregion Processing Data
 
         #region Public Functions

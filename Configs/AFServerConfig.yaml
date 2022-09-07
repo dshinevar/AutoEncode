@@ -11,6 +11,7 @@ ServerSettings:
     # Currently built around using hdr10plus_tool and dovi_tool; Will need to install manually
     HDR10PlusExtractorFullPath: '\Dir\To\hdr10plus_tool'
     DolbyVisionExtractorFullPath: '\Dir\To\dovi_tool'
+    X265FullPath: '\Dir\To\X265'
     LoggerSettings:
         LogFileLocation: '\Fake\Path'
         MaxFileSizeInBytes: 4098
@@ -24,6 +25,8 @@ GlobalJobSettings:
     HoursCompletedUntilRemoval: 1
     # Number of hours a job will sit in error before removed from the queue
     HoursErroredUntilRemoval: 2
+    # Enables the preservation of DolbyVision data; Will disable if mkvmerge is not installed and x265 cannot be found
+    DolbyVisionEncodingEnabled: True
 
 # Directories AFServer will be aware of
 Directories:
