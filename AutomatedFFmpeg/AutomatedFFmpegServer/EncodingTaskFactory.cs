@@ -49,6 +49,7 @@ namespace AutomatedFFmpegServer
                 using (Process ffmpegProcess = new())
                 {
                     ffmpegProcess.StartInfo = startInfo;
+                    ffmpegProcess.EnableRaisingEvents = true;
                     ffmpegProcess.ErrorDataReceived += (sender, e) =>
                     {
                         Process proc = sender as Process;
@@ -176,7 +177,8 @@ namespace AutomatedFFmpegServer
 
                 videoEncodeProcess = new()
                 {
-                    StartInfo = videoEncodeStartInfo
+                    StartInfo = videoEncodeStartInfo,
+                    EnableRaisingEvents = true
                 };
                 videoEncodeProcess.ErrorDataReceived += (sender, e) =>
                 {
@@ -214,7 +216,6 @@ namespace AutomatedFFmpegServer
                     }
                 };
 
-                //File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
                 stopwatch.Start();
                 videoEncodeProcess.Start();
                 videoEncodeProcess.BeginErrorReadLine();
@@ -231,7 +232,8 @@ namespace AutomatedFFmpegServer
 
                 audioSubEncodeProcess = new()
                 {
-                    StartInfo = audioSubEncodeStartInfo
+                    StartInfo = audioSubEncodeStartInfo,
+                    EnableRaisingEvents = true
                 };
                 audioSubEncodeProcess.ErrorDataReceived += (sender, e) =>
                 {
@@ -262,15 +264,14 @@ namespace AutomatedFFmpegServer
                     }
                 };
                 audioSubEncodeProcess.Start();
+                audioSubEncodeProcess.WaitForExit();
+                audioSubEncodeProcess.Close();
 
                 videoEncodeProcess.WaitForExit();
                 stopwatch.Stop();
                 job.ElapsedEncodingTime = stopwatch.Elapsed;
-
-                audioSubEncodeProcess.WaitForExit();
-
                 videoEncodeProcess.Close();
-                audioSubEncodeProcess.Close();
+                
             }
             catch (Exception ex)
             {

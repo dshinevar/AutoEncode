@@ -200,7 +200,9 @@ namespace AutomatedFFmpegServer
                     }
                     else
                     {
-                        logger.LogInfo(videoEncodingCommandArguments); // TEMP
+                        logger.LogInfo(videoEncodingCommandArguments);
+                        logger.LogInfo(audioSubEncodingCommandArguments);
+                        logger.LogInfo(mergeCommandArguments);
                         job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
                         {
                             VideoEncodingCommandArguments = videoEncodingCommandArguments,
@@ -663,7 +665,7 @@ namespace AutomatedFFmpegServer
                 IHDRData hdr = streamData.VideoStream.HDRData;
                 sbArguments.AppendFormat(format, "-c:v libx265").AppendFormat(format, "-preset slow").AppendFormat(format, $"-crf {videoInstructions.CRF}");
                 if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
-                sbArguments.Append($"-x265-params \"bframes={videoInstructions.BFrames}:keyint=60:repeat-headers=1:")
+                sbArguments.Append($"-x265-params \"bframes={videoInstructions.BFrames}:keyint=120:repeat-headers=1:")
                     .Append($"colorprim={streamData.VideoStream.ColorPrimaries}:transfer={streamData.VideoStream.ColorTransfer}:colormatrix={streamData.VideoStream.ColorSpace}")
                     .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $":chromaloc={(int)streamData.VideoStream.ChromaLocation}")}");
 
@@ -750,20 +752,18 @@ namespace AutomatedFFmpegServer
             const string format = "{0} ";
 
             (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments) arguments = new();
-            StringBuilder sbVideo = new();
-            StringBuilder sbAudioSubs = new();
-            StringBuilder sbMerge = new();
 
             // Video extraction/encoding
+            StringBuilder sbVideo = new();
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
             IHDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
-            sbVideo.AppendFormat(format, $"-c \"{Path.Combine(ffmpegDirectory, "ffmpeg")} -i '{sourceFullPath}' -f yuv4mpegpipe -strict -1 -pix_fmt yuv420p10le - |")
+            sbVideo.AppendFormat(format, $"-c \"{Path.Combine(ffmpegDirectory, "ffmpeg")} -i '{sourceFullPath}' -an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
             .AppendFormat(format, $"{x265FullPath} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
-            .AppendFormat(format, $"--repeat-headers")
+            .AppendFormat(format, $"--repeat-headers --keyint 120")
             .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
-            .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix bt2020nc --colorprim bt2020 --transfer smpte2084")
+            .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix {streamData.VideoStream.ColorSpace} --colorprim {streamData.VideoStream.ColorPrimaries} --transfer {streamData.VideoStream.ColorTransfer}")
             .AppendFormat(format, $"--dolby-vision-rpu '{dolbyVisionMetadataPath}' --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-maxrate 140000");
 
             if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
@@ -779,6 +779,7 @@ namespace AutomatedFFmpegServer
             arguments.videoEncodingCommandArguments = sbVideo.ToString();
 
             // Audio/Sub extraction/encoding
+            StringBuilder sbAudioSubs = new();
             sbAudioSubs.AppendFormat(format, $"-i \"{sourceFullPath}\" -vn");
             foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
             {
@@ -832,6 +833,7 @@ namespace AutomatedFFmpegServer
             arguments.audioSubEncodingCommandArguments = sbAudioSubs.ToString();
 
             // Merging
+            StringBuilder sbMerge = new();
             sbMerge.AppendFormat(format, $"-o \"{destinationFullPath}\" --compression -1:none \"{instructions.EncodedVideoFullPath}\" --compression -1:none \"{instructions.EncodedAudioSubsFullPath}\"")
                 .Append($"--title \"{title}\"");
             arguments.mergeCommandArguments = sbMerge.ToString();
