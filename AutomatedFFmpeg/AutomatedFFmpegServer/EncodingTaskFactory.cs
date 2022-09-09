@@ -219,6 +219,9 @@ namespace AutomatedFFmpegServer
                 stopwatch.Start();
                 videoEncodeProcess.Start();
                 videoEncodeProcess.BeginErrorReadLine();
+                videoEncodeProcess.WaitForExit();
+                job.ElapsedEncodingTime = stopwatch.Elapsed;
+                videoEncodeProcess.Close();
 
                 ProcessStartInfo audioSubEncodeStartInfo = new()
                 {
@@ -267,11 +270,7 @@ namespace AutomatedFFmpegServer
                 audioSubEncodeProcess.WaitForExit();
                 audioSubEncodeProcess.Close();
 
-                videoEncodeProcess.WaitForExit();
                 stopwatch.Stop();
-                job.ElapsedEncodingTime = stopwatch.Elapsed;
-                videoEncodeProcess.Close();
-                
             }
             catch (Exception ex)
             {
