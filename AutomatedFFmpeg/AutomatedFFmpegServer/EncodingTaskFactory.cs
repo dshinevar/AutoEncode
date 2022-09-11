@@ -200,7 +200,7 @@ namespace AutomatedFFmpegServer
                     {
                         encodingToken.Cancel();
                     }
-                    else if (new FileInfo(job.EncodingInstructions.EncodedAudioSubsFullPath).Length >= 0)
+                    else if (new FileInfo(job.EncodingInstructions.EncodedAudioSubsFullPath).Length <= 0)
                     {
                         encodingToken.Cancel();
                         File.Delete(job.EncodingInstructions.EncodedAudioSubsFullPath);
