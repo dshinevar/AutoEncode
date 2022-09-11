@@ -207,6 +207,7 @@ namespace AutomatedFFmpegServer
                     }
                 };
                 audioSubEncodeProcess.Start();
+                audioSubEncodeProcess.BeginErrorReadLine();
                 audioSubEncodeProcess.WaitForExit();
                 audioSubEncodeProcess.Close();
             }
