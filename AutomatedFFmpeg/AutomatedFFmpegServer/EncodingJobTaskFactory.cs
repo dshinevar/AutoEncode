@@ -636,7 +636,7 @@ namespace AutomatedFFmpegServer
             // Format should hopefully always add space to end of append
             const string format = "{0} ";
             StringBuilder sbArguments = new();
-            sbArguments.AppendFormat(format, $"-y -i \"{sourceFullPath}\"");
+            sbArguments.AppendFormat(format, $"-y -nostdin -i \"{sourceFullPath}\"");
             
             // Map Section
             sbArguments.AppendFormat(format, "-map 0:v:0");
@@ -759,7 +759,8 @@ namespace AutomatedFFmpegServer
             IHDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
-            sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")} \"{Path.Combine(ffmpegDirectory, "ffmpeg")} -i '{sourceFullPath}' -an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
+            sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")}")
+            .AppendFormat(format, $"\"{Path.Combine(ffmpegDirectory, "ffmpeg")} -y -nostdin -i '{sourceFullPath}' -an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
             .AppendFormat(format, $"{x265FullPath} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
             .AppendFormat(format, $"--repeat-headers --keyint 120")
             .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
@@ -780,7 +781,7 @@ namespace AutomatedFFmpegServer
 
             // Audio/Sub extraction/encoding
             StringBuilder sbAudioSubs = new();
-            sbAudioSubs.AppendFormat(format, $"-i \"{sourceFullPath}\" -vn");
+            sbAudioSubs.AppendFormat(format, $"-y -nostdin -i \"{sourceFullPath}\" -vn");
             foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
             {
                 sbAudioSubs.AppendFormat(format, $"-map 0:a:{audioInstructions.SourceIndex}");

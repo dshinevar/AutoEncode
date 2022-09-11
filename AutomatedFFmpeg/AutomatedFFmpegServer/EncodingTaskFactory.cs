@@ -159,7 +159,62 @@ namespace AutomatedFFmpegServer
             DolbyVisionEncodingCommandArguments arguments = job.EncodingCommandArguments as DolbyVisionEncodingCommandArguments;
 
             Stopwatch stopwatch = new();
-            
+
+            // AUDIO ENCODING
+            try
+            {
+                ProcessStartInfo audioSubEncodeStartInfo = new()
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    FileName = Path.Combine(ffmpegDir, "ffmpeg"),
+                    Arguments = arguments.AudioSubsEncodingCommandArguments,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+
+                audioSubEncodeProcess = new()
+                {
+                    StartInfo = audioSubEncodeStartInfo,
+                    EnableRaisingEvents = true
+                };
+                audioSubEncodeProcess.ErrorDataReceived += (sender, e) =>
+                {
+                    Process proc = sender as Process;
+                    if (cancellationToken.IsCancellationRequested is true || encodingToken.Token.IsCancellationRequested)
+                    {
+                        proc.CancelErrorRead();
+                        proc.Kill();
+                        return;
+                    };
+                };
+                audioSubEncodeProcess.Exited += (sender, e) =>
+                {
+                    Process proc = sender as Process;
+                    if (proc.ExitCode != 0)
+                    {
+                        encodingToken.Cancel();
+                        File.Delete(job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    }
+                    else if (File.Exists(job.EncodingInstructions.EncodedAudioSubsFullPath) is false)
+                    {
+                        encodingToken.Cancel();
+                    }
+                    else if (new FileInfo(job.EncodingInstructions.EncodedAudioSubsFullPath).Length >= 0)
+                    {
+                        encodingToken.Cancel();
+                        File.Delete(job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    }
+                };
+                audioSubEncodeProcess.Start();
+                audioSubEncodeProcess.WaitForExit();
+                audioSubEncodeProcess.Close();
+            }
+            catch (Exception ex)
+            {
+                logger.LogException(ex, "Error encoding audio");
+            }
+
             // ENCODING
             try
             {
@@ -223,7 +278,7 @@ namespace AutomatedFFmpegServer
                 job.ElapsedEncodingTime = stopwatch.Elapsed;
                 videoEncodeProcess.Close();
 
-                ProcessStartInfo audioSubEncodeStartInfo = new()
+                /*ProcessStartInfo audioSubEncodeStartInfo = new()
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
@@ -269,7 +324,7 @@ namespace AutomatedFFmpegServer
                 audioSubEncodeProcess.Start();
                 audioSubEncodeProcess.WaitForExit();
                 audioSubEncodeProcess.Close();
-
+                */
                 stopwatch.Stop();
             }
             catch (Exception ex)
