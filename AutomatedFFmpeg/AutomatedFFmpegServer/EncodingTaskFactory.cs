@@ -205,6 +205,7 @@ namespace AutomatedFFmpegServer
                         encodingToken.Cancel();
                         File.Delete(job.EncodingInstructions.EncodedAudioSubsFullPath);
                     }
+                    logger.LogInfo($"Audio Encoded Exit: {proc.ExitCode}");
                 };
                 audioSubEncodeProcess.Start();
                 audioSubEncodeProcess.BeginErrorReadLine();
