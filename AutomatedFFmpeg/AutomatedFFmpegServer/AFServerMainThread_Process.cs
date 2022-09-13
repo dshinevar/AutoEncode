@@ -72,7 +72,10 @@ namespace AutomatedFFmpegServer
                     {
                         EncodingJobBuilderCancellationToken = new CancellationTokenSource();
                         EncodingJobBuilderTask = Task.Factory.StartNew(()
-                            => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, Config.ServerSettings.FFmpegDirectory, Config.ServerSettings.HDR10PlusExtractorFullPath, Config.ServerSettings.DolbyVisionExtractorFullPath, Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
+                            => EncodingJobTaskFactory.BuildEncodingJob(jobToBuild, State.GlobalJobSettings.DolbyVisionEncodingEnabled, State.ServerSettings.FFmpegDirectory, 
+                                                                        State.ServerSettings.HDR10PlusExtractorFullPath, State.ServerSettings.DolbyVisionExtractorFullPath,
+                                                                        State.ServerSettings.X265FullPath,
+                                                                        Logger, EncodingJobBuilderCancellationToken.Token), EncodingJobBuilderCancellationToken.Token);
                     }
                 }
 
@@ -83,8 +86,16 @@ namespace AutomatedFFmpegServer
                     if (jobToEncode is not null)
                     {
                         EncodingCancellationToken = new CancellationTokenSource();
-                        EncodingTask = Task.Factory.StartNew(()
-                            => EncodingJobTaskFactory.Encode(jobToEncode, Config.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
+                        if (State.GlobalJobSettings.DolbyVisionEncodingEnabled is true && jobToEncode.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision is true)
+                        {
+                            EncodingTask = Task.Factory.StartNew(()
+                                => EncodingTaskFactory.EncodeWithDolbyVision(jobToEncode, State.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
+                        }
+                        else
+                        {
+                            EncodingTask = Task.Factory.StartNew(()
+                                => EncodingTaskFactory.Encode(jobToEncode, State.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
+                        }
                     }
                 }
 

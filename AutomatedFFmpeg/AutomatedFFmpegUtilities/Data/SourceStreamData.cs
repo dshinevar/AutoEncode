@@ -22,7 +22,7 @@ namespace AutomatedFFmpegUtilities.Data
     {
         public IHDRData HDRData { get; set; }
         public bool IsHDR => (!HDRData?.HDRFlags.Equals(HDRFlags.NONE)) ?? false;
-        public bool IsDynamicHDR => (HDRData is IDynamicHDRData) && ((HDRData?.HDRFlags.HasFlag(HDRFlags.HDR10PLUS) ?? false) || (HDRData?.HDRFlags.Equals(HDRFlags.DOLBY_VISION) ?? false));
+        public bool IsDynamicHDR => (HDRData is IDynamicHDRData) && ((HDRData?.HDRFlags.HasFlag(HDRFlags.HDR10PLUS) ?? false) || (HDRData?.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION) ?? false));
         public string CodecName { get; set; }
         public string PixelFormat { get; set; }
         /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: crop=XXXX:YYYY:AA:BB </summary>

@@ -252,29 +252,38 @@ namespace AutomatedFFmpegServer.Data
                             {
                                 hdrData = new DynamicHDRData()
                                 {
-                                    HDRFlags = hdrFlags
+                                    HDRFlags = hdrFlags,
+                                    Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_x.Split("/")[0],
+                                    Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_y.Split("/")[0],
+                                    Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_x.Split("/")[0],
+                                    Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_y.Split("/")[0],
+                                    Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_x.Split("/")[0],
+                                    Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_y.Split("/")[0],
+                                    WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_x.Split("/")[0],
+                                    WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0],
+                                    MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0],
+                                    MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0],
+                                    MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}"
                                 };
                             }
                             else
                             {
                                 hdrData = new HDR10Data()
                                 {
-                                    HDRFlags = hdrFlags
+                                    HDRFlags = hdrFlags,
+                                    Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_x.Split("/")[0],
+                                    Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_y.Split("/")[0],
+                                    Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_x.Split("/")[0],
+                                    Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_y.Split("/")[0],
+                                    Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_x.Split("/")[0],
+                                    Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_y.Split("/")[0],
+                                    WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_x.Split("/")[0],
+                                    WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0],
+                                    MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0],
+                                    MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0],
+                                    MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}"
                                 };
                             }
-
-                            hdrData.Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_x.Split("/")[0];
-                            hdrData.Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.blue_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.blue_y.Split("/")[0];
-                            hdrData.Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_x.Split("/")[0];
-                            hdrData.Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.green_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.green_y.Split("/")[0];
-                            hdrData.Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_x.Split("/")[0];
-                            hdrData.Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.red_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.red_y.Split("/")[0];
-                            hdrData.WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_x) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_x.Split("/")[0];
-                            hdrData.WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0];
-                            hdrData.MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0];
-                            hdrData.MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0];
-
-                            hdrData.MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}";
 
                             sourceFileData.VideoStream.HDRData = hdrData;
                         }

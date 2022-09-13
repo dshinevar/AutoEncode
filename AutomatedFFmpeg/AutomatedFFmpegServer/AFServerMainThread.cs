@@ -35,19 +35,23 @@ namespace AutomatedFFmpegServer
         private Queue<Action> TaskQueue { get; set; } = new Queue<Action>();
 
         private AFServerSocket ServerSocket { get; set; }
+        /// <summary>Config as in file </summary>
         private AFServerConfig Config { get; set; }
+        /// <summary>Config to be used; Does not have to match what is saved to file</summary>
+        private AFServerConfig State { get; set; }
         private ManualResetEvent ShutdownMRE { get; set; }
         private Logger Logger { get; set; }
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
         /// <param name="serverConfig">Server Config</param>
-        public AFServerMainThread(AFServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
+        public AFServerMainThread(AFServerConfig serverState, AFServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
         {
+            State = serverState;
             Config = serverConfig;
             ShutdownMRE = shutdown;
             Logger = logger;
             ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
-            EncodingJobFinderThread = new EncodingJobFinderThread(this, Config, Logger, EncodingJobShutdown);
+            EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
 
             TaskTimerWaitTime = 1000;
             ServerTimerWaitTime = 1000;

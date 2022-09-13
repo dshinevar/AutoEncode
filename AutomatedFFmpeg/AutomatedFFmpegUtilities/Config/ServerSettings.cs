@@ -16,6 +16,8 @@ namespace AutomatedFFmpegUtilities.Config
 
         public string FFmpegDirectory { get; set; }
 
+        public string X265FullPath { get; set; }
+
         public string HDR10PlusExtractorFullPath { get; set; }
 
         public string DolbyVisionExtractorFullPath { get; set; }
