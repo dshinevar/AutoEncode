@@ -167,6 +167,8 @@ namespace AutomatedFFmpegServer.TaskFactory
                 return;
             }
 
+            if (CheckForCancellation(job, logger, cancellationToken)) return;
+
             // STEP 4: Decide Encoding Options
             try
             {
@@ -233,7 +235,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
 
             job.Status = EncodingJobStatus.BUILT;
-            logger.LogInfo($"Successfully built {job.Name} encoding job.");
+            logger.LogInfo($"Successfully built {job} encoding job.");
         }
 
         #region BuildEncodingJob Private Functions

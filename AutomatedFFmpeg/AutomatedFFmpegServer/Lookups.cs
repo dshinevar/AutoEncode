@@ -9,17 +9,15 @@ namespace AutomatedFFmpegServer
     {
         #region LINUX VS WINDOWS
         public static string ConfigFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-            "/etc/afserver/AFServerConfig.yaml" :
-            $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
+                                                    "/etc/afserver/AFServerConfig.yaml" :
+                                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
 
         public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
                                     @"/var/log/afserver" :
                                     $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
 
-        public static string PreviouslyEncodingTempFile => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                    $"{Path.GetTempPath()}afserver.tmp" :
-                                    $"{Path.GetTempPath()}AFServer.tmp";
+        public static string PreviouslyEncodingTempFile => $"{Path.GetTempPath()}afserver.tmp";
         #endregion LINUX VS WINDOWS
 
         /// <summary> 

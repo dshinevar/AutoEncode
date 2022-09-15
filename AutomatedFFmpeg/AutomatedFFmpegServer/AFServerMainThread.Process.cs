@@ -61,8 +61,6 @@ namespace AutomatedFFmpegServer
         /// <summary>Server timer task: Send update to client; Spin up threads for other tasks</summary>
         private void OnServerTimerElapsed(object obj)
         {
-            // TODO: Handle Cancelling
-
             if (EncodingJobQueue.Any())
             {
                 // Check if task is done (or null -- first time setup)

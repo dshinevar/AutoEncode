@@ -57,7 +57,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     if (bFoundEncodingJob is false)
                     {
                         failedToFindJobCount++;
-                        if (failedToFindJobCount >= MAX_COUNT)
+                        if (failedToFindJobCount >= MaxFailedToFindJobCount)
                         {
                             DeepSleep();
                         }

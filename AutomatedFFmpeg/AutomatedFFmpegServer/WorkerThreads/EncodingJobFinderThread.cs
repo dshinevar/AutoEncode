@@ -12,7 +12,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
-        private const int MAX_COUNT = 6;
+        private const int MaxFailedToFindJobCount = 6;
         private bool Shutdown = false;
         private bool DirectoryUpdate = false;
         private ManualResetEvent ShutdownMRE { get; set; }

@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -27,7 +26,7 @@ namespace AutomatedFFmpegUtilities
         public static bool IsValidJson(this string s)
         {
             if (string.IsNullOrWhiteSpace(s)) { return false; }
-            if ((s.StartsWith("{") && s.EndsWith("}")) || ((s.StartsWith("[")) && (s.EndsWith("]"))))
+            if ((s.StartsWith("{") && s.EndsWith("}")) || (s.StartsWith("[") && s.EndsWith("]")))
             {
                 try
                 {
