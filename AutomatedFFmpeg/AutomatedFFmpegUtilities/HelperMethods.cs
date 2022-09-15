@@ -29,6 +29,8 @@ namespace AutomatedFFmpegUtilities
             }
         }
 
+        public static string FormatEncodingTime(TimeSpan ts) => (ts.Days > 0) ?  $"{ts:d\\d\\ hh\\:mm\\:ss}" : $"{ts:hh\\:mm\\:ss}";
+
         public static bool IsAnyNullOrWhitespace(object obj) => obj.GetType().GetProperties().Where(pi => pi.PropertyType == typeof(string))
                                                                             .Select(pi => (string)pi.GetValue(obj)).Any(value => string.IsNullOrWhiteSpace(value));
     }

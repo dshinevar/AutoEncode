@@ -7,6 +7,8 @@ namespace AutomatedFFmpegUtilities.Data
     public class SourceStreamData
     {
         public int DurationInSeconds { get; set; }
+        /// <summary>This is an approx. number; Used for dolby vision jobs</summary>
+        public int NumberOfFrames { get; set; }
         public VideoStreamData VideoStream { get; set; }
         public List<AudioStreamData> AudioStreams { get; set; } = new();
         public List<SubtitleStreamData> SubtitleStreams { get; set; } = new();
@@ -32,6 +34,7 @@ namespace AutomatedFFmpegUtilities.Data
         public string ColorSpace { get; set; }
         public string ColorPrimaries { get; set; }
         public string ColorTransfer { get; set; }
+        public string FrameRate { get; set; }
         public bool Animated { get; set; } = false;
         public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
         public ChromaLocation? ChromaLocation { get; set; } = null;

@@ -1,4 +1,5 @@
-﻿using AutomatedFFmpegUtilities.Data;
+﻿using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Interfaces;
 using System;
@@ -59,6 +60,8 @@ namespace AutomatedFFmpegServer.Data
             public string chroma_location;
             public int channels;
             public string channel_layout;
+            public string r_frame_rate;
+            public string avg_frame_rate;
             public Tags tags;
             public Disposition disposition;
         }
@@ -79,7 +82,7 @@ namespace AutomatedFFmpegServer.Data
         public class Format
         {
             public int nb_streams;
-            public string duration; // seconds
+            public double duration; // seconds
         }
 
         /// <summary> Converts to a <see cref="SourceStreamData"/> object</summary>
@@ -89,7 +92,7 @@ namespace AutomatedFFmpegServer.Data
         {
             SourceStreamData sourceFileData = new()
             {
-                DurationInSeconds = Convert.ToInt32(Convert.ToDouble(format.duration))
+                DurationInSeconds = Convert.ToInt32(format.duration)
             };
 
             int audioIndex = 0;
@@ -98,12 +101,26 @@ namespace AutomatedFFmpegServer.Data
             {
                 if (stream.codec_type.Equals("video"))
                 {
+                    string frameRateString = string.IsNullOrWhiteSpace(stream.r_frame_rate) ? (stream.avg_frame_rate ?? string.Empty) : stream.r_frame_rate;
+
+                    if (string.IsNullOrWhiteSpace(frameRateString) is false)
+                    {
+                        string[] frameRateStrings = stream.r_frame_rate.Split("/");
+                        if (double.TryParse(frameRateStrings[0], out double frameRateNumerator) && double.TryParse(frameRateStrings[1], out double frameRateDenominator))
+                        {
+                            double frameRate = frameRateNumerator / frameRateDenominator;
+                            int frames = (int)(frameRate * format.duration);
+                            sourceFileData.NumberOfFrames = frames;
+                        }
+                    }
+
                     sourceFileData.VideoStream = new VideoStreamData()
                     {
                         StreamIndex = stream.index,
                         Resolution = $"{stream.width}x{stream.height}",
                         ResoultionInt = stream.width * stream.height,
                         CodecName = stream.codec_name,
+                        FrameRate = frameRateString,
                         Title = string.IsNullOrWhiteSpace(stream.tags.title) ? "Video" : stream.tags.title
                     };
                 }

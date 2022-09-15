@@ -1,17 +1,12 @@
 ﻿using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Logger;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
-namespace AutomatedFFmpegServer
+namespace AutomatedFFmpegServer.TaskFactory
 {
-    public static class ServerMethods
+    public static partial class EncodingJobTaskFactory
     {
         /// <summary>Checks for a cancellation token. Returns true if task was cancelled. </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>

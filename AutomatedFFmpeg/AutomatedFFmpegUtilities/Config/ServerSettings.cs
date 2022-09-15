@@ -14,13 +14,15 @@ namespace AutomatedFFmpegUtilities.Config
 
         public int ThreadSleepInMS { get; set; } = 300000; // 5 minutes
 
-        public string FFmpegDirectory { get; set; }
+        public string FFmpegDirectory { get; set; } = string.Empty;
 
-        public string X265FullPath { get; set; }
+        public string X265FullPath { get; set; } = string.Empty;
 
-        public string HDR10PlusExtractorFullPath { get; set; }
+        public string HDR10PlusExtractorFullPath { get; set; } = string.Empty;
 
-        public string DolbyVisionExtractorFullPath { get; set; }
+        public string DolbyVisionExtractorFullPath { get; set; } = string.Empty;
+
+        public string MkvMergeFullPath { get; set; } = string.Empty;
 
         public LoggerSettings LoggerSettings { get; set; }
     }

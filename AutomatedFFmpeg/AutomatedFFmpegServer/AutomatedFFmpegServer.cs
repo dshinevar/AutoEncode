@@ -130,7 +130,7 @@ namespace AutomatedFFmpegServer
             {
                 try
                 {
-                    mkvmergeVersion = GetMKVMergeVersion();
+                    mkvmergeVersion = GetMKVMergeVersion(serverConfig.ServerSettings.MkvMergeFullPath);
                 }
                 catch (Exception ex)
                 {
@@ -161,20 +161,23 @@ namespace AutomatedFFmpegServer
             // GET AND LOG STARTUP AND VERSION
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             startupLog.Add($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.");
-            startupLog.Add("LOADED CONFIG VALUES");
             startupLog.Add($"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}");
             startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}");
             startupLog.Add($"DOLBY VISION: {(dolbyVisionEnabled ? "ENABLED" : "DISABLED")}");
-
             if (dolbyVisionEnabled)
             {
-                startupLog.AddRange(x265Version);
                 startupLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath}");
+                startupLog.Add($"x265: {serverConfig.ServerSettings.X265FullPath}");
+                startupLog.Add($"MKVMERGE: {serverConfig.ServerSettings.MkvMergeFullPath}");
             }
             if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath}");
             startupLog.Add($"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}");
             startupLog.AddRange(ffmpegVersion);
             startupLog.Add(mkvmergeVersion);
+            if (dolbyVisionEnabled)
+            {
+                startupLog.AddRange(x265Version);
+            }
 
             logger.LogInfo(startupLog, LOG_THREAD_NAME);
 
@@ -260,7 +263,7 @@ namespace AutomatedFFmpegServer
 
         /// <summary>Gets mkvmerge version </summary>
         /// <returns>mkvmerge version string</returns>
-        static string GetMKVMergeVersion()
+        static string GetMKVMergeVersion(string mkvMergeFullPath)
         {
             try
             {
@@ -270,7 +273,7 @@ namespace AutomatedFFmpegServer
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = "mkvmerge",
+                    FileName = string.IsNullOrWhiteSpace(mkvMergeFullPath) ? "mkvmerge" : mkvMergeFullPath,
                     Arguments = "--version",
                     UseShellExecute = false,
                     RedirectStandardOutput = true

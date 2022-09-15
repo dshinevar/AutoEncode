@@ -1,4 +1,5 @@
 ﻿using AutomatedFFmpegServer.ServerSocket;
+using AutomatedFFmpegServer.TaskFactory;
 using AutomatedFFmpegServer.WorkerThreads;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
@@ -89,12 +90,13 @@ namespace AutomatedFFmpegServer
                         if (State.GlobalJobSettings.DolbyVisionEncodingEnabled is true && jobToEncode.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision is true)
                         {
                             EncodingTask = Task.Factory.StartNew(()
-                                => EncodingTaskFactory.EncodeWithDolbyVision(jobToEncode, State.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
+                                => EncodingJobTaskFactory.EncodeWithDolbyVision(jobToEncode, State.ServerSettings.FFmpegDirectory, State.ServerSettings.MkvMergeFullPath, 
+                                                                                Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
                         }
                         else
                         {
                             EncodingTask = Task.Factory.StartNew(()
-                                => EncodingTaskFactory.Encode(jobToEncode, State.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
+                                => EncodingJobTaskFactory.Encode(jobToEncode, State.ServerSettings.FFmpegDirectory, Logger, EncodingCancellationToken.Token), EncodingCancellationToken.Token);
                         }
                     }
                 }
@@ -106,7 +108,7 @@ namespace AutomatedFFmpegServer
                     {
                         EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
                         EncodingJobPostProcessingTask = Task.Factory.StartNew(()
-                            => EncodingJobTaskFactory.EncodingJobPostProcessing(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
+                            => EncodingJobTaskFactory.PostProcess(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
                     }
                 }
 
