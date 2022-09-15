@@ -698,7 +698,6 @@ namespace AutomatedFFmpegServer.TaskFactory
             StringBuilder sbVideo = new();
             string ffmpegFormatted;
             string sourceFormatted;
-            string cropFormatted;
             string x265Formatted;
             string outputFormatted;
             string dolbyVisionPathFormatted;
