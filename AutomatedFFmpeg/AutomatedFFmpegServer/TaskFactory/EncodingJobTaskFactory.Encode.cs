@@ -26,6 +26,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             if (CheckForCancellation(job, logger, cancellationToken)) return;
 
             Stopwatch stopwatch = new();
+            Process ffmpegProcess = null;
             try
             {
                 ProcessStartInfo startInfo = new()
@@ -40,9 +41,10 @@ namespace AutomatedFFmpegServer.TaskFactory
 
                 int count = 0;
 
-                using Process ffmpegProcess = new();
-                ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.EnableRaisingEvents = true;
+                ffmpegProcess = new()
+                {
+                    StartInfo = startInfo
+                };
                 ffmpegProcess.ErrorDataReceived += (sender, e) =>
                 {
                     Process proc = sender as Process;
@@ -67,17 +69,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                         count++;
                     }
                 };
-                ffmpegProcess.Exited += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    if (proc.ExitCode != 0)
-                    {
-                        DeleteFiles(job.DestinationFullPath);
-                        string msg = $"Encoding process for {job.Name} ended unsuccessfully.";
-                        job.SetError(msg);
-                        logger.LogError(msg);
-                    }
-                };
 
                 File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
                 stopwatch.Start();
@@ -97,25 +88,30 @@ namespace AutomatedFFmpegServer.TaskFactory
 
             try
             {
-                // SUCCESS
-                if (job.EncodingProgress >= 75 && job.Error is false)
-                {
-                    job.CompleteEncoding(stopwatch.Elapsed);
-                    DeleteFiles(Lookups.PreviouslyEncodingTempFile);
-                    if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
-                    {
-                        // Delete all possible HDRMetadata files
-                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
-                    }
-                    logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
-                }
+                bool nonEmptyFileExists = File.Exists(job.DestinationFullPath) && new FileInfo(job.DestinationFullPath).Length > 0;
                 // CANCELLED
-                else if (cancellationToken.IsCancellationRequested is true)
+                if (cancellationToken.IsCancellationRequested is true)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
                     logger.LogError($"{job} was cancelled.");
+                }
+                // NON-ZERO EXIT CODE / NULL PROCESS
+                else if ((ffmpegProcess?.ExitCode ?? -1) != 0)
+                {
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
+                    string msg = $"{job} encoding job failed. Exit Code: {(ffmpegProcess is null ? "NULL PROCESS" : ffmpegProcess.ExitCode)}";
+                    job.SetError(msg);
+                    logger.LogError(msg);
+                }
+                // FILE NOT CREATED / EMPTY FILE
+                else if (nonEmptyFileExists is false)
+                {
+                    DeleteFiles(job.DestinationFullPath);
+                    string msg = $"{job} either did not create an output or created an empty file";
+                    job.SetError(msg);
+                    logger.LogError(msg);
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.Error is false && job.EncodingProgress < 75)
@@ -131,6 +127,18 @@ namespace AutomatedFFmpegServer.TaskFactory
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     // Log occurred in catch
+                }
+                // SUCCESS
+                else if (job.EncodingProgress >= 75 && job.Error is false)
+                {
+                    job.CompleteEncoding(stopwatch.Elapsed);
+                    DeleteFiles(Lookups.PreviouslyEncodingTempFile);
+                    if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
+                    {
+                        // Delete all possible HDRMetadata files
+                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                    }
+                    logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }
             }
             catch (Exception ex)
@@ -332,7 +340,8 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
-                    string msg = $"One of the encoding (video/audio-sub) processes errored for {job}. Video Encode Exit Code: {videoEncodeProcess.ExitCode} | Audio/Sub Encode Exit Code: {audioSubEncodeProcess.ExitCode}";
+                    string msg = $"One of the encoding (video/audio-sub) processes errored for {job}. " +
+                        $"Video Encode Exit Code: {(videoEncodeProcess is null ? "NULL VIDEO PROCESS" : videoEncodeProcess.ExitCode)} | Audio/Sub Encode Exit Code: {(audioSubEncodeProcess is null ? "NULL AUDIO/SUB PROCESS" : audioSubEncodeProcess.ExitCode)}";
                     logger.LogError(msg);
                     job.SetError(msg);
                     return;
