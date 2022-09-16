@@ -2,23 +2,23 @@ using AutomatedFFmpegServer.Data;
 using AutomatedFFmpegUtilities;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Logger;
 using AutomatedFFmpegUtilities.Interfaces;
+using AutomatedFFmpegUtilities.Logger;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Runtime.InteropServices;
+using YamlDotNet.Serialization.NamingConventions;
 
-namespace AutomatedFFmpegServer
+namespace AutomatedFFmpegServer.TaskFactory
 {
-    public static class EncodingJobTaskFactory
+    public static partial class EncodingJobTaskFactory
     {
         /// <summary>Builds out an <see cref="EncodingJob"/> by analyzing the file's streams, building encoding instructions, and building FFmpeg arguments.</summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be filled out.</param>
@@ -28,272 +28,235 @@ namespace AutomatedFFmpegServer
         /// <param name="dolbyVisionExtractorPath">The full path of the dolby vision extractor program (dovi_tool)</param>
         /// <param name="logger"><see cref="Logger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath, 
+        public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
                                             string x265Path, Logger logger, CancellationToken cancellationToken)
         {
             job.Status = EncodingJobStatus.BUILDING;
 
-            ServerMethods.CheckForCancellation(job, logger, cancellationToken);
-
-            // STEP 1: Initial ffprobe
             try
             {
-                ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
+                cancellationToken.ThrowIfCancellationRequested();
 
-                if (probeData is not null)
+                // STEP 1: Initial ffprobe
+                try
                 {
-                    job.SourceStreamData = probeData.ToSourceStreamData();
-                }
-                else
-                {
-                    // Reset job status and exit
-                    string msg = $"Failed to get probe data for {job.FileName}";
-                    logger.LogError(msg);
-                    Debug.WriteLine(msg);
-                    job.SetError(msg);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                string msg = $"Error getting probe or source file data for {job.FileName}";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
-                job.SetError(msg);
-                return;
-            }
+                    ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
 
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // STEP 2: Get ScanType
-            try
-            {
-                VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
-
-                if (scanType.Equals(VideoScanType.UNDETERMINED))
-                {
-                    string msg = $"Failed to determine VideoScanType for {job.FileName}.";
-                    logger.LogError(msg);
-                    Debug.WriteLine(msg);
-                    job.SetError(msg);
-                    return;
-                }
-                else
-                {
-                    job.SourceStreamData.VideoStream.ScanType = scanType;
-                }
-            }
-            catch (Exception ex)
-            {
-                string msg = $"Error determining VideoScanType for {job.FileName}";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
-                job.SetError(msg);
-                return;
-            }
-
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // STEP 3: Determine Crop
-            try
-            {
-                string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceStreamData.DurationInSeconds);
-
-                if (string.IsNullOrWhiteSpace(crop))
-                {
-                    string msg = $"Failed to determine crop for {job.FileName}";
-                    logger.LogError(msg);
-                    job.SetError(msg);
-                    return;
-                }
-                else
-                {
-                    job.SourceStreamData.VideoStream.Crop = crop;
-                }
-            }
-            catch (Exception ex)
-            {
-                string msg = $"Error determining crop for {job.FileName}";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
-                job.SetError(msg);
-                return;
-            }
-
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // OPTIONAL STEP: Create HDR metadata file if needed
-            try
-            {
-                if (job.SourceStreamData?.VideoStream?.IsDynamicHDR ?? false)
-                {
-                    HDRFlags hdrFlags = job.SourceStreamData.VideoStream.HDRData.HDRFlags;
-                    if (hdrFlags.HasFlag(HDRFlags.HDR10PLUS))
+                    if (probeData is not null)
                     {
-                        // If we aren't given a path, skip this step;  It will be treated as HDR10
-                        if (!string.IsNullOrWhiteSpace(hdr10plusExtractorPath))
-                        {
-                            ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
-                                .Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath));
-                        }
-                        else
-                        {
-                            logger.LogWarning($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
-                            Debug.WriteLine($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
-                        }
-                    }
-
-                    if (hdrFlags.HasFlag(HDRFlags.DOLBY_VISION) && dolbyVisionEnabled is true)
-                    {
-                        // If we aren't given a path, skip this step;  It will be treated as HDR10
-                        if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
-                        {
-                            ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
-                                .Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath));
-                        }
-                        else
-                        {
-                            logger.LogWarning($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
-                            Debug.WriteLine($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                string msg = $"Error creating HDR metadata file for {job.FileName}";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
-                job.SetError(msg);
-                return;
-            }
-
-            // STEP 4: Decide Encoding Options
-            try
-            {
-                job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
-            }
-            catch (Exception ex)
-            {
-                string msg = $"Error building encoding instructions for {job.FileName}";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
-                job.SetError(msg);
-                return;
-            }
-
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // STEP 5: Create FFMPEG command
-            try
-            {
-                if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
-                {
-                    (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments) 
-                        = BuildDolbyVisionEncodingCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath, ffmpegDir, x265Path);
-
-                    if (string.IsNullOrWhiteSpace(videoEncodingCommandArguments) || 
-                        string.IsNullOrWhiteSpace(audioSubEncodingCommandArguments) || 
-                        string.IsNullOrWhiteSpace(mergeCommandArguments))
-                    {
-                        throw new Exception("Empty dolby vision encoding command argument string returned.");
+                        job.SourceStreamData = probeData.ToSourceStreamData();
                     }
                     else
                     {
-                        logger.LogInfo(videoEncodingCommandArguments);
-                        logger.LogInfo(audioSubEncodingCommandArguments);
-                        logger.LogInfo(mergeCommandArguments);
-                        job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
-                        {
-                            VideoEncodingCommandArguments = videoEncodingCommandArguments,
-                            AudioSubsEncodingCommandArguments = audioSubEncodingCommandArguments,
-                            MergeCommandArguments = mergeCommandArguments
-                        };
+                        // Reset job status and exit
+                        string msg = $"Failed to get probe data for {job.FileName}";
+                        logger.LogError(msg);
+                        Debug.WriteLine(msg);
+                        job.SetError(msg);
+                        return;
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    string ffmpegEncodingCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
-                    if (string.IsNullOrWhiteSpace(ffmpegEncodingCommandArguments))
+                    string msg = $"Error getting probe or source file data for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // STEP 2: Get ScanType
+                try
+                {
+                    VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+
+                    if (scanType.Equals(VideoScanType.UNDETERMINED))
                     {
-                        throw new Exception("Empty encoding command argument string returned.");
+                        string msg = $"Failed to determine VideoScanType for {job.FileName}.";
+                        logger.LogError(msg);
+                        Debug.WriteLine(msg);
+                        job.SetError(msg);
+                        return;
                     }
                     else
                     {
-                        job.EncodingCommandArguments = new EncodingCommandArguments()
-                        {
-                            FFmpegEncodingCommandArguments = ffmpegEncodingCommandArguments
-                        };
+                        job.SourceStreamData.VideoStream.ScanType = scanType;
                     }
                 }
+                catch (Exception ex)
+                {
+                    string msg = $"Error determining VideoScanType for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // STEP 3: Determine Crop
+                try
+                {
+                    string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceStreamData.DurationInSeconds);
+
+                    if (string.IsNullOrWhiteSpace(crop))
+                    {
+                        string msg = $"Failed to determine crop for {job.FileName}";
+                        logger.LogError(msg);
+                        job.SetError(msg);
+                        return;
+                    }
+                    else
+                    {
+                        job.SourceStreamData.VideoStream.Crop = crop;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string msg = $"Error determining crop for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // OPTIONAL STEP: Create HDR metadata file if needed
+                try
+                {
+                    if (job.SourceStreamData?.VideoStream?.IsDynamicHDR ?? false)
+                    {
+                        HDRFlags hdrFlags = job.SourceStreamData.VideoStream.HDRData.HDRFlags;
+                        if (hdrFlags.HasFlag(HDRFlags.HDR10PLUS))
+                        {
+                            // If we aren't given a path, skip this step;  It will be treated as HDR10
+                            if (!string.IsNullOrWhiteSpace(hdr10plusExtractorPath))
+                            {
+                                ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
+                                    .Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath));
+                            }
+                            else
+                            {
+                                logger.LogWarning($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
+                                Debug.WriteLine($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
+                            }
+                        }
+
+                        if (hdrFlags.HasFlag(HDRFlags.DOLBY_VISION) && dolbyVisionEnabled is true)
+                        {
+                            // If we aren't given a path, skip this step;  It will be treated as HDR10
+                            if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
+                            {
+                                ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
+                                    .Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath));
+                            }
+                            else
+                            {
+                                logger.LogWarning($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
+                                Debug.WriteLine($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string msg = $"Error creating HDR metadata file for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // STEP 4: Decide Encoding Options
+                try
+                {
+                    job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
+                }
+                catch (Exception ex)
+                {
+                    string msg = $"Error building encoding instructions for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // STEP 5: Create FFMPEG command
+                try
+                {
+                    if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
+                    {
+                        (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments)
+                            = BuildDolbyVisionEncodingCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath, ffmpegDir, x265Path);
+
+                        if (string.IsNullOrWhiteSpace(videoEncodingCommandArguments) ||
+                            string.IsNullOrWhiteSpace(audioSubEncodingCommandArguments) ||
+                            string.IsNullOrWhiteSpace(mergeCommandArguments))
+                        {
+                            throw new Exception("Empty dolby vision encoding command argument string returned.");
+                        }
+                        else
+                        {
+                            job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
+                            {
+                                VideoEncodingCommandArguments = videoEncodingCommandArguments,
+                                AudioSubsEncodingCommandArguments = audioSubEncodingCommandArguments,
+                                MergeCommandArguments = mergeCommandArguments
+                            };
+                        }
+                    }
+                    else
+                    {
+                        string ffmpegEncodingCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
+                        if (string.IsNullOrWhiteSpace(ffmpegEncodingCommandArguments))
+                        {
+                            throw new Exception("Empty encoding command argument string returned.");
+                        }
+                        else
+                        {
+                            job.EncodingCommandArguments = new EncodingCommandArguments()
+                            {
+                                FFmpegEncodingCommandArguments = ffmpegEncodingCommandArguments
+                            };
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string msg = $"Error building FFmpeg command for {job.FileName}";
+                    logger.LogException(ex, msg);
+                    Debug.WriteLine($"{msg} : {ex.Message}");
+                    job.SetError(msg);
+                    return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Reset Status
+                job.ResetStatus();
+                string msg = $"Build was cancelled for {job}";
+                logger.LogInfo(msg);
+                Debug.WriteLine(msg);
+                return;
             }
             catch (Exception ex)
             {
-                string msg = $"Error building FFmpeg command for {job.FileName}";
+                string msg = $"Error building encoding job for {job}";
                 logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
+                Debug.WriteLine(msg);
                 return;
             }
 
             job.Status = EncodingJobStatus.BUILT;
-            logger.LogInfo($"Successfully built {job.Name} encoding job.");
-        }
-
-        /// <summary> Runs post-processing tasks marked for the encoding job. </summary>
-        /// <param name="job">The <see cref="EncodingJob"/> to be post-processed.</param>
-        /// <param name="logger"><see cref="Logger"/></param>
-        /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void EncodingJobPostProcessing(EncodingJob job, Logger logger, CancellationToken cancellationToken)
-        {
-            // Double-check to ensure we don't post-process a job that shouldn't be
-            if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;
-
-            job.Status = EncodingJobStatus.POST_PROCESSING;
-
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // COPY FILES
-            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.Copy))
-            {
-                try
-                {
-                    foreach (string path in job.PostProcessingSettings.CopyFilePaths)
-                    {
-                        File.Copy(job.DestinationFullPath, Path.Combine(path, Path.GetFileName(job.DestinationFullPath)), true);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    string msg = $"Error copying output file to other locations for {job.Name}";
-                    logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
-                    job.SetError(msg);
-                    return;
-                }
-            }
-
-            if (ServerMethods.CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // DELETE SOURCE FILE
-            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.DeleteSourceFile))
-            {
-                try
-                {
-                    File.Delete(job.SourceFullPath);
-                }
-                catch (Exception ex)
-                {
-                    string msg = $"Error deleting source file for {job.Name}";
-                    logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
-                    job.SetError(msg);
-                    return;
-                }
-            }
-
-            job.CompletePostProcessing();
-            logger.LogInfo($"Successfully post-processed {job.Name} encoding job.");
+            logger.LogInfo($"Successfully built {job} encoding job.");
         }
 
         #region BuildEncodingJob Private Functions
@@ -526,8 +489,8 @@ namespace AutomatedFFmpegServer
 
                         if (path.Key.Equals(HDRFlags.DOLBY_VISION))
                         {
-                            instructions.EncodedVideoFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".hevc");
-                            instructions.EncodedAudioSubsFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".as.mkv");
+                            instructions.EncodedVideoFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".hevc").Replace('\'', ' ');
+                            instructions.EncodedAudioSubsFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".as.mkv").Replace('\'', ' ');
                         }
 
                     }
@@ -602,7 +565,7 @@ namespace AutomatedFFmpegServer
                 .ThenBy(x => x.Language.Equals(Lookups.PrimaryLanguage, StringComparison.OrdinalIgnoreCase)) // Put non-primary languages first
                 .ThenBy(x => x.Language) // Not sure if needed? Make sure languages are together
                 .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY)) // Put COPY before anything else
-                .ToList(); 
+                .ToList();
 
             List<SubtitleStreamEncodingInstructions> subtitleInstructions = new();
             foreach (SubtitleStreamData stream in streamData.SubtitleStreams)
@@ -637,7 +600,7 @@ namespace AutomatedFFmpegServer
             const string format = "{0} ";
             StringBuilder sbArguments = new();
             sbArguments.AppendFormat(format, $"-y -nostdin -i \"{sourceFullPath}\"");
-            
+
             // Map Section
             sbArguments.AppendFormat(format, "-map 0:v:0");
             foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
@@ -646,7 +609,7 @@ namespace AutomatedFFmpegServer
             }
             foreach (SubtitleStreamEncodingInstructions subtitleInstructions in instructions.SubtitleStreamEncodingInstructions)
             {
-                sbArguments.AppendFormat(format , $"-map 0:s:{subtitleInstructions.SourceIndex}");
+                sbArguments.AppendFormat(format, $"-map 0:s:{subtitleInstructions.SourceIndex}");
             }
 
             // Video Section
@@ -723,7 +686,8 @@ namespace AutomatedFFmpegServer
                 {
                     sbArguments.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
                         .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.Language})\"");
+                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
+                        .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
                 }
             }
 
@@ -746,7 +710,7 @@ namespace AutomatedFFmpegServer
             return sbArguments.ToString();
         }
 
-        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, 
+        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, SourceStreamData streamData,
             string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265FullPath)
         {
             const string format = "{0} ";
@@ -755,28 +719,61 @@ namespace AutomatedFFmpegServer
 
             // Video extraction/encoding
             StringBuilder sbVideo = new();
+            string ffmpegFormatted;
+            string sourceFormatted;
+            string x265Formatted;
+            string outputFormatted;
+            string dolbyVisionPathFormatted;
+            string masterDisplayFormatted;
+            string maxCLLFormatted;
+
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
             IHDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                ffmpegFormatted = $"'{Path.Combine(ffmpegDirectory, "ffmpeg")}'";
+                sourceFormatted = $"'{sourceFullPath.Replace("'", "'\\''")}'";
+                x265Formatted = $"'{x265FullPath}'";
+                outputFormatted = $"'{instructions.EncodedVideoFullPath}'";
+                masterDisplayFormatted = $"'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'";
+                maxCLLFormatted = $"'{streamData.VideoStream.HDRData.MaxCLL}'";
+                dolbyVisionPathFormatted = $"'{dolbyVisionMetadataPath}'";
+            }
+            else
+            {
+                ffmpegFormatted = $"\"{Path.Combine(ffmpegDirectory, "ffmpeg")}\"";
+                sourceFormatted = $"\"{sourceFullPath}\"";
+                x265Formatted = $"\"{x265FullPath}\"";
+                outputFormatted = $"\"{instructions.EncodedVideoFullPath}\"";
+                masterDisplayFormatted = $"\"G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})\"";
+                maxCLLFormatted = $"\"{streamData.VideoStream.HDRData.MaxCLL}\"";
+                dolbyVisionPathFormatted = $"\"{dolbyVisionMetadataPath}\"";
+            }
+
             sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")}")
-            .AppendFormat(format, $"\"{Path.Combine(ffmpegDirectory, "ffmpeg")} -y -nostdin -i '{sourceFullPath}' -an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
-            .AppendFormat(format, $"{x265FullPath} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
-            .AppendFormat(format, $"--repeat-headers --keyint 120")
-            .AppendFormat(format, $"--master-display 'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'")
-            .AppendFormat(format, $"--max-cll '{streamData.VideoStream.HDRData.MaxCLL}' --colormatrix {streamData.VideoStream.ColorSpace} --colorprim {streamData.VideoStream.ColorPrimaries} --transfer {streamData.VideoStream.ColorTransfer}")
-            .AppendFormat(format, $"--dolby-vision-rpu '{dolbyVisionMetadataPath}' --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-maxrate 140000");
+                .AppendFormat(format, $"\"{ffmpegFormatted} -y -hide_banner -loglevel error -nostdin -i {sourceFormatted}");
+
+            if (videoInstructions.Crop is true) sbVideo.AppendFormat(format, $"-vf {streamData.VideoStream.Crop}");
+             
+            sbVideo.AppendFormat(format, $"-an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
+                .AppendFormat(format, $"{x265Formatted} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
+                .AppendFormat(format, $"--repeat-headers --keyint 120")
+                .AppendFormat(format, $"--master-display {masterDisplayFormatted}")
+                .AppendFormat(format, $"--max-cll {maxCLLFormatted} --colormatrix {streamData.VideoStream.ColorSpace} --colorprim {streamData.VideoStream.ColorPrimaries} --transfer {streamData.VideoStream.ColorTransfer}")
+                .AppendFormat(format, $"--dolby-vision-rpu {dolbyVisionPathFormatted} --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-maxrate 140000");
 
             if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
             {
                 videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.HDR10PLUS, out string hdr10PlusMetadataPath);
                 if (!string.IsNullOrWhiteSpace(hdr10PlusMetadataPath))
                 {
-                    sbVideo.Append($"--dhdr10-info '{hdr10PlusMetadataPath}'");
+                    sbVideo.AppendFormat(format, $"--dhdr10-info '{hdr10PlusMetadataPath}'");
                 }
             }
 
-            sbVideo.Append($"'{instructions.EncodedVideoFullPath}'\"");
+            sbVideo.Append($"{outputFormatted}\"");
             arguments.videoEncodingCommandArguments = sbVideo.ToString();
 
             // Audio/Sub extraction/encoding
@@ -813,7 +810,8 @@ namespace AutomatedFFmpegServer
                 {
                     sbAudioSubs.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
                         .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.Language})\"");
+                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
+                        .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
                 }
             }
 

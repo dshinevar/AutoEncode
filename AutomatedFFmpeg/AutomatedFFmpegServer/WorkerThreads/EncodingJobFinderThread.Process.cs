@@ -13,7 +13,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
-        protected void ThreadLoop()
+        private void ThreadLoop()
         {
             int failedToFindJobCount = 0;
 
@@ -27,7 +27,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     bool bFoundEncodingJob = false;
 
                     // Don't do anything if the queue is full
-                    if (EncodingJobQueue.Count < Config.GlobalJobSettings.MaxNumberOfJobsInQueue)
+                    if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                     {
                         BuildSourceFiles(SearchDirectories);
 
@@ -57,7 +57,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     if (bFoundEncodingJob is false)
                     {
                         failedToFindJobCount++;
-                        if (failedToFindJobCount >= MAX_COUNT)
+                        if (failedToFindJobCount >= MaxFailedToFindJobCount)
                         {
                             DeepSleep();
                         }
@@ -83,7 +83,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #region PRIVATE FUNCTIONS
         private void UpdateSearchDirectories(Dictionary<string, SearchDirectory> searchDirectories)
         {
-            searchDirectories = Config.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
+            searchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
 
             // Remove any old directories (keys) in source files
             lock (showSourceFileLock)
@@ -114,7 +114,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                         List<ShowSourceData> shows = new();
                         IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
                         IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         // Show
                         foreach (string showPath in sourceShows)
                         {
@@ -127,7 +127,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                 string season = new DirectoryInfo(seasonPath).Name;
                                 SeasonSourceData seasonData = new(season);
                                 IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                    .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
+                                    .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
                                 // Episode
                                 foreach (string episodePath in episodes)
                                 {
@@ -155,9 +155,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     {
                         List<VideoSourceData> movies = new();
                         IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
+                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
                         IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => Config.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         foreach (string sourceFile in sourceFiles)
                         {
                             VideoSourceData sourceData = new()
@@ -186,7 +186,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
             // Don't create encoding job if we are at max count
-            if (EncodingJobQueue.Count < Config.GlobalJobSettings.MaxNumberOfJobsInQueue)
+            if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
             {
                 // Only add encoding job is file is ready.
                 if (CheckFileReady(sourceData.FullPath))

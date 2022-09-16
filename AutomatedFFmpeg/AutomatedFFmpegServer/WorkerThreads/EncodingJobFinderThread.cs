@@ -12,7 +12,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
-        private const int MAX_COUNT = 6;
+        private const int MaxFailedToFindJobCount = 6;
         private bool Shutdown = false;
         private bool DirectoryUpdate = false;
         private ManualResetEvent ShutdownMRE { get; set; }
@@ -31,27 +31,26 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         private AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
         private AFServerMainThread MainThread { get; set; }
-        private AFServerConfig Config { get; set; }
+        private AFServerConfig State { get; set; }
         private Logger Logger { get; set; }
 
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Main Thread handle <see cref="AFServerMainThread"/></param>
-        /// <param name="serverConfig">Config <see cref="AFServerConfig"/></param>
-        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverConfig, Logger logger, ManualResetEvent shutdownMRE)
+        /// <param name="serverState">Current Server State<see cref="AFServerConfig"/></param>
+        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverState, Logger logger, ManualResetEvent shutdownMRE)
         {
             MainThread = mainThread;
-            Config = serverConfig;
+            State = serverState;
             Logger = logger;
             ShutdownMRE = shutdownMRE;
-            ThreadSleep = Config.ServerSettings.ThreadSleepInMS;
-            SearchDirectories = Config.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
+            ThreadSleep = State.ServerSettings.ThreadSleepInMS;
+            SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
         }
 
         #region Start/Stop Functions
         public void Start()
         {
-            void threadStart() => ThreadLoop();
-            Thread = new Thread(threadStart)
+            Thread = new Thread(() => ThreadLoop())
             {
                 Name = nameof(EncodingJobFinderThread),
                 IsBackground = true
@@ -78,12 +77,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
         #endregion Start/Stop Functions
 
         #region Thread Functions
-        /// <summary> Wakes up thread by setting the Sleep AutoResetEvent. Not used by default.</summary>
-        public void Wake()
-        {
-            SleepARE.Set();
-            Status = AFWorkerThreadStatus.PROCESSING;
-        }
+        /// <summary> Wakes up thread by setting the Sleep AutoResetEvent.</summary>
+        public void Wake() => SleepARE.Set();
 
         /// <summary> Sleeps thread for certain amount of time. </summary>
         private void Sleep()
