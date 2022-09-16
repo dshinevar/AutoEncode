@@ -21,45 +21,64 @@ namespace AutomatedFFmpegServer.TaskFactory
 
             job.Status = EncodingJobStatus.POST_PROCESSING;
 
-            if (CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // COPY FILES
-            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.Copy))
+            try
             {
-                try
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // COPY FILES
+                if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.Copy))
                 {
-                    foreach (string path in job.PostProcessingSettings.CopyFilePaths)
+                    try
                     {
-                        File.Copy(job.DestinationFullPath, Path.Combine(path, Path.GetFileName(job.DestinationFullPath)), true);
+                        foreach (string path in job.PostProcessingSettings.CopyFilePaths)
+                        {
+                            File.Copy(job.DestinationFullPath, Path.Combine(path, Path.GetFileName(job.DestinationFullPath)), true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        string msg = $"Error copying output file to other locations for {job.Name}";
+                        logger.LogException(ex, msg);
+                        Debug.WriteLine($"{msg} : {ex.Message}");
+                        job.SetError(msg);
+                        return;
                     }
                 }
-                catch (Exception ex)
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // DELETE SOURCE FILE
+                if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.DeleteSourceFile))
                 {
-                    string msg = $"Error copying output file to other locations for {job.Name}";
-                    logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
-                    job.SetError(msg);
-                    return;
+                    try
+                    {
+                        File.Delete(job.SourceFullPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        string msg = $"Error deleting source file for {job.Name}";
+                        logger.LogException(ex, msg);
+                        Debug.WriteLine($"{msg} : {ex.Message}");
+                        job.SetError(msg);
+                        return;
+                    }
                 }
             }
-
-            if (CheckForCancellation(job, logger, cancellationToken)) return;
-
-            // DELETE SOURCE FILE
-            if (job.PostProcessingFlags.HasFlag(PostProcessingFlags.DeleteSourceFile))
+            catch (OperationCanceledException)
             {
-                try
-                {
-                    File.Delete(job.SourceFullPath);
-                }
-                catch (Exception ex)
-                {
-                    string msg = $"Error deleting source file for {job.Name}";
-                    logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
-                    job.SetError(msg);
-                    return;
-                }
+                job.ResetStatus();
+                string msg = $"PostProcess was cancelled for {job}";
+                logger.LogInfo(msg);
+                Debug.WriteLine(msg);
+                return;
+            }
+            catch (Exception ex)
+            {
+                string msg = $"Error postprocessing {job}";
+                logger.LogException(ex, msg);
+                job.SetError(msg);
+                Debug.WriteLine(msg);
+                return;
             }
 
             job.CompletePostProcessing();

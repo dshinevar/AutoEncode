@@ -23,8 +23,6 @@ namespace AutomatedFFmpegServer.TaskFactory
         {
             job.Status = EncodingJobStatus.ENCODING;
 
-            if (CheckForCancellation(job, logger, cancellationToken)) return;
-
             Stopwatch stopwatch = new();
             Process ffmpegProcess = null;
             try
@@ -159,8 +157,6 @@ namespace AutomatedFFmpegServer.TaskFactory
         public static void EncodeWithDolbyVision(EncodingJob job, string ffmpegDir, string mkvMergeFullPath, Logger logger, CancellationToken taskCancellationToken)
         {
             job.Status = EncodingJobStatus.ENCODING;
-
-            if (CheckForCancellation(job, logger, taskCancellationToken)) return;
 
             CancellationTokenSource encodingTokenSource = new();
             CancellationToken encodingToken = encodingTokenSource.Token;
