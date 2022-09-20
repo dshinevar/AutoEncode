@@ -245,13 +245,14 @@ namespace AutomatedFFmpegServer.Data
                     // Usually should have something in here
                     if (frame.side_data_list.Any())
                     {
-                        // Should only be one of both of these
+                        // Should only be one
                         SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata"));
-                        SideData contentLightLevelMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Content light level metadata"));
-
+                        
                         // Has HDR; Otherwise, we can't do HDR so don't do anything more
-                        if (masteringDisplayMetadata is not null && contentLightLevelMetadata is not null)
+                        if (masteringDisplayMetadata is not null)
                         {
+                            SideData contentLightLevelMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Content light level metadata"));
+
                             IHDRData hdrData = null;
                             HDRFlags hdrFlags = HDRFlags.HDR10;
                             // Check if HDR10+ or DolbyVision
@@ -280,7 +281,7 @@ namespace AutomatedFFmpegServer.Data
                                     WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0],
                                     MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0],
                                     MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0],
-                                    MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}"
+                                    MaxCLL = $"{contentLightLevelMetadata?.max_content ?? 0},{contentLightLevelMetadata?.max_average ?? 0}"
                                 };
                             }
                             else
@@ -298,7 +299,7 @@ namespace AutomatedFFmpegServer.Data
                                     WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.white_point_y) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.white_point_y.Split("/")[0],
                                     MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0],
                                     MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0],
-                                    MaxCLL = $"{contentLightLevelMetadata.max_content},{contentLightLevelMetadata.max_average}"
+                                    MaxCLL = $"{contentLightLevelMetadata?.max_content ?? 0},{contentLightLevelMetadata?.max_average ?? 0}"
                                 };
                             }
 
