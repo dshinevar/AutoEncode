@@ -203,9 +203,11 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private static bool CheckFileReady(string filePath)
         {
             FileInfo fileInfo = new(filePath);
-
             long beforeFileSize = fileInfo.Length;
+
             Thread.Sleep(2000);
+
+            fileInfo.Refresh();
             long afterFileSize = fileInfo.Length;
 
             return beforeFileSize == afterFileSize;
