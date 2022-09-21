@@ -185,15 +185,24 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
-            // Don't create encoding job if we are at max count
-            if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
+            try
             {
-                // Only add encoding job is file is ready.
-                if (CheckFileReady(sourceData.FullPath))
+                // Don't create encoding job if we are at max count
+                if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                 {
-                    int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
-                    if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                    // Only add encoding job is file is ready.
+                    if (CheckFileReady(sourceData.FullPath))
+                    {
+                        int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
+                        if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                string msg = $"Error creating encoding job for {sourceData.FileName}.";
+                Logger.LogException(ex, msg, ThreadName);
+                Debug.WriteLine($"{msg} : {ex.Message}");
             }
         }
 
