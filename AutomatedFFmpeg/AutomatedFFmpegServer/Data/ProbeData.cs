@@ -200,10 +200,10 @@ namespace AutomatedFFmpegServer.Data
                 // Currently don't do anything with audio (doesn't give much useful data)
                 if (frame.media_type.Equals("video"))
                 {
-                    sourceFileData.VideoStream.PixelFormat = string.IsNullOrWhiteSpace(frame.pix_fmt) ? "yuv420p10le" : frame.pix_fmt;
-                    sourceFileData.VideoStream.ColorPrimaries = string.IsNullOrWhiteSpace(frame.color_primaries) ? "bt709" : frame.color_primaries;
-                    sourceFileData.VideoStream.ColorSpace = string.IsNullOrWhiteSpace(frame.color_space) ? "bt709" : frame.color_space;
-                    sourceFileData.VideoStream.ColorTransfer = string.IsNullOrWhiteSpace(frame.color_transfer) ? "bt709" : frame.color_transfer;
+                    sourceFileData.VideoStream.PixelFormat = string.IsNullOrWhiteSpace(frame.pix_fmt) ? throw new Exception("No Pixel Format Found") : frame.pix_fmt;
+                    sourceFileData.VideoStream.ColorPrimaries = string.IsNullOrWhiteSpace(frame.color_primaries) ? throw new Exception("No Color Primaries Found") : frame.color_primaries;
+                    sourceFileData.VideoStream.ColorSpace = string.IsNullOrWhiteSpace(frame.color_space) ? throw new Exception("No Color Space Found") : frame.color_space;
+                    sourceFileData.VideoStream.ColorTransfer = string.IsNullOrWhiteSpace(frame.color_transfer) ? throw new Exception("No Color Transfer Found") : frame.color_transfer;
 
                     ChromaLocation? chroma = null;
                     switch (frame.chroma_location)
