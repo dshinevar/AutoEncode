@@ -48,6 +48,7 @@ namespace AutomatedFFmpegUtilities.Logger
         /// <param name="messages">Messages to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
+        [Conditional("DEBUG")]
         public void LogDebug(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, messages, threadName, callingMemberName);
         /// <summary> Log an Info Message </summary>
         /// <param name="msg">Message to log</param>

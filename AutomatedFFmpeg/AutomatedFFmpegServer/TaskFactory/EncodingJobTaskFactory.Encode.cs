@@ -367,7 +367,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                string msg = $"Error cleaning up dolby vision encoding job.";
+                string msg = $"Error cleaning up dolby vision encoding job for {job}.";
                 logger.LogException(ex, msg);
                 Debug.WriteLine($"{msg} : {ex.Message}");
                 return;
@@ -416,7 +416,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     Process proc = sender as Process;
                     if (proc.ExitCode != 0)
                     {
-                        string msg = $"Merge process for {job.Name} ended unsuccessfully. ExitCode: {proc.ExitCode}";
+                        string msg = $"Merge process for {job} ended unsuccessfully. ExitCode: {proc.ExitCode}";
                         job.SetError(msg);
                         logger.LogError(msg);
                     }
@@ -497,7 +497,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                string msg = $"Error cleaning up dolby vision merging job.";
+                string msg = $"Error cleaning up dolby vision merging job for {job}.";
                 logger.LogException(ex, msg);
                 Debug.WriteLine($"{msg} : {ex.Message}");
                 return;
