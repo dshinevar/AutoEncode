@@ -51,7 +51,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                         // Reset job status and exit
                         string msg = $"Failed to get probe data for {job.FileName}";
                         logger.LogError(msg);
-                        Debug.WriteLine(msg);
                         job.SetError(msg);
                         return;
                     }
@@ -60,7 +59,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error getting probe or source file data for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -76,7 +74,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                     {
                         string msg = $"Failed to determine VideoScanType for {job.FileName}.";
                         logger.LogError(msg);
-                        Debug.WriteLine(msg);
                         job.SetError(msg);
                         return;
                     }
@@ -89,7 +86,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error determining VideoScanType for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -117,7 +113,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error determining crop for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -141,7 +136,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                             else
                             {
                                 logger.LogWarning($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
-                                Debug.WriteLine($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
                             }
                         }
 
@@ -156,7 +150,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                             else
                             {
                                 logger.LogWarning($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
-                                Debug.WriteLine($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
                             }
                         }
                     }
@@ -165,7 +158,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error creating HDR metadata file for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -181,7 +173,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error building encoding instructions for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -232,7 +223,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     string msg = $"Error building FFmpeg command for {job.FileName}";
                     logger.LogException(ex, msg);
-                    Debug.WriteLine($"{msg} : {ex.Message}");
                     job.SetError(msg);
                     return;
                 }
@@ -241,9 +231,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             {
                 // Reset Status
                 job.ResetStatus();
-                string msg = $"Build was cancelled for {job}";
-                logger.LogInfo(msg);
-                Debug.WriteLine(msg);
+                logger.LogInfo($"Build was cancelled for {job}");
                 return;
             }
             catch (Exception ex)
@@ -251,7 +239,6 @@ namespace AutomatedFFmpegServer.TaskFactory
                 string msg = $"Error building encoding job for {job}";
                 logger.LogException(ex, msg);
                 job.SetError(msg);
-                Debug.WriteLine(msg);
                 return;
             }
 

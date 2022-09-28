@@ -78,7 +78,6 @@ namespace AutomatedFFmpegServer.TaskFactory
             {
                 string msg = $"Error encoding {job}.";
                 logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
             }
 
@@ -142,9 +141,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                string msg = $"Error cleaning up encoding job.";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
+                logger.LogException(ex, $"Error cleaning up encoding job.");
                 // Don't error the job for now
             }
         }
@@ -313,7 +310,6 @@ namespace AutomatedFFmpegServer.TaskFactory
             {
                 string msg = $"Error encoding {job}.";
                 logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
                 videoEncodeProcess.Kill(true);
                 audioSubEncodeProcess.Kill();
@@ -367,9 +363,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                string msg = $"Error cleaning up dolby vision encoding job for {job}.";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
+                logger.LogException(ex, $"Error cleaning up dolby vision encoding job for {job}.");
                 return;
                 // Don't error the job for now
             }
@@ -442,7 +436,6 @@ namespace AutomatedFFmpegServer.TaskFactory
             {
                 string msg = $"Error merging {job}.";
                 logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
                 job.SetError(msg);
                 mergeProcess.Kill();
             }
@@ -497,9 +490,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                string msg = $"Error cleaning up dolby vision merging job for {job}.";
-                logger.LogException(ex, msg);
-                Debug.WriteLine($"{msg} : {ex.Message}");
+                logger.LogException(ex, $"Error cleaning up dolby vision merging job for {job}.");
                 return;
                 // Don't error the job for now
             }

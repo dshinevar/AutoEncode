@@ -74,7 +74,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 catch (Exception ex)
                 {
                     Logger.LogException(ex, "Error during looking for encoding jobs.", ThreadName);
-                    Debug.WriteLine($"[{ThreadName}] ERROR: {ex.Message}");
                     return;
                 }
             }
@@ -178,7 +177,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 else
                 {
                     Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
-                    Debug.WriteLine($"{entry.Value.Source} does not exist.");
                 }
             });
         }
@@ -200,9 +198,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             }
             catch (Exception ex)
             {
-                string msg = $"Error creating encoding job for {sourceData.FileName}.";
-                Logger.LogException(ex, msg, ThreadName);
-                Debug.WriteLine($"{msg} : {ex.Message}");
+                Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName);
             }
         }
 

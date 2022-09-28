@@ -125,6 +125,8 @@ namespace AutomatedFFmpegUtilities.Logger
                 sbLogMsg.Append(' ', spacing).AppendLine($"{messages[i]}");
             }
 
+            Debug.Write(sbLogMsg.ToString());
+
             try
             {
                 lock (FileLock)
