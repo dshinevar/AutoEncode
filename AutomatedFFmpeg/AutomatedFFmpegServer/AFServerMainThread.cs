@@ -25,13 +25,20 @@ namespace AutomatedFFmpegServer
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private ManualResetEvent EncodingJobShutdown { get; set; } = new ManualResetEvent(false);
 
-        private readonly int ServerTimerWaitTime;
-        private Timer ServerTimer { get; set; }
-        private ManualResetEvent ServerTimerDispose { get; set; } = new ManualResetEvent(false);
+        // Maintenance Timer - Mean to run infrequently for cleanup tasks
+        private readonly TimeSpan MaintenanceTimerWaitTime;
+        private Timer MaintenanceTimer { get; set; }
+        private ManualResetEvent MaintenanceTimerDispose { get; set; } = new ManualResetEvent(false);
 
-        private readonly int TaskTimerWaitTime;
-        private Timer TaskTimer { get; set; }
-        private ManualResetEvent TaskTimerDispose { get; set; } = new ManualResetEvent(false);
+        // Encoding Task Timer
+        private readonly TimeSpan EncodingJobTaskTimerWaitTime;
+        private Timer EncodingJobTaskTimer { get; set; }
+        private ManualResetEvent EncodingJobTaskTimerDispose { get; set; } = new ManualResetEvent(false);
+
+        // Process Timer - Processes Actions / Client Interactions
+        private readonly TimeSpan ProcessTimerWaitTime;
+        private Timer ProcessTimer { get; set; }
+        private ManualResetEvent ProcessTimerDispose { get; set; } = new ManualResetEvent(false);
         private Queue<Action> TaskQueue { get; set; } = new Queue<Action>();
 
         private AFServerSocket ServerSocket { get; set; }
@@ -53,19 +60,22 @@ namespace AutomatedFFmpegServer
             ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
 
-            TaskTimerWaitTime = 1000;
-            ServerTimerWaitTime = 1000;
+            MaintenanceTimerWaitTime = TimeSpan.FromHours(1);
+            EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(2);
+            ProcessTimerWaitTime = TimeSpan.FromSeconds(1.5);
         }
 
         #region START/SHUTDOWN FUNCTIONS
-        /// <summary> Starts AFServerMainThread; Server socket starts listening. </summary>
+        /// <summary> Starts Timers and Threads; Server socket starts listening. </summary>
         public void Start()
         {
             Debug.WriteLine("AFServerMainThread Starting");
             EncodingJobFinderThread.Start();
             //ServerSocket?.StartListening();
-            TaskTimer = new Timer(OnTaskTimerElapsed, null, 15000, TaskTimerWaitTime);
-            ServerTimer = new Timer(OnServerTimerElapsed, null, 10000, ServerTimerWaitTime);
+
+            MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromHours(1), MaintenanceTimerWaitTime);
+            EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
+            ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
 
         /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
@@ -82,15 +92,19 @@ namespace AutomatedFFmpegServer
             // Stop socket and timers
             ServerSocket.Disconnect(false);
             ServerSocket.Dispose();
-            ServerTimer.Dispose(ServerTimerDispose);
-            ServerTimerDispose.WaitOne();
-            ServerTimerDispose.Dispose();
+            EncodingJobTaskTimer.Dispose(EncodingJobTaskTimerDispose);
+            EncodingJobTaskTimerDispose.WaitOne();
+            EncodingJobTaskTimerDispose.Dispose();
 
-            // Clear and stop task queue
+            MaintenanceTimer.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimerDispose.WaitOne();
+            MaintenanceTimerDispose.Dispose();
+
+            // Clear Task Queue and Stop processsing timer
             TaskQueue.Clear();
-            TaskTimer.Dispose(TaskTimerDispose);
-            TaskTimerDispose.WaitOne();
-            TaskTimerDispose.Dispose();
+            ProcessTimer.Dispose(ProcessTimerDispose);
+            ProcessTimerDispose.WaitOne();
+            ProcessTimerDispose.Dispose();
 
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
