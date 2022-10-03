@@ -85,7 +85,7 @@ namespace AutomatedFFmpegServer
             bool success = false;
             lock (jobLock)
             {
-                var job = jobQueue.FirstOrDefault(x => x.Id == id);
+                var job = jobQueue.SingleOrDefault(x => x.Id == id);
                 if (job is not null) success = jobQueue.Remove(job);
             }
 
