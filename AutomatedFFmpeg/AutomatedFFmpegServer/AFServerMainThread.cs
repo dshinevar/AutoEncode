@@ -60,9 +60,9 @@ namespace AutomatedFFmpegServer
             ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
 
-            MaintenanceTimerWaitTime = TimeSpan.FromHours(1);
-            EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(2);
-            ProcessTimerWaitTime = TimeSpan.FromSeconds(1.5);
+            MaintenanceTimerWaitTime = TimeSpan.FromHours(1);           // Doesn't need to run very often
+            EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(5);     // Run a bit slower than process; Is mainly managing the tasks so doesn't need to spin often
+            ProcessTimerWaitTime = TimeSpan.FromSeconds(1.5);           // Handle processes pretty frequently
         }
 
         #region START/SHUTDOWN FUNCTIONS

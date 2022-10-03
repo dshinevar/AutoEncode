@@ -1,5 +1,6 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Interfaces;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
@@ -49,18 +50,8 @@ namespace AutomatedFFmpegUtilities.Data
         public bool Paused { get; set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
         public bool Cancelled { get; set; } = false;
-        private int _encodingProgress = 0;
         /// <summary>Encoding Progress Percentage </summary>
-        public int EncodingProgress
-        {
-            get => _encodingProgress;
-            set
-            {
-                if (value > 100) _encodingProgress = 100;
-                else if (value < 0) _encodingProgress = 0;
-                else _encodingProgress = value;
-            }
-        }
+        public int EncodingProgress { get; private set; }
         /// <summary>Amount of time spent encoding. </summary>
         public TimeSpan? ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
         /// <summary> DateTime when encoding was completed </summary>
@@ -89,7 +80,18 @@ namespace AutomatedFFmpegUtilities.Data
         #region Public Functions
         public override string ToString() => $"(JobID: {Id}) {Name}";
 
+        /// <summary>Sets the current status of the job.</summary>
+        /// <param name="status"></param>
         public void SetStatus(EncodingJobStatus status) => Status = status;
+
+        /// <summary>Handles updating of encoding progress.</summary>
+        /// <param name="progress"></param>
+        public void UpdateEncodingProgress(int progress)
+        {
+            if (progress > 100) EncodingProgress = 100;
+            else if (progress < 0) EncodingProgress = 0;
+            else EncodingProgress = progress;
+        }
         /// <summary>Marks the job as completed encoding </summary>
         /// <param name="timeCompleted"></param>
         public void CompleteEncoding(TimeSpan timeElapsed)
@@ -97,12 +99,12 @@ namespace AutomatedFFmpegUtilities.Data
             SetStatus(EncodingJobStatus.ENCODED);
             CompletedEncodingDateTime = DateTime.Now;
             ElapsedEncodingTime = timeElapsed;
-            EncodingProgress = 100;
+            UpdateEncodingProgress(100);
         }
         /// <summary> Resets encoding status and progress </summary>
         public void ResetEncoding()
         {
-            EncodingProgress = 0;
+            UpdateEncodingProgress(0);
             CompletedEncodingDateTime = null;
             ElapsedEncodingTime = TimeSpan.Zero;
             SetStatus(EncodingJobStatus.BUILT);

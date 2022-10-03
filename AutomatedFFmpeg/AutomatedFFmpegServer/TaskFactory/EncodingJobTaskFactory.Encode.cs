@@ -67,7 +67,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
                         {
-                            job.EncodingProgress = HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds) ?? job.EncodingProgress;
+                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds) ?? job.EncodingProgress);
                         }
                         count = 0;
                     }
@@ -216,7 +216,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
-                                job.EncodingProgress = HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9) ?? job.EncodingProgress;
+                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9) ?? job.EncodingProgress);
                             }
                             count = 0;
                         }
@@ -375,7 +375,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 // SUCCESS
                 else
                 {
-                    job.EncodingProgress = 90; // Hard set progress to 90%
+                    job.UpdateEncodingProgress(90); // Hard set progress to 90%
                 }
             }
             catch (Exception ex)
