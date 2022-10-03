@@ -32,7 +32,7 @@ namespace AutomatedFFmpegServer
                     TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedEncodingDateTime);
                     if (ts.TotalHours >= Config.GlobalJobSettings.HoursCompletedUntilRemoval)
                     {
-                        bool success = EncodingJobQueue.RemoveEncodingJob(job);
+                        bool success = EncodingJobQueue.RemoveEncodingJobById(job.Id);
                         if (success is true)
                         {
                             jobsRemovedLog.Add(job.ToString());
@@ -59,7 +59,7 @@ namespace AutomatedFFmpegServer
                     TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedPostProcessingTime);
                     if (ts.TotalHours >= Config.GlobalJobSettings.HoursCompletedUntilRemoval)
                     {
-                        bool success = EncodingJobQueue.RemoveEncodingJob(job);
+                        bool success = EncodingJobQueue.RemoveEncodingJobById(job.Id);
                         if (success is true)
                         {
                             jobsRemovedLog.Add(job.ToString());
@@ -97,7 +97,7 @@ namespace AutomatedFFmpegServer
                     TimeSpan ts = DateTime.Now.Subtract((DateTime)job.ErrorTime);
                     if (ts.TotalHours >= Config.GlobalJobSettings.HoursErroredUntilRemoval)
                     {
-                        bool success = EncodingJobQueue.RemoveEncodingJob(job);
+                        bool success = EncodingJobQueue.RemoveEncodingJobById(job.Id);
                         if (success is true)
                         {
                             jobsRemovedLog.Add(job.ToString());

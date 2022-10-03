@@ -67,13 +67,29 @@ namespace AutomatedFFmpegServer
             return jobId;
         }
         /// <summary>Removes an encoding job from the list.</summary>
-        /// <param name="job">EncodingJob</param>
+        /// <param name="job"><see cref="EncodingJob"/></param>
+        /// <returns>True if successfully removed; False, otherwise.</returns>
         public static bool RemoveEncodingJob(EncodingJob job)
         {
             lock (jobLock)
             {
                 return jobQueue.Remove(job);
             }
+        }
+
+        /// <summary>Removes an encoding job from the queue by id lookup.</summary>
+        /// <param name="id">Id of the EncodingJob</param>
+        /// <returns>True if successfully removed; False, otherwise.</returns>
+        public static bool RemoveEncodingJobById(int id)
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                var job = jobQueue.FirstOrDefault(x => x.Id == id);
+                if (job is not null) success = jobQueue.Remove(job);
+            }
+
+            return success;
         }
 
         /// <summary> Checks to see if a job exists by the given filename. </summary>
