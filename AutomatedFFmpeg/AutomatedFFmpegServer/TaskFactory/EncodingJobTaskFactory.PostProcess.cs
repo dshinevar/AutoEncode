@@ -2,7 +2,6 @@
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -19,7 +18,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             // Double-check to ensure we don't post-process a job that shouldn't be
             if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;
 
-            job.Status = EncodingJobStatus.POST_PROCESSING;
+            job.SetStatus(EncodingJobStatus.POST_PROCESSING);
 
             try
             {

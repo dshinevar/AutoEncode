@@ -14,7 +14,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace AutomatedFFmpegServer.TaskFactory
 {
@@ -31,7 +30,16 @@ namespace AutomatedFFmpegServer.TaskFactory
         public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
                                             string x265Path, Logger logger, CancellationToken cancellationToken)
         {
-            job.Status = EncodingJobStatus.BUILDING;
+            job.SetStatus(EncodingJobStatus.BUILDING);
+
+            // Verify source file is still here
+            if (File.Exists(job.SourceFullPath) is false)
+            {
+                string msg = $"Source file no longer found for {job}";
+                logger.LogError(msg);
+                job.SetError(msg);
+                return;
+            }
 
             try
             {
@@ -242,7 +250,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 return;
             }
 
-            job.Status = EncodingJobStatus.BUILT;
+            job.SetStatus(EncodingJobStatus.BUILT);
             logger.LogInfo($"Successfully built {job} encoding job.");
         }
 

@@ -21,7 +21,16 @@ namespace AutomatedFFmpegServer.TaskFactory
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         public static void Encode(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
         {
-            job.Status = EncodingJobStatus.ENCODING;
+            job.SetStatus(EncodingJobStatus.ENCODING);
+
+            // Verify source file is still here
+            if (File.Exists(job.SourceFullPath) is false)
+            {
+                string msg = $"Source file no longer found for {job}";
+                logger.LogError(msg);
+                job.SetError(msg);
+                return;
+            }
 
             Stopwatch stopwatch = new();
             Process ffmpegProcess = null;
@@ -153,7 +162,16 @@ namespace AutomatedFFmpegServer.TaskFactory
         /// <param name="taskCancellationToken"><see cref="CancellationToken"/></param>
         public static void EncodeWithDolbyVision(EncodingJob job, string ffmpegDir, string mkvMergeFullPath, Logger logger, CancellationToken taskCancellationToken)
         {
-            job.Status = EncodingJobStatus.ENCODING;
+            job.SetStatus(EncodingJobStatus.ENCODING);
+
+            // Verify source file is still here
+            if (File.Exists(job.SourceFullPath) is false)
+            {
+                string msg = $"Source file no longer found for {job}";
+                logger.LogError(msg);
+                job.SetError(msg);
+                return;
+            }
 
             CancellationTokenSource encodingTokenSource = new();
             CancellationToken encodingToken = encodingTokenSource.Token;
