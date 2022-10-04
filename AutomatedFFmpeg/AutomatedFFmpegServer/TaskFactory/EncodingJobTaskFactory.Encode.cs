@@ -26,9 +26,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
             {
-                string msg = $"Source file no longer found for {job}";
-                logger.LogError(msg);
-                job.SetError(msg);
+                job.SetError(logger.LogError($"Source file no longer found for {job}"));
                 return;
             }
 
@@ -85,9 +83,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
             catch (Exception ex)
             {
-                string msg = $"Error encoding {job}.";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
+                job.SetError(logger.LogException(ex, $"Error encoding {job}."));
             }
 
             stopwatch.Stop();
@@ -107,25 +103,20 @@ namespace AutomatedFFmpegServer.TaskFactory
                 else if ((ffmpegProcess?.ExitCode ?? -1) != 0)
                 {
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    string msg = $"{job} encoding job failed. Exit Code: {(ffmpegProcess is null ? "NULL PROCESS" : ffmpegProcess.ExitCode)}";
-                    job.SetError(msg);
-                    logger.LogError(msg);
+                    job.SetError(logger.LogError($"{job} encoding job failed. Exit Code: {(ffmpegProcess is null ? "NULL PROCESS" : ffmpegProcess.ExitCode)}"));
                 }
                 // FILE NOT CREATED / EMPTY FILE
                 else if (nonEmptyFileExists is false)
                 {
                     DeleteFiles(job.DestinationFullPath);
-                    string msg = $"{job} either did not create an output or created an empty file";
-                    job.SetError(msg);
-                    logger.LogError(msg);
+                    job.SetError(logger.LogError($"{job} either did not create an output or created an empty file"));
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.Error is false && job.EncodingProgress < 75)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError($"{job} encoding job ended prematurely.");
-                    logger.LogError($"{job} encoding job ended prematurely.");
+                    job.SetError(logger.LogError($"{job} encoding job ended prematurely."));
                 }
                 // JOB ERRORED
                 else if (job.Error is true)
@@ -167,9 +158,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
             {
-                string msg = $"Source file no longer found for {job}";
-                logger.LogError(msg);
-                job.SetError(msg);
+                job.SetError(logger.LogError($"Source file no longer found for {job}"));
                 return;
             }
 
@@ -253,9 +242,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 if (videoEncodeProcess.Start() is false)
                 {
                     // If failed to start, error and end
-                    string msg = $"Video encoding failed to start for {job}";
-                    logger.LogError(msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogError($"Video encoding failed to start for {job}"));
                     return;
                 }
 
@@ -312,9 +299,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 if (audioSubEncodeProcess.Start() is false)
                 {
                     // If failed to start, error and end
-                    string msg = $"Audio/Sub encoding failed to start for {job}";
-                    logger.LogError(msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogError($"Audio/Sub encoding failed to start for {job}"));
                     encodingTokenSource.Cancel();
                 }
                 audioSubEncodeProcess.BeginErrorReadLine();
@@ -326,9 +311,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
             catch (Exception ex)
             {
-                string msg = $"Error encoding {job}.";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
+                job.SetError(logger.LogException(ex, $"Error encoding {job}."));
                 videoEncodeProcess.Kill(true);
                 audioSubEncodeProcess.Kill();
             }
@@ -352,8 +335,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
                     string msg = $"One of the encoding (video/audio-sub) processes errored for {job}. " +
                         $"Video Encode Exit Code: {(videoEncodeProcess is null ? "NULL VIDEO PROCESS" : videoEncodeProcess.ExitCode)} | Audio/Sub Encode Exit Code: {(audioSubEncodeProcess is null ? "NULL AUDIO/SUB PROCESS" : audioSubEncodeProcess.ExitCode)}";
-                    logger.LogError(msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogError(msg));
                     return;
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
@@ -361,8 +343,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     // Ensure these files are deleted
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
-                    job.SetError($"{job} encoding job ended prematurely.");
-                    logger.LogError($"{job} encoding job ended prematurely.");
+                    job.SetError(logger.LogError($"{job} encoding job ended prematurely."));
                     return;
                 }
                 // JOB ERRORED
@@ -428,18 +409,14 @@ namespace AutomatedFFmpegServer.TaskFactory
                     Process proc = sender as Process;
                     if (proc.ExitCode != 0)
                     {
-                        string msg = $"Merge process for {job} ended unsuccessfully. ExitCode: {proc.ExitCode}";
-                        job.SetError(msg);
-                        logger.LogError(msg);
+                        job.SetError(logger.LogError($"Merge process for {job} ended unsuccessfully. ExitCode: {proc.ExitCode}"));
                     }
                 };
 
                 if (mergeProcess.Start() is false)
                 {
                     // If failed to start, error and end
-                    string msg = $"Mkvmerge failed to start for {job}";
-                    logger.LogError(msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogError($"Mkvmerge failed to start for {job}"));
                     // Delete previous encoding files
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
                     return;
@@ -452,9 +429,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
             catch (Exception ex)
             {
-                string msg = $"Error merging {job}.";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
+                job.SetError(logger.LogException(ex, $"Error merging {job}."));
                 mergeProcess.Kill();
             }
 
@@ -487,8 +462,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 {
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.DestinationFullPath);
-                    job.SetError($"{job} encoding job ended prematurely.");
-                    logger.LogError($"{job} encoding job ended prematurely.");
+                    job.SetError(logger.LogError($"{job} encoding job ended prematurely."));
                 }
                 // JOB ERRORED
                 else if (job.Error is true)
@@ -500,9 +474,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 else if (nonEmptyFileExists is false)
                 {
                     DeleteFiles(job.DestinationFullPath);
-                    string msg = $"Output file not created for {job}";
-                    job.SetError(msg);
-                    logger.LogError(msg);
+                    job.SetError(logger.LogError($"Output file not created for {job}"));
                 }
             }
             catch (Exception ex)

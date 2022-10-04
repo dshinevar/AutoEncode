@@ -36,9 +36,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error copying output file to other locations for {job.Name}";
-                        logger.LogException(ex, msg);
-                        job.SetError(msg);
+                        job.SetError(logger.LogException(ex, $"Error copying output file to other locations for {job}"));
                         return;
                     }
                 }
@@ -54,9 +52,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error deleting source file for {job.Name}";
-                        logger.LogException(ex, msg);
-                        job.SetError(msg);
+                        job.SetError(logger.LogException(ex, $"Error deleting source file for {job}"));
                         return;
                     }
                 }
@@ -64,14 +60,12 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (OperationCanceledException)
             {
                 job.ResetStatus();
-                logger.LogInfo($"PostProcess was cancelled for {job}");
+                logger.LogInfo($"Post-Process was cancelled for {job}");
                 return;
             }
             catch (Exception ex)
             {
-                string msg = $"Error postprocessing {job}";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
+                job.SetError(logger.LogException(ex, $"Error post-processing {job}"));
                 return;
             }
 

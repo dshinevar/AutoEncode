@@ -35,9 +35,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
             {
-                string msg = $"Source file no longer found for {job}";
-                logger.LogError(msg);
-                job.SetError(msg);
+                job.SetError(logger.LogError($"Source file no longer found for {job}"));
                 return;
             }
 
@@ -56,18 +54,14 @@ namespace AutomatedFFmpegServer.TaskFactory
                     }
                     else
                     {
-                        // Reset job status and exit
-                        string msg = $"Failed to get probe data for {job.FileName}";
-                        logger.LogError(msg);
-                        job.SetError(msg);
+                        // Set error and end
+                        job.SetError(logger.LogError($"Failed to get probe data for {job.FileName}"));
                         return;
                     }
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error getting probe or source file data for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error getting probe or source file data for {job}"));
                     return;
                 }
 
@@ -80,9 +74,7 @@ namespace AutomatedFFmpegServer.TaskFactory
 
                     if (scanType.Equals(VideoScanType.UNDETERMINED))
                     {
-                        string msg = $"Failed to determine VideoScanType for {job.FileName}.";
-                        logger.LogError(msg);
-                        job.SetError(msg);
+                        job.SetError(logger.LogError($"Failed to determine VideoScanType for {job}."));
                         return;
                     }
                     else
@@ -92,9 +84,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error determining VideoScanType for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error determining VideoScanType for {job}"));
                     return;
                 }
 
@@ -107,9 +97,7 @@ namespace AutomatedFFmpegServer.TaskFactory
 
                     if (string.IsNullOrWhiteSpace(crop))
                     {
-                        string msg = $"Failed to determine crop for {job.FileName}";
-                        logger.LogError(msg);
-                        job.SetError(msg);
+                        job.SetError(logger.LogError($"Failed to determine crop for {job}"));
                         return;
                     }
                     else
@@ -119,9 +107,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error determining crop for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error determining crop for {job}"));
                     return;
                 }
 
@@ -164,9 +150,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error creating HDR metadata file for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error creating HDR metadata file for {job}"));
                     return;
                 }
 
@@ -179,9 +163,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error building encoding instructions for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error building encoding instructions for {job}"));
                     return;
                 }
 
@@ -229,9 +211,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    string msg = $"Error building FFmpeg command for {job.FileName}";
-                    logger.LogException(ex, msg);
-                    job.SetError(msg);
+                    job.SetError(logger.LogException(ex, $"Error building FFmpeg command for {job}"));
                     return;
                 }
             }
@@ -244,9 +224,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
             catch (Exception ex)
             {
-                string msg = $"Error building encoding job for {job}";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
+                job.SetError(logger.LogException(ex, $"Error building encoding job for {job}"));
                 return;
             }
 
