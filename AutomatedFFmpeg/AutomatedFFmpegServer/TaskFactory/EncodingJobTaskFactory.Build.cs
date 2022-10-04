@@ -757,7 +757,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 .AppendFormat(format, $"--repeat-headers --keyint 120")
                 .AppendFormat(format, $"--master-display {masterDisplayFormatted}")
                 .AppendFormat(format, $"--max-cll {maxCLLFormatted} --colormatrix {streamData.VideoStream.ColorSpace} --colorprim {streamData.VideoStream.ColorPrimaries} --transfer {streamData.VideoStream.ColorTransfer}")
-                .AppendFormat(format, $"--dolby-vision-rpu {dolbyVisionPathFormatted} --dolby-vision-profile 8.1 --vbv-bufsize 140000 --vbv-maxrate 140000");
+                .AppendFormat(format, $"--dolby-vision-rpu {dolbyVisionPathFormatted} --dolby-vision-profile 8.1 --vbv-bufsize 120000 --vbv-maxrate 120000");
 
             if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
             {

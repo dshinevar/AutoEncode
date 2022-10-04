@@ -1,6 +1,5 @@
 ﻿using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Interfaces;
-using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
