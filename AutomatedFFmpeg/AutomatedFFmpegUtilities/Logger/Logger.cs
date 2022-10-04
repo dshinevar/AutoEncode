@@ -6,6 +6,7 @@ using System.Linq;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using AutomatedFFmpegUtilities;
 
 namespace AutomatedFFmpegUtilities.Logger
 {
@@ -105,21 +106,12 @@ namespace AutomatedFFmpegUtilities.Logger
             StringBuilder sbLogMsg = new();
 
             sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
-            if (string.IsNullOrEmpty(threadName))
-            {
-                if (!string.IsNullOrEmpty(callingMemberName))
-                {
-                    sbLogMsg.Append($"[{callingMemberName}]");
-                }
-            }
-            else
-            {
-                sbLogMsg.Append($"[{threadName}]");
 
-                if (!string.IsNullOrEmpty(callingMemberName))
-                {
-                    sbLogMsg.Append($"[{callingMemberName}]");
-                }
+            string threadAndCallingMemberName = HelperMethods.JoinFilterWrap(string.Empty, "[", "]", threadName, callingMemberName);
+
+            if (string.IsNullOrEmpty(threadAndCallingMemberName) is false)
+            {
+                sbLogMsg.Append(threadAndCallingMemberName);
             }
 
             sbLogMsg.Append(": ");
