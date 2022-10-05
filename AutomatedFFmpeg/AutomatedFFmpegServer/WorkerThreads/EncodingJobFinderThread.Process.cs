@@ -210,7 +210,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             FileInfo fileInfo = new(filePath);
             long beforeFileSize = fileInfo.Length;
 
-            Thread.Sleep(2000);
+            Thread.Sleep(5000);
 
             fileInfo.Refresh();
             long afterFileSize = fileInfo.Length;
