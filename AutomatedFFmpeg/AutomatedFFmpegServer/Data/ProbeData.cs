@@ -243,7 +243,7 @@ namespace AutomatedFFmpegServer.Data
                     sourceFileData.VideoStream.ChromaLocation = chroma;
 
                     // Usually should have something in here
-                    if (frame.side_data_list.Any())
+                    if (frame?.side_data_list?.Any() ?? false)
                     {
                         // Should only be one
                         SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata"));
