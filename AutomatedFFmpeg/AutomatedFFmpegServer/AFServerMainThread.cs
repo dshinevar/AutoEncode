@@ -73,7 +73,7 @@ namespace AutomatedFFmpegServer
             EncodingJobFinderThread.Start();
             //ServerSocket?.StartListening();
 
-            MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromHours(1), MaintenanceTimerWaitTime);
+            MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(30), MaintenanceTimerWaitTime);
             EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
             ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
