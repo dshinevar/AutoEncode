@@ -202,12 +202,27 @@ namespace AutomatedFFmpegServer.WorkerThreads
             }
         }
 
-        /// <summary>Check if file size is changing, if it is, it is not ready for encoding.</summary>
+        /// <summary>Check if file is accessible or file size is changing.</summary>
         /// <param name="filePath"></param>
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
             FileInfo fileInfo = new(filePath);
+
+            // Check if it can be accessed first
+            try
+            {
+                using (FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+
+            // If still able to access, check to see if file size is changing
             long beforeFileSize = fileInfo.Length;
 
             Thread.Sleep(5000);
