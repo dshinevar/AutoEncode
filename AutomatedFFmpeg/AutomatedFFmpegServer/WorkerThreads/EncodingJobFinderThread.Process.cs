@@ -212,10 +212,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             // Check if it can be accessed first
             try
             {
-                using (FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                {
-                    stream.Close();
-                }
+                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             }
             catch (IOException)
             {
