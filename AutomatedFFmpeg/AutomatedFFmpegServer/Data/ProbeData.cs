@@ -1,5 +1,4 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Data;
+﻿using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Interfaces;
 using System;
@@ -247,7 +246,7 @@ namespace AutomatedFFmpegServer.Data
                     {
                         // Should only be one
                         SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata"));
-                        
+
                         // Has HDR; Otherwise, we can't do HDR so don't do anything more
                         if (masteringDisplayMetadata is not null)
                         {

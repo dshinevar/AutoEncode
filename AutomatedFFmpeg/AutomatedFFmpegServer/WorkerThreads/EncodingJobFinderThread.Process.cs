@@ -3,7 +3,6 @@ using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -37,10 +36,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                bFoundEncodingJob = moviesToEncode.Any();
+                                bFoundEncodingJob |= moviesToEncode.Any();
                                 moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
-
                         }
                         foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
                         {
@@ -48,7 +46,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                bFoundEncodingJob = episodesToEncode.Any();
+                                bFoundEncodingJob |= episodesToEncode.Any();
                                 episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
@@ -137,7 +135,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                     };
                                     seasonData.Episodes.Add(episodeData);
                                 }
-                                seasonData.Episodes.Sort((x,y) => x.FileName.CompareTo(y.FileName));
+                                seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
                                 showData.Seasons.Add(seasonData);
                             }
                             showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
@@ -166,7 +164,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             };
                             movies.Add(sourceData);
                         }
-                        movies.Sort((x,y) => x.FileName.CompareTo(y.FileName));
+                        movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
 
                         lock (movieSourceFileLock)
                         {

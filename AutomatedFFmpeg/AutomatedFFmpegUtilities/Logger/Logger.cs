@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using AutomatedFFmpegUtilities;
 
 namespace AutomatedFFmpegUtilities.Logger
 {

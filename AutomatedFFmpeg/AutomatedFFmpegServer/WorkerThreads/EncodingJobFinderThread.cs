@@ -1,10 +1,9 @@
-﻿using AutomatedFFmpegUtilities.Config;
+﻿using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
-using AutomatedFFmpegUtilities;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
