@@ -70,7 +70,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             }
 
             job.CompletePostProcessing();
-            logger.LogInfo($"Successfully post-processed {job.Name} encoding job.");
+            logger.LogInfo($"Successfully post-processed {job} encoding job.");
         }
     }
 }

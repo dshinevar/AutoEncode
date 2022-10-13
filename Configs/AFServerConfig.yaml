@@ -4,8 +4,6 @@
 ServerSettings:
     IP: 127.0.0.1
     Port: 39000
-    VideoFileExtensions: ['.mkv', '.m4v', '.avi']
-    ThreadSleepInMS: 300000
     # Directory of FFmpeg that AFServer will use
     FFmpegDirectory: ''
     # Currently built around using hdr10plus_tool and dovi_tool; Will need to install manually
@@ -16,6 +14,12 @@ ServerSettings:
         LogFileLocation: '\Fake\Path'
         MaxFileSizeInBytes: 4098
         BackupFileCount: 3
+
+# Setting for the JobFinder thread
+JobFinderSettings:
+    VideoFileExtensions: ['.mkv', '.m4v', '.avi']
+    SecondFileExtensionSkip: 'skip'
+    ThreadSleepInMinutes: 5
 
 # Settings that apply to all jobs
 GlobalJobSettings:

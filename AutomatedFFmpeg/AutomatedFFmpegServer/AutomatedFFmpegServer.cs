@@ -162,7 +162,8 @@ namespace AutomatedFFmpegServer
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             startupLog.Add($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.");
             startupLog.Add($"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}");
-            startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.ServerSettings.VideoFileExtensions)}");
+            startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.JobFinderSettings.VideoFileExtensions)}");
+            if (!string.IsNullOrWhiteSpace(serverConfig.JobFinderSettings.SecondarySkipExtension)) startupLog.Add($"SKIP SECONDARY EXTENSION: {serverConfig.JobFinderSettings.SecondarySkipExtension}");
             startupLog.Add($"DOLBY VISION: {(dolbyVisionEnabled ? "ENABLED" : "DISABLED")}");
             if (dolbyVisionEnabled)
             {

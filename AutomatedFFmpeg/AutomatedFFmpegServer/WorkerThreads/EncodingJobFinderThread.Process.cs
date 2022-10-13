@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace AutomatedFFmpegServer.WorkerThreads
 {
@@ -111,7 +112,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                         List<ShowSourceData> shows = new();
                         IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
                         IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         // Show
                         foreach (string showPath in sourceShows)
                         {
@@ -124,7 +125,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                 string season = new DirectoryInfo(seasonPath).Name;
                                 SeasonSourceData seasonData = new(season);
                                 IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                    .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
+                                    .Where(file => ValidSourceFile(file));
                                 // Episode
                                 foreach (string episodePath in episodes)
                                 {
@@ -152,9 +153,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     {
                         List<VideoSourceData> movies = new();
                         IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
+                            .Where(file => ValidSourceFile(file));
                         IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
                         foreach (string sourceFile in sourceFiles)
                         {
                             VideoSourceData sourceData = new()
@@ -198,6 +199,34 @@ namespace AutomatedFFmpegServer.WorkerThreads
             {
                 Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName);
             }
+        }
+
+        /// <summary> Checks if a file is valid for being considered a source file.
+        /// <para>Currently 2 checks:</para>
+        /// <para>1. Valid file extension</para>
+        /// <para>2. File doesn't contain the secondary skip extension</para>
+        /// </summary>
+        /// <param name="filePath">Path of the file</param>
+        /// <returns>True if valid; False, otherwise</returns>
+        private bool ValidSourceFile(string filePath)
+        {
+            // Check if it's an allowed file extension
+            bool valid = State.JobFinderSettings.VideoFileExtensions.Any(filePath.ToLower().EndsWith);
+
+            // If valid and the config has a secondary skip extension
+            if (valid is true && string.IsNullOrWhiteSpace(State.JobFinderSettings.SecondarySkipExtension) is false)
+            {
+                string fileSecondExtension = Path.GetExtension(Path.GetFileNameWithoutExtension(filePath)).Trim('.');
+
+                // If there even is a secondary extension, check if it's the skip extension
+                if (string.IsNullOrWhiteSpace(fileSecondExtension) is false)
+                {
+                    // File is NOT valid if the extension equals the skip extension
+                    valid &= !fileSecondExtension.Equals(State.JobFinderSettings.SecondarySkipExtension, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return valid;
         }
 
         /// <summary>Check if file is accessible or file size is changing.</summary>
