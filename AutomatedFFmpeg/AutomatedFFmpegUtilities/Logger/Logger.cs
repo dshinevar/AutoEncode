@@ -85,12 +85,17 @@ namespace AutomatedFFmpegUtilities.Logger
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
         public string LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, new string[] { msg }, threadName, callingMemberName);
-        /// <summary> Log an <see cref="Exception"/>. Will log both the message and Exception message. </summary>
+        /// <summary> Log an <see cref="Exception"/>. Will log the message, Exception message, and stack trace. </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
         public string LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
-            => LogError(new string[] { msg, $"Exception: {ex.Message}" }, threadName, callingMemberName);
+        {
+            List<string> messages = new() { msg, $"Exception: {ex.Message}" };
+            messages.AddRange(ex.StackTrace.Split(Environment.NewLine));
+            return LogError(messages, threadName, callingMemberName);
+        }
+
 
         /// <summary>Base log function; Returns first string from list for usage elsewhere if needed. </summary>
         /// <param name="severity"><see cref="Severity"/></param>
