@@ -3,7 +3,6 @@ using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -37,10 +36,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                bFoundEncodingJob = moviesToEncode.Any();
+                                bFoundEncodingJob |= moviesToEncode.Any();
                                 moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
-
                         }
                         foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
                         {
@@ -48,7 +46,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                bFoundEncodingJob = episodesToEncode.Any();
+                                bFoundEncodingJob |= episodesToEncode.Any();
                                 episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
@@ -74,7 +72,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 catch (Exception ex)
                 {
                     Logger.LogException(ex, "Error during looking for encoding jobs.", ThreadName);
-                    Debug.WriteLine($"[{ThreadName}] ERROR: {ex.Message}");
                     return;
                 }
             }
@@ -138,7 +135,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                                     };
                                     seasonData.Episodes.Add(episodeData);
                                 }
-                                seasonData.Episodes.Sort((x,y) => x.FileName.CompareTo(y.FileName));
+                                seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
                                 showData.Seasons.Add(seasonData);
                             }
                             showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
@@ -167,7 +164,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             };
                             movies.Add(sourceData);
                         }
-                        movies.Sort((x,y) => x.FileName.CompareTo(y.FileName));
+                        movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
 
                         lock (movieSourceFileLock)
                         {
@@ -178,34 +175,54 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 else
                 {
                     Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
-                    Debug.WriteLine($"{entry.Value.Source} does not exist.");
                 }
             });
         }
 
         private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
-            // Don't create encoding job if we are at max count
-            if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
+            try
             {
-                // Only add encoding job is file is ready.
-                if (CheckFileReady(sourceData.FullPath))
+                // Don't create encoding job if we are at max count
+                if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                 {
-                    int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
-                    if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                    // Only add encoding job is file is ready.
+                    if (CheckFileReady(sourceData.FullPath))
+                    {
+                        int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
+                        if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName);
             }
         }
 
-        /// <summary>Check if file size is changing, if it is, it is not ready for encoding.</summary>
+        /// <summary>Check if file is accessible or file size is changing.</summary>
         /// <param name="filePath"></param>
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
             FileInfo fileInfo = new(filePath);
 
+            // Check if it can be accessed first
+            try
+            {
+                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+
+            // If still able to access, check to see if file size is changing
             long beforeFileSize = fileInfo.Length;
-            Thread.Sleep(2000);
+
+            Thread.Sleep(5000);
+
+            fileInfo.Refresh();
             long afterFileSize = fileInfo.Length;
 
             return beforeFileSize == afterFileSize;

@@ -67,13 +67,29 @@ namespace AutomatedFFmpegServer
             return jobId;
         }
         /// <summary>Removes an encoding job from the list.</summary>
-        /// <param name="job">EncodingJob</param>
+        /// <param name="job"><see cref="EncodingJob"/></param>
+        /// <returns>True if successfully removed; False, otherwise.</returns>
         public static bool RemoveEncodingJob(EncodingJob job)
         {
             lock (jobLock)
             {
                 return jobQueue.Remove(job);
             }
+        }
+
+        /// <summary>Removes an encoding job from the queue by id lookup.</summary>
+        /// <param name="id">Id of the EncodingJob</param>
+        /// <returns>True if successfully removed; False, otherwise.</returns>
+        public static bool RemoveEncodingJobById(int id)
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                var job = jobQueue.SingleOrDefault(x => x.Id == id);
+                if (job is not null) success = jobQueue.Remove(job);
+            }
+
+            return success;
         }
 
         /// <summary> Checks to see if a job exists by the given filename. </summary>
@@ -150,66 +166,21 @@ namespace AutomatedFFmpegServer
             }
         }
 
-        /// <summary> Clears completed jobs </summary>
-        /// <param name="hoursSinceCompleted">The number of hours a job needs to have been marked completed before removal.</param>
-        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
-        public static IList<string> ClearCompletedJobs(int hoursSinceCompleted)
-        {
-            IList<string> jobsRemoved = new List<string>();
-
-            // Handle jobs that don't need post processing
-            IEnumerable<EncodingJob> completedJobs = jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED && 
-                                                                    x.CompletedEncodingDateTime.HasValue && 
+        /// <summary>Gets encoding jobs that have been encoded and do not need post-processing. </summary>
+        /// <returns>IReadOnlyList of <see cref="EncodingJob>"/></returns>
+        public static IReadOnlyList<EncodingJob> GetEncodedEncodingJobs()
+            => jobQueue.Where(x => x.Status >= EncodingJobStatus.ENCODED &&
+                                                                    x.CompletedEncodingDateTime.HasValue &&
                                                                     x.PostProcessingFlags.Equals(PostProcessingFlags.None) is true).ToList();
-            foreach (EncodingJob job in completedJobs)
-            {
-                // If it's been completed for longer than the given number of hours, remove job
-                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedEncodingDateTime);
-                if (ts.TotalHours >= hoursSinceCompleted)
-                {
-                    bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.ToString());
-                }
-            }
 
-            // Handle jobs that need post processsing
-            completedJobs = jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue).ToList();
-            foreach (EncodingJob job in completedJobs)
-            {
-                // If it's been completed for longer than the given number of hours, remove job
-                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.CompletedPostProcessingTime);
-                if (ts.TotalHours >= hoursSinceCompleted)
-                {
-                    bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.ToString());
-                }
-            }
+        /// <summary>Gets encoding jobs that have been post-processed (and completed encoding). </summary>
+        /// <returns>IReadOnlyList of <see cref="EncodingJob>"/></returns>
+        public static IReadOnlyList<EncodingJob> GetPostProcessedEncodingJobs()
+            => jobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) && x.CompletedPostProcessingTime.HasValue).ToList();
 
-            return jobsRemoved;
-        }
-
-        /// <summary> Clears errored jobs </summary>
-        /// <param name="hoursSinceErrored">The number of hours a job needs to have been marked in error before removal.</param>
-        /// <returns>A <see cref="IList{T}"/> of strings of the removed jobs.</returns>
-        public static IList<string> ClearErroredJobs(int hoursSinceErrored)
-        {
-            IList<string> jobsRemoved = new List<string>();
-
-            // Handle jobs that don't need post processing
-            IEnumerable<EncodingJob> erroredJobs = jobQueue.Where(x => x.Error is true).ToList();
-
-            foreach (EncodingJob job in erroredJobs)
-            {
-                TimeSpan ts = DateTime.Now.Subtract((DateTime)job.ErrorTime);
-                if (ts.TotalHours >= hoursSinceErrored)
-                {
-                    bool success = RemoveEncodingJob(job);
-                    if (success) jobsRemoved.Add(job.ToString());
-                }
-            }
-
-            return jobsRemoved;
-        }
+        /// <summary>Gets errored encoding jobs. </summary>
+        /// <returns>IReadOnlyList of <see cref="EncodingJob"/></returns>
+        public static IReadOnlyList<EncodingJob> GetErroredJobs() => jobQueue.Where(x => x.Error is true).ToList();
 
         public static string Output()
         { 

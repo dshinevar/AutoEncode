@@ -1,10 +1,9 @@
-﻿using AutomatedFFmpegUtilities.Config;
+﻿using AutomatedFFmpegUtilities;
+using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
-using AutomatedFFmpegUtilities;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -56,7 +55,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
                 IsBackground = true
             };
 
-            Debug.WriteLine($"{ThreadName} Starting");
             Logger.LogInfo($"{ThreadName} Starting", ThreadName);
             // Update the source files initially before starting thread
             BuildSourceFiles(SearchDirectories);
@@ -65,7 +63,6 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         public void Stop()
         {
-            Debug.WriteLine($"{ThreadName} Shutting Down.");
             Logger.LogInfo($"{ThreadName} Shutting Down", ThreadName);
             Shutdown = true;
 

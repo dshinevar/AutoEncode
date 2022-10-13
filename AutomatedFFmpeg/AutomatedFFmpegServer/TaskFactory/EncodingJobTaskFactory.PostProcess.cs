@@ -2,7 +2,6 @@
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -19,7 +18,7 @@ namespace AutomatedFFmpegServer.TaskFactory
             // Double-check to ensure we don't post-process a job that shouldn't be
             if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;
 
-            job.Status = EncodingJobStatus.POST_PROCESSING;
+            job.SetStatus(EncodingJobStatus.POST_PROCESSING);
 
             try
             {
@@ -37,10 +36,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error copying output file to other locations for {job.Name}";
-                        logger.LogException(ex, msg);
-                        Debug.WriteLine($"{msg} : {ex.Message}");
-                        job.SetError(msg);
+                        job.SetError(logger.LogException(ex, $"Error copying output file to other locations for {job}"));
                         return;
                     }
                 }
@@ -56,10 +52,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        string msg = $"Error deleting source file for {job.Name}";
-                        logger.LogException(ex, msg);
-                        Debug.WriteLine($"{msg} : {ex.Message}");
-                        job.SetError(msg);
+                        job.SetError(logger.LogException(ex, $"Error deleting source file for {job}"));
                         return;
                     }
                 }
@@ -67,17 +60,12 @@ namespace AutomatedFFmpegServer.TaskFactory
             catch (OperationCanceledException)
             {
                 job.ResetStatus();
-                string msg = $"PostProcess was cancelled for {job}";
-                logger.LogInfo(msg);
-                Debug.WriteLine(msg);
+                logger.LogInfo($"Post-Process was cancelled for {job}");
                 return;
             }
             catch (Exception ex)
             {
-                string msg = $"Error postprocessing {job}";
-                logger.LogException(ex, msg);
-                job.SetError(msg);
-                Debug.WriteLine(msg);
+                job.SetError(logger.LogException(ex, $"Error post-processing {job}"));
                 return;
             }
 

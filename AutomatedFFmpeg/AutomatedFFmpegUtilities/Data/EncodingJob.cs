@@ -40,7 +40,7 @@ namespace AutomatedFFmpegUtilities.Data
 
         #region Status
         /// <summary>Overall Status of the Job </summary>
-        public EncodingJobStatus Status { get; set; } = EncodingJobStatus.NEW;
+        public EncodingJobStatus Status { get; private set; } = EncodingJobStatus.NEW;
         /// <summary>Flag showing if a job is in error </summary>
         public bool Error { get; private set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
@@ -49,18 +49,8 @@ namespace AutomatedFFmpegUtilities.Data
         public bool Paused { get; set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
         public bool Cancelled { get; set; } = false;
-        private int _encodingProgress = 0;
         /// <summary>Encoding Progress Percentage </summary>
-        public int EncodingProgress
-        {
-            get => _encodingProgress;
-            set
-            {
-                if (value > 100) _encodingProgress = 100;
-                else if (value < 0) _encodingProgress = 0;
-                else _encodingProgress = value;
-            }
-        }
+        public int EncodingProgress { get; private set; }
         /// <summary>Amount of time spent encoding. </summary>
         public TimeSpan? ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
         /// <summary> DateTime when encoding was completed </summary>
@@ -88,28 +78,41 @@ namespace AutomatedFFmpegUtilities.Data
 
         #region Public Functions
         public override string ToString() => $"(JobID: {Id}) {Name}";
+
+        /// <summary>Sets the current status of the job.</summary>
+        /// <param name="status"></param>
+        public void SetStatus(EncodingJobStatus status) => Status = status;
+
+        /// <summary>Handles updating of encoding progress.</summary>
+        /// <param name="progress"></param>
+        public void UpdateEncodingProgress(int progress)
+        {
+            if (progress > 100) EncodingProgress = 100;
+            else if (progress < 0) EncodingProgress = 0;
+            else EncodingProgress = progress;
+        }
         /// <summary>Marks the job as completed encoding </summary>
         /// <param name="timeCompleted"></param>
         public void CompleteEncoding(TimeSpan timeElapsed)
         {
-            Status = EncodingJobStatus.ENCODED;
+            SetStatus(EncodingJobStatus.ENCODED);
             CompletedEncodingDateTime = DateTime.Now;
             ElapsedEncodingTime = timeElapsed;
-            EncodingProgress = 100;
+            UpdateEncodingProgress(100);
         }
         /// <summary> Resets encoding status and progress </summary>
         public void ResetEncoding()
         {
-            EncodingProgress = 0;
+            UpdateEncodingProgress(0);
             CompletedEncodingDateTime = null;
             ElapsedEncodingTime = TimeSpan.Zero;
-            Status = EncodingJobStatus.BUILT;
+            SetStatus(EncodingJobStatus.BUILT);
         }
         /// <summary>Marks the job as completed post processing </summary>
         /// <param name="timeCompleted"></param>
         public void CompletePostProcessing()
         {
-            Status = EncodingJobStatus.POST_PROCESSED;
+            SetStatus(EncodingJobStatus.POST_PROCESSED);
             CompletedPostProcessingTime = DateTime.Now;
         }
         /// <summary>Sets the given PostProcessingFlag for the job </summary>
