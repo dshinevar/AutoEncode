@@ -8,7 +8,7 @@ namespace AutomatedFFmpegUtilities.Config
 
         public string SecondarySkipExtension { get; set; } = "skip";
 
-        public int ThreadSleepInMinutes { get; set; } = 5;
+        public double ThreadSleepInMinutes { get; set; } = 5;
 
         public TimeSpan ThreadSleep => TimeSpan.FromMinutes(ThreadSleepInMinutes);
     }

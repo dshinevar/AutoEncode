@@ -27,7 +27,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private Thread Thread { get; set; }
         private string ThreadName => Thread?.Name ?? string.Empty;
         private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(5);
-        private TimeSpan ThreadDeepSleep => TimeSpan.FromTicks(ThreadSleep.Ticks * 5);
+        private TimeSpan ThreadDeepSleep => TimeSpan.FromMinutes(ThreadSleep.TotalMinutes * 5);
 
         private AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
         private AFServerMainThread MainThread { get; set; }
