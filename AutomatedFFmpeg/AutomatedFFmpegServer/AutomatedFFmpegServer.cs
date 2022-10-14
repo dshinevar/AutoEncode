@@ -187,11 +187,15 @@ namespace AutomatedFFmpegServer
             {
                 if (File.Exists(Lookups.PreviouslyEncodingTempFile))
                 {
-                    string fileToDelete = File.ReadLines(Lookups.PreviouslyEncodingTempFile).First().Trim();
+                    IEnumerable<string> filesToDelete = File.ReadLines(Lookups.PreviouslyEncodingTempFile);
 
-                    if (File.Exists(fileToDelete))
+                    foreach (string file in filesToDelete)
                     {
-                        File.Delete(fileToDelete);
+                        string fileToDelete = file.Trim();
+                        if (File.Exists(fileToDelete))
+                        {
+                            File.Delete(fileToDelete);
+                        }
                     }
 
                     File.Delete(Lookups.PreviouslyEncodingTempFile);
