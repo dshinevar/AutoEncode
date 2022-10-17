@@ -23,7 +23,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     Status = AFWorkerThreadStatus.PROCESSING;
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
-                    bool bFoundEncodingJob = false;
+                    bool foundEncodingJob = false;
 
                     // Don't do anything if the queue is full
                     if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
@@ -36,7 +36,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                bFoundEncodingJob |= moviesToEncode.Any();
+                                foundEncodingJob |= moviesToEncode.Any();
                                 moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
@@ -46,13 +46,13 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                bFoundEncodingJob |= episodesToEncode.Any();
+                                foundEncodingJob |= episodesToEncode.Any();
                                 episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
                     }
 
-                    if (bFoundEncodingJob is false)
+                    if (foundEncodingJob is false)
                     {
                         failedToFindJobCount++;
                         if (failedToFindJobCount >= MaxFailedToFindJobCount)
