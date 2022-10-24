@@ -81,7 +81,7 @@ namespace AutomatedFFmpegServer
             if (jobsRemovedLog.Any())
             {
                 jobsRemovedLog.Insert(0, "Completed Jobs Removed");
-                Logger.LogInfo(jobsRemovedLog, ThreadName);
+                Logger.LogInfo(jobsRemovedLog, MaintenanceThreadName);
             }
         }
 
