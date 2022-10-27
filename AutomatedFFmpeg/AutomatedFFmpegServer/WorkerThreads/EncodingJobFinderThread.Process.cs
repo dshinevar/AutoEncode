@@ -103,78 +103,97 @@ namespace AutomatedFFmpegServer.WorkerThreads
         {
             Parallel.ForEach(searchDirectories, entry =>
             {
-                if (Directory.Exists(entry.Value.Source))
+                try
                 {
-                    // TV Show structured directories
-                    if (entry.Value.TVShowStructure)
+                    if (Directory.Exists(entry.Value.Source))
                     {
-                        List<ShowSourceData> shows = new();
-                        IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
-                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
-                        // Show
-                        foreach (string showPath in sourceShows)
+                        // TV Show structured directories
+                        if (entry.Value.TVShowStructure)
                         {
-                            string showName = new DirectoryInfo(showPath).Name;
-                            ShowSourceData showData = new(showName);
-                            IEnumerable<string> seasons = Directory.GetDirectories(showPath);
-                            // Season
-                            foreach (string seasonPath in seasons)
+                            List<ShowSourceData> shows = new();
+                            IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
+                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            // Show
+                            foreach (string showPath in sourceShows)
                             {
-                                string season = new DirectoryInfo(seasonPath).Name;
-                                SeasonSourceData seasonData = new(season);
-                                IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                    .Where(file => ValidSourceFile(file));
-                                // Episode
-                                foreach (string episodePath in episodes)
-                                {
-                                    VideoSourceData episodeData = new()
-                                    {
-                                        FullPath = episodePath,
-                                        Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
-                                    };
-                                    seasonData.Episodes.Add(episodeData);
-                                }
-                                seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
-                                showData.Seasons.Add(seasonData);
-                            }
-                            showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
-                            shows.Add(showData);
-                        }
-                        shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
+                                // Double check existence (in case of deletion while running)
+                                if (Directory.Exists(showPath) is false) continue;
 
-                        lock (showSourceFileLock)
+                                string showName = new DirectoryInfo(showPath).Name;
+                                ShowSourceData showData = new(showName);
+                                IEnumerable<string> seasons = Directory.GetDirectories(showPath);
+                                // Season
+                                foreach (string seasonPath in seasons)
+                                {
+                                    // Double check existence (in case of deletion while running)
+                                    if (Directory.Exists(seasonPath) is false) continue;
+
+                                    string season = new DirectoryInfo(seasonPath).Name;
+                                    SeasonSourceData seasonData = new(season);
+                                    IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
+                                        .Where(file => ValidSourceFile(file));
+                                    // Episode
+                                    foreach (string episodePath in episodes)
+                                    {
+                                        // Double check existence (in case of deletion while running)
+                                        if (File.Exists(episodePath) is false) continue;
+
+                                        VideoSourceData episodeData = new()
+                                        {
+                                            FullPath = episodePath,
+                                            Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
+                                        };
+                                        seasonData.Episodes.Add(episodeData);
+                                    }
+                                    seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
+                                    showData.Seasons.Add(seasonData);
+                                }
+                                showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
+                                shows.Add(showData);
+                            }
+                            shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
+
+                            lock (showSourceFileLock)
+                            {
+                                ShowSourceFiles[entry.Key] = shows;
+                            }
+                        }
+                        else
                         {
-                            ShowSourceFiles[entry.Key] = shows;
+                            List<VideoSourceData> movies = new();
+                            IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
+                                .Where(file => ValidSourceFile(file));
+                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            foreach (string sourceFile in sourceFiles)
+                            {
+                                if (File.Exists(sourceFile) is false) continue;
+
+                                VideoSourceData sourceData = new()
+                                {
+                                    FullPath = sourceFile,
+                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
+                                };
+                                movies.Add(sourceData);
+                            }
+                            movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
+
+                            lock (movieSourceFileLock)
+                            {
+                                MovieSourceFiles[entry.Key] = movies;
+                            }
                         }
                     }
                     else
                     {
-                        List<VideoSourceData> movies = new();
-                        IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                            .Where(file => ValidSourceFile(file));
-                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
-                        foreach (string sourceFile in sourceFiles)
-                        {
-                            VideoSourceData sourceData = new()
-                            {
-                                FullPath = sourceFile,
-                                Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
-                            };
-                            movies.Add(sourceData);
-                        }
-                        movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
-
-                        lock (movieSourceFileLock)
-                        {
-                            MovieSourceFiles[entry.Key] = movies;
-                        }
+                        Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
+                    Logger.LogException(ex, $"Error building source files for source directory {entry.Key}", ThreadName);
+                    return;
                 }
             });
         }
