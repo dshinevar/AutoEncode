@@ -253,11 +253,19 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private static bool CheckFileReady(string filePath)
         {
             FileInfo fileInfo = new(filePath);
+            long beforeFileSize = fileInfo.Length;
 
             // Check if it can be accessed first
             try
             {
-                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                // Do multiple attempts just in case
+                int count = 0;
+                while (count < 5)
+                {
+                    using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    count++;
+                }
             }
             catch (IOException)
             {
@@ -265,9 +273,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             }
 
             // If still able to access, check to see if file size is changing
-            long beforeFileSize = fileInfo.Length;
-
-            Thread.Sleep(5000);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
             fileInfo.Refresh();
             long afterFileSize = fileInfo.Length;
