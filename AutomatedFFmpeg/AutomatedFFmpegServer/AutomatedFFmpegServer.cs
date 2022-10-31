@@ -123,10 +123,15 @@ namespace AutomatedFFmpegServer
                 Environment.Exit(-2);
             }
 
-            // DOLBY VISION: CHECK FOR MKVMERGE AND X265
+            // HDR10PLUS EXTRACTOR CHECK
+            bool hdr10PlusExtractorFound = !string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath) && File.Exists(serverConfig.ServerSettings.HDR10PlusExtractorFullPath);
+
+            // DOLBY VISION: CHECK FOR EXTRACTOR, MKVMERGE, AND X265
             string mkvmergeVersion = string.Empty;
             List<string> x265Version = null;
-            if (serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled is true)
+            bool dolbyVisionExtractorFound = !string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath) && File.Exists(serverConfig.ServerSettings.DolbyVisionExtractorFullPath);
+
+            if (serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled is true && dolbyVisionExtractorFound is true)
             {
                 try
                 {
@@ -153,9 +158,9 @@ namespace AutomatedFFmpegServer
             }
 
             bool dolbyVisionEnabled = serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled &&
+                                        dolbyVisionExtractorFound is true &&
                                         !string.IsNullOrWhiteSpace(mkvmergeVersion) &&
-                                        x265Version?.Any() is true &&
-                                        !string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath);
+                                        x265Version?.Any() is true;
             serverState.GlobalJobSettings.DolbyVisionEncodingEnabled = dolbyVisionEnabled;
 
             // GET AND LOG STARTUP AND VERSION
@@ -167,11 +172,12 @@ namespace AutomatedFFmpegServer
             startupLog.Add($"DOLBY VISION: {(dolbyVisionEnabled ? "ENABLED" : "DISABLED")}");
             if (dolbyVisionEnabled)
             {
-                startupLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath}");
+                startupLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath} ({(dolbyVisionExtractorFound ? "FOUND" : "NOT FOUND")})");
                 startupLog.Add($"x265: {serverConfig.ServerSettings.X265FullPath}");
                 startupLog.Add($"MKVMERGE: {serverConfig.ServerSettings.MkvMergeFullPath}");
             }
-            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath}");
+            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) 
+                startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath} ({(hdr10PlusExtractorFound ? "FOUND" : "NOT FOUND")})");
             startupLog.Add($"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}");
             startupLog.AddRange(ffmpegVersion);
             startupLog.Add(mkvmergeVersion);
