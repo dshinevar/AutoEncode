@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -252,8 +253,9 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
+            List<long> fileSizes = new();
             FileInfo fileInfo = new(filePath);
-            long beforeFileSize = fileInfo.Length;
+            fileSizes.Add(fileInfo.Length);
 
             // Check if it can be accessed first
             try
@@ -273,12 +275,15 @@ namespace AutomatedFFmpegServer.WorkerThreads
             }
 
             // If still able to access, check to see if file size is changing
-            Thread.Sleep(TimeSpan.FromSeconds(3));
+            fileInfo = new(filePath);
+            fileSizes.Add(fileInfo.Length);
+
+            Thread.Sleep(TimeSpan.FromSeconds(4));
 
             fileInfo = new(filePath);
-            long afterFileSize = fileInfo.Length;
+            fileSizes.Add(fileInfo.Length);
 
-            return beforeFileSize == afterFileSize;
+            return fileSizes.All(x => x.Equals(fileSizes.First()));
         }
         #endregion PRIVATE FUNCTIONS
     }
