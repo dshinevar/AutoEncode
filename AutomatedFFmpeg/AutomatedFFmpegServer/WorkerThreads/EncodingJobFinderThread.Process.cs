@@ -275,7 +275,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             // If still able to access, check to see if file size is changing
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
-            fileInfo.Refresh();
+            fileInfo = new(filePath);
             long afterFileSize = fileInfo.Length;
 
             return beforeFileSize == afterFileSize;
