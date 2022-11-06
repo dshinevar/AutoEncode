@@ -248,7 +248,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             return valid;
         }
 
-        /// <summary>Check if file is accessible or file size is changing.</summary>
+        /// <summary>Check if file size is changing.</summary>
         /// <param name="filePath"></param>
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
@@ -257,28 +257,13 @@ namespace AutomatedFFmpegServer.WorkerThreads
             FileInfo fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
 
-            // Check if it can be accessed first
-            try
-            {
-                // Do multiple attempts just in case
-                int count = 0;
-                while (count < 5)
-                {
-                    using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
-                    count++;
-                }
-            }
-            catch (IOException)
-            {
-                return false;
-            }
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
             // If still able to access, check to see if file size is changing
             fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
 
-            Thread.Sleep(TimeSpan.FromSeconds(4));
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
             fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
