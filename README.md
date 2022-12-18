@@ -1,4 +1,4 @@
-# AutomatedFFmpeg
+# AutoEncode
 A tool for automating the encoding of movies/TV shows utilizing FFmpeg.
 
 ## Useful Links
