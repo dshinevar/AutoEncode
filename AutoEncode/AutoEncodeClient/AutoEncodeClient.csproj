@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutomatedFFmpegUtilities\AutoEncodeUtilities.csproj" />
+    <ProjectReference Include="..\AutoEncodeUtilities\AutoEncodeUtilities.csproj" />
   </ItemGroup>
 
 </Project>
