@@ -1,4 +1,4 @@
-# AutomatedFFmpegServer Config Template
+# AutoEncodeServer Config Template
 ---
 ServerSettings:
     IP: 127.0.0.1

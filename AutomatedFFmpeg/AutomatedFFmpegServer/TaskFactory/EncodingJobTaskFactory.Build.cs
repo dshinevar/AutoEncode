@@ -1,9 +1,9 @@
-using AutomatedFFmpegServer.Data;
-using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Interfaces;
-using AutomatedFFmpegUtilities.Logger;
+using AutoEncodeServer.Data;
+using AutoEncodeUtilities;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
+using AutoEncodeUtilities.Logger;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
-namespace AutomatedFFmpegServer.TaskFactory
+namespace AutoEncodeServer.TaskFactory
 {
     public static partial class EncodingJobTaskFactory
     {

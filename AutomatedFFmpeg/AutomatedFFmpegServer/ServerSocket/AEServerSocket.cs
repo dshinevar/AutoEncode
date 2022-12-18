@@ -1,7 +1,7 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Messages;
-using AutomatedFFmpegUtilities.Logger;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Messages;
+using AutoEncodeUtilities.Logger;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -10,9 +10,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace AutomatedFFmpegServer.ServerSocket
+namespace AutoEncodeServer.ServerSocket
 {
-    public class AFServerSocket : IDisposable
+    public class AEServerSocket : IDisposable
     {
         private const int BUFFER_SIZE = 4096;
         private byte[] Buffer = new byte[BUFFER_SIZE];
@@ -25,7 +25,7 @@ namespace AutomatedFFmpegServer.ServerSocket
         {
             TypeNameHandling = TypeNameHandling.All
         };
-        private AFServerMainThread MainThreadHandle = null;
+        private AEServerMainThread MainThreadHandle = null;
         private Logger Logger { get; set; }
 
 
@@ -42,7 +42,7 @@ namespace AutomatedFFmpegServer.ServerSocket
         /// <summary> Constructor </summary>
         /// <param name="IP">IP Address of the Server</param>
         /// <param name="port">Port to bind to.</param>
-        public AFServerSocket(AFServerMainThread thread, Logger logger, string IP, int port)
+        public AEServerSocket(AEServerMainThread thread, Logger logger, string IP, int port)
         {
             MainThreadHandle = thread;
             Logger = logger;
@@ -118,7 +118,7 @@ namespace AutomatedFFmpegServer.ServerSocket
         #endregion DISCONNECT
 
         #region SEND/RECEIVE
-        public void Send(AFMessageBase msg)
+        public void Send(AEMessageBase msg)
         {
             if (!IsConnected()) return;
             byte[] byteData = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, JsonSettings));
@@ -160,18 +160,18 @@ namespace AutomatedFFmpegServer.ServerSocket
 
                     if (state.stringBuffer.ToString().IsValidJson())
                     {
-                        object msg = JsonConvert.DeserializeObject<AFMessageBase>(state.stringBuffer.ToString(), JsonSettings);
-                        if (msg is AFMessageBase)
+                        object msg = JsonConvert.DeserializeObject<AEMessageBase>(state.stringBuffer.ToString(), JsonSettings);
+                        if (msg is AEMessageBase)
                         {
-                            Debug.WriteLine($"Message from client: {((AFMessageBase)msg).MessageType}");
-                            if (((AFMessageBase)msg).MessageType.Equals(AFMessageType.DISCONNECT))
+                            Debug.WriteLine($"Message from client: {((AEMessageBase)msg).MessageType}");
+                            if (((AEMessageBase)msg).MessageType.Equals(AEMessageType.DISCONNECT))
                             {
                                 Disconnect();
                                 return;
                             }
                             else
                             {
-                                MainThreadHandle.AddProcessMessage((AFMessageBase)msg);
+                                MainThreadHandle.AddProcessMessage((AEMessageBase)msg);
                             }
                         }
                         state.stringBuffer.Clear();

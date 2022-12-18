@@ -1,12 +1,12 @@
-﻿using AutomatedFFmpegServer.TaskFactory;
-using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeServer.TaskFactory;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
-    public partial class AFServerMainThread
+    public partial class AEServerMainThread
     {
         /// <summary>Server timer task: Send update to client; Spin up threads for other tasks</summary>
         private void OnEncodingJobTaskTimerElapsed(object obj)

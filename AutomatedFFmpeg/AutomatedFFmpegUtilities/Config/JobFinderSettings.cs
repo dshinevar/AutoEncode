@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AutomatedFFmpegUtilities.Config
+namespace AutoEncodeUtilities.Config
 {
     public class JobFinderSettings
     {

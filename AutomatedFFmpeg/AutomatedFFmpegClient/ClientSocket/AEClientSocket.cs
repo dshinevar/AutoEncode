@@ -1,6 +1,6 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Messages;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Messages;
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -9,9 +9,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace AutomatedFFmpegClient.ClientSocket
+namespace AutoEncodeClient.ClientSocket
 {
-    public class AFClientSocket
+    public class AEClientSocket
     {
         private const int BUFFER_SIZE = 4096;
         private byte[] _buffer = new byte[BUFFER_SIZE];
@@ -26,7 +26,7 @@ namespace AutomatedFFmpegClient.ClientSocket
             TypeNameHandling = TypeNameHandling.All
         };
 
-        private AFClientMainThread _mainThreadHandle { get; set; }
+        private AEClientMainThread _mainThreadHandle { get; set; }
 
         // State object for receiving data from remote device.  
         public class StateObject
@@ -37,7 +37,7 @@ namespace AutomatedFFmpegClient.ClientSocket
             public StringBuilder stringBuffer = new StringBuilder();
         }
 
-        public AFClientSocket(AFClientMainThread thread, string ipAddress, int port)
+        public AEClientSocket(AEClientMainThread thread, string ipAddress, int port)
         {
             _mainThreadHandle = thread;
             _serverIP = IPAddress.Parse(ipAddress);
@@ -108,7 +108,7 @@ namespace AutomatedFFmpegClient.ClientSocket
         public void Disconnect()
         {
             if (!IsConnected()) return;
-            Send(new AFMessageBase() { MessageType = AFMessageType.DISCONNECT });
+            Send(new AEMessageBase() { MessageType = AEMessageType.DISCONNECT });
             _clientSocket.Shutdown(SocketShutdown.Both);
             _clientSocket.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), _clientSocket);
 
@@ -160,10 +160,10 @@ namespace AutomatedFFmpegClient.ClientSocket
 
                     if (state.stringBuffer.ToString().IsValidJson())
                     {
-                        object msg = JsonConvert.DeserializeObject<AFMessageBase>(state.stringBuffer.ToString(), _serializerSettings);
-                        if (msg is AFMessageBase)
+                        object msg = JsonConvert.DeserializeObject<AEMessageBase>(state.stringBuffer.ToString(), _serializerSettings);
+                        if (msg is AEMessageBase)
                         {
-                            _mainThreadHandle.AddProcessMessage((AFMessageBase)msg);
+                            //_mainThreadHandle.AddProcessMessage((AEMessageBase)msg);
                         }
                         state.stringBuffer.Clear();
                         client.BeginReceive(_buffer, 0, BUFFER_SIZE, 0, new AsyncCallback(ReceiveCallback), state);
@@ -185,7 +185,7 @@ namespace AutomatedFFmpegClient.ClientSocket
             }
         }
 
-        public void Send(AFMessageBase msg)
+        public void Send(AEMessageBase msg)
         {
             if (IsConnected())
             {

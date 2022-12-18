@@ -1,10 +1,10 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
     public static class EncodingJobQueue
     {

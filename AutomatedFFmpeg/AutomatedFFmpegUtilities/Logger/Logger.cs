@@ -7,7 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace AutomatedFFmpegUtilities.Logger
+namespace AutoEncodeUtilities.Logger
 {
     public enum Severity
     {

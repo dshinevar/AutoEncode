@@ -13,11 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="YamlDotNet" Version="12.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="YamlDotNet" Version="12.2.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutomatedFFmpegUtilities\AutomatedFFmpegUtilities.csproj" />
+    <ProjectReference Include="..\AutomatedFFmpegUtilities\AutoEncodeUtilities.csproj" />
   </ItemGroup>
 </Project>

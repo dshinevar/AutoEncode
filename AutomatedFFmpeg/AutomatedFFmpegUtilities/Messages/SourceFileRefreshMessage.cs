@@ -1,9 +1,9 @@
-﻿using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Enums;
 
-namespace AutomatedFFmpegUtilities.Messages
+namespace AutoEncodeUtilities.Messages
 {
-    public class SourceFileRefreshMessage : AFMessageBase
+    public class SourceFileRefreshMessage : AEMessageBase
     {
-        public SourceFileRefreshMessage() => MessageType = AFMessageType.CLIENT_REQUEST;
+        public SourceFileRefreshMessage() => MessageType = AEMessageType.CLIENT_REQUEST;
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     public class ShowSourceData
     {

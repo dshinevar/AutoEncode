@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutomatedFFmpegUtilities.Config
+namespace AutoEncodeUtilities.Config
 {
     public class ServerSettings
     {

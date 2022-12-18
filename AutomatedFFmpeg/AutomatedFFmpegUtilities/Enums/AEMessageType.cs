@@ -1,6 +1,6 @@
-﻿namespace AutomatedFFmpegUtilities.Enums
+﻿namespace AutoEncodeUtilities.Enums
 {
-    public enum AFMessageType
+    public enum AEMessageType
     {
         DISCONNECT = 0,
         CLIENT_REQUEST = 1,

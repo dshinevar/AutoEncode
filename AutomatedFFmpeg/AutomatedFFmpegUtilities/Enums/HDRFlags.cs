@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace AutomatedFFmpegUtilities.Enums
+namespace AutoEncodeUtilities.Enums
 {
     [Flags]
     public enum HDRFlags

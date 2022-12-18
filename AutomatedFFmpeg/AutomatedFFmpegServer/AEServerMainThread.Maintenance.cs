@@ -1,11 +1,11 @@
-﻿using AutomatedFFmpegUtilities.Data;
+﻿using AutoEncodeUtilities.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
-    public partial class AFServerMainThread
+    public partial class AEServerMainThread
     {
         private static string MaintenanceThreadName => $"{ThreadName}-Maintenance";
 

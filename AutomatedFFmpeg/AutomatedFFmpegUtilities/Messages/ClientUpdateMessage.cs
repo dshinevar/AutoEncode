@@ -1,10 +1,10 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 
-namespace AutomatedFFmpegUtilities.Messages
+namespace AutoEncodeUtilities.Messages
 {
-    public class ClientUpdateMessage : AFMessageBase<ClientUpdateData>
+    public class ClientUpdateMessage : AEMessageBase<ClientUpdateData>
     {
-        public ClientUpdateMessage() => MessageType = AFMessageType.CLIENT_UPDATE;
+        public ClientUpdateMessage() => MessageType = AEMessageType.CLIENT_UPDATE;
     }
 }

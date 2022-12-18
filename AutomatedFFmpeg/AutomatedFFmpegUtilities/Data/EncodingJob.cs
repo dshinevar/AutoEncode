@@ -1,10 +1,10 @@
-﻿using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Interfaces;
+﻿using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
 using System.IO;
 using System.Linq;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     public class EncodingJob
     {
@@ -70,7 +70,7 @@ namespace AutomatedFFmpegUtilities.Data
         public bool NeedsPostProcessing => !PostProcessingFlags.Equals(PostProcessingFlags.None) && PostProcessingSettings is not null;
         /// <summary>Marks what PostProcessing functions should be done to this job. </summary>
         public PostProcessingFlags PostProcessingFlags { get; private set; } = PostProcessingFlags.None;
-        /// <summary>Settings for PostProcessing; Initially copied over from AFServerConfig file. </summary>
+        /// <summary>Settings for PostProcessing; Initially copied over from AEServerConfig file. </summary>
         public PostProcessingSettings PostProcessingSettings { get; set; }
         /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
         public IEncodingCommandArguments EncodingCommandArguments { get; set; }

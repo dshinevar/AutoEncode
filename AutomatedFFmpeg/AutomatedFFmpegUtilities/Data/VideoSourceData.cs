@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     public class VideoSourceData
     {

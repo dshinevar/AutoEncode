@@ -1,6 +1,6 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Config;
-using AutomatedFFmpegUtilities.Logger;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Config;
+using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,25 +11,25 @@ using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
-    class AutomatedFFmpegServer
+    class AutoEncodeServer
     {
         private const string LOG_THREAD_NAME = "STARTUP";
-        private const string LOG_FILENAME = "afserver.log";
+        private const string LOG_FILENAME = "aeserver.log";
 
         static void Main(string[] args)
         {
-            AFServerMainThread mainThread = null;
-            AFServerConfig serverConfig = null; // As loaded from file
-            AFServerConfig serverState = null; // State after startup checks
+            AEServerMainThread mainThread = null;
+            AEServerConfig serverConfig = null; // As loaded from file
+            AEServerConfig serverState = null; // State after startup checks
             Logger logger = null;
             ManualResetEvent Shutdown = new(false);
             List<string> startupLog = new();
 
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
 
-            Debug.WriteLine("AutomatedFFmpegServer Starting Up.");
+            Debug.WriteLine("AutoEncodeServer Starting Up.");
             // LOAD CONFIG FILE
             try
             {
@@ -37,7 +37,7 @@ namespace AutomatedFFmpegServer
                 string str = reader.ReadToEnd();
                 var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
 
-                serverConfig = deserializer.Deserialize<AFServerConfig>(str);
+                serverConfig = deserializer.Deserialize<AEServerConfig>(str);
                 serverState = serverConfig.DeepClone();
             }
             catch (Exception ex)
@@ -165,7 +165,7 @@ namespace AutomatedFFmpegServer
 
             // GET AND LOG STARTUP AND VERSION
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            startupLog.Add($"AutomatedFFmpegServer V{version} Starting Up. Config file loaded.");
+            startupLog.Add($"AutoEncodeServer V{version} Starting Up. Config file loaded.");
             startupLog.Add($"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}");
             startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.JobFinderSettings.VideoFileExtensions)}");
             if (!string.IsNullOrWhiteSpace(serverConfig.JobFinderSettings.SecondarySkipExtension)) startupLog.Add($"SKIP SECONDARY EXTENSION: {serverConfig.JobFinderSettings.SecondarySkipExtension}");
@@ -214,7 +214,7 @@ namespace AutomatedFFmpegServer
                 logger.LogException(ex, "Failed to delete previously encoding file or temp file.", threadName: LOG_THREAD_NAME);
             }
 
-            mainThread = new AFServerMainThread(serverState, serverConfig, logger, Shutdown);
+            mainThread = new AEServerMainThread(serverState, serverConfig, logger, Shutdown);
             mainThread.Start();
 
             Shutdown.WaitOne();
@@ -222,9 +222,9 @@ namespace AutomatedFFmpegServer
             mainThread = null;
         }
 
-        static void OnApplicationExit(object sender, EventArgs e, AFServerMainThread mainThread, ManualResetEvent shutdownMRE, Logger logger)
+        static void OnApplicationExit(object sender, EventArgs e, AEServerMainThread mainThread, ManualResetEvent shutdownMRE, Logger logger)
         {
-            logger?.LogInfo("AutomatedFFmpegServer Shutting Down.", "SHUTDOWN");
+            logger?.LogInfo("AutoEncodeServer Shutting Down.", "SHUTDOWN");
 
             if (mainThread is not null)
             {

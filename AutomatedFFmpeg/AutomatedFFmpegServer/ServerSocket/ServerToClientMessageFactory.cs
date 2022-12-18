@@ -1,7 +1,7 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Messages;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Messages;
 
-namespace AutomatedFFmpegServer.ServerSocket
+namespace AutoEncodeServer.ServerSocket
 {
     public static class ServerToClientMessageFactory
     {

@@ -1,6 +1,6 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AutomatedFFmpegServer.WorkerThreads
+namespace AutoEncodeServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
@@ -21,7 +21,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             {
                 try
                 {
-                    Status = AFWorkerThreadStatus.PROCESSING;
+                    Status = AEWorkerThreadStatus.PROCESSING;
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
                     bool foundEncodingJob = false;

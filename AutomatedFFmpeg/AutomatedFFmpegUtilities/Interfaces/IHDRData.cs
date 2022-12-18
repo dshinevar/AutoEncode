@@ -1,7 +1,7 @@
-﻿using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Enums;
 using System.Collections.Generic;
 
-namespace AutomatedFFmpegUtilities.Interfaces
+namespace AutoEncodeUtilities.Interfaces
 {
     public interface IHDRData
     {

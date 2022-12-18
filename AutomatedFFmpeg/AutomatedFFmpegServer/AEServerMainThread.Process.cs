@@ -1,12 +1,12 @@
-﻿using AutomatedFFmpegServer.ServerSocket;
-using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Messages;
+﻿using AutoEncodeServer.ServerSocket;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Messages;
 using System;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
-    public partial class AFServerMainThread
+    public partial class AEServerMainThread
     {
         private static string ProcessThreadName => $"{ThreadName}-Process";
 
@@ -35,18 +35,18 @@ namespace AutomatedFFmpegServer
         /// <param name="task">Action</param>
         private void AddTask(Action task) => TaskQueue.Enqueue(task);
         /// <summary>Adds ProcessMessage task to Task Queue (Client to Server Message).</summary>
-        /// <param name="msg">AFMessageBase</param>
-        public void AddProcessMessage(AFMessageBase msg) => AddTask(() => ProcessMessage(msg));
+        /// <param name="msg">AEMessageBase</param>
+        public void AddProcessMessage(AEMessageBase msg) => AddTask(() => ProcessMessage(msg));
         public void AddSendClientConnectData() => AddTask(() => SendClientConnectData());
         /// <summary>Adds SendMessage task to Task Queue (Server To Client Message). </summary>
-        /// <param name="msg">AFMessageBase</param>
-        public void AddSendMessage(AFMessageBase msg) => AddTask(() => SendMessage(msg));
+        /// <param name="msg">AEMessageBase</param>
+        public void AddSendMessage(AEMessageBase msg) => AddTask(() => SendMessage(msg));
         #endregion Add Task Functions
 
         #region SendMessage Functions
         /// <summary>Send message to client.</summary>
         /// <param name="msg"></param>
-        private void SendMessage(AFMessageBase msg) => ServerSocket.Send(msg);
+        private void SendMessage(AEMessageBase msg) => ServerSocket.Send(msg);
 
         private void SendClientConnectData()
         {
@@ -61,11 +61,11 @@ namespace AutomatedFFmpegServer
 
         /// <summary>Process received message from client. </summary>
         /// <param name="msg"></param>
-        private void ProcessMessage(AFMessageBase msg)
+        private void ProcessMessage(AEMessageBase msg)
         {
             switch (msg.MessageType)
             {
-                case AFMessageType.CLIENT_REQUEST:
+                case AEMessageType.CLIENT_REQUEST:
                 {
                     SendClientConnectData();
                     break;

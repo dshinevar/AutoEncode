@@ -1,10 +1,10 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 
-namespace AutomatedFFmpegUtilities.Messages
+namespace AutoEncodeUtilities.Messages
 {
-    public class ClientConnectMessage : AFMessageBase<ClientConnectData>
+    public class ClientConnectMessage : AEMessageBase<ClientConnectData>
     {
-        public ClientConnectMessage() => MessageType = AFMessageType.CLIENT_CONNECT;
+        public ClientConnectMessage() => MessageType = AEMessageType.CLIENT_CONNECT;
     }
 }

@@ -1,21 +1,21 @@
-﻿using AutomatedFFmpegClient.Config;
+﻿using AutoEncodeClient.Config;
 using System;
 using System.IO;
 using System.Windows;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace AutomatedFFmpegClient
+namespace AutoEncodeClient
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
     public partial class App : Application
     {
-        private const string CONFIG_FILE_LOCATION = "AFClientConfig.yaml";
-        private void AFClient_Startup(object sender, StartupEventArgs e)
+        private const string CONFIG_FILE_LOCATION = "AEClientConfig.yaml";
+        private void AEClient_Startup(object sender, StartupEventArgs e)
         {
-            AFClientConfig clientConfig = null;
+            AEClientConfig clientConfig = null;
 
             try
             {
@@ -24,7 +24,7 @@ namespace AutomatedFFmpegClient
                     string str = reader.ReadToEnd();
                     var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
 
-                    clientConfig = deserializer.Deserialize<AFClientConfig>(str);
+                    clientConfig = deserializer.Deserialize<AEClientConfig>(str);
                 }
             }
             catch (Exception ex)
@@ -33,8 +33,8 @@ namespace AutomatedFFmpegClient
                 Environment.Exit(-2);
             }
 
-            MainWindow wnd = new MainWindow(clientConfig);
-            wnd.Show();
+            //MainWindow wnd = new MainWindow(clientConfig);
+            //wnd.Show();
         }
     }
 }

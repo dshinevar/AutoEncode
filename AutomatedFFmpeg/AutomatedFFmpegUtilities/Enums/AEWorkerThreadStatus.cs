@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 
-namespace AutomatedFFmpegUtilities.Enums
+namespace AutoEncodeUtilities.Enums
 {
-    public enum AFWorkerThreadStatus
+    public enum AEWorkerThreadStatus
     {
         [Description("Processing")]
         PROCESSING = 0,

@@ -1,4 +1,4 @@
-﻿namespace AutomatedFFmpegUtilities.Config
+﻿namespace AutoEncodeUtilities.Config
 {
     public class GlobalJobSettings
     {

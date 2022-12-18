@@ -1,16 +1,16 @@
-﻿using AutomatedFFmpegServer.ServerSocket;
-using AutomatedFFmpegServer.WorkerThreads;
-using AutomatedFFmpegUtilities.Config;
-using AutomatedFFmpegUtilities.Logger;
+﻿using AutoEncodeServer.ServerSocket;
+using AutoEncodeServer.WorkerThreads;
+using AutoEncodeUtilities.Config;
+using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
-    public partial class AFServerMainThread
+    public partial class AEServerMainThread
     {
         private static string ThreadName => "MainThread";
         private Task EncodingJobBuilderTask { get; set; }
@@ -41,23 +41,23 @@ namespace AutomatedFFmpegServer
         private ManualResetEvent ProcessTimerDispose { get; set; } = new ManualResetEvent(false);
         private Queue<Action> TaskQueue { get; set; } = new Queue<Action>();
 
-        private AFServerSocket ServerSocket { get; set; }
+        private AEServerSocket ServerSocket { get; set; }
         /// <summary>Config as in file </summary>
-        private AFServerConfig Config { get; set; }
+        private AEServerConfig Config { get; set; }
         /// <summary>Config to be used; Does not have to match what is saved to file</summary>
-        private AFServerConfig State { get; set; }
+        private AEServerConfig State { get; set; }
         private ManualResetEvent ShutdownMRE { get; set; }
         private Logger Logger { get; set; }
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
         /// <param name="serverConfig">Server Config</param>
-        public AFServerMainThread(AFServerConfig serverState, AFServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
+        public AEServerMainThread(AEServerConfig serverState, AEServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
         {
             State = serverState;
             Config = serverConfig;
             ShutdownMRE = shutdown;
             Logger = logger;
-            ServerSocket = new AFServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
+            ServerSocket = new AEServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
 
             MaintenanceTimerWaitTime = TimeSpan.FromHours(1);           // Doesn't need to run very often
@@ -69,7 +69,7 @@ namespace AutomatedFFmpegServer
         /// <summary> Starts Timers and Threads; Server socket starts listening. </summary>
         public void Start()
         {
-            Debug.WriteLine("AFServerMainThread Starting");
+            Debug.WriteLine("AEServerMainThread Starting");
             EncodingJobFinderThread.Start();
             //ServerSocket?.StartListening();
 
@@ -78,10 +78,10 @@ namespace AutomatedFFmpegServer
             ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
 
-        /// <summary>Shuts down AFServerMainThread; Disconnects server socket. </summary>
+        /// <summary>Shuts down AEServerMainThread; Disconnects server socket. </summary>
         public void Shutdown()
         {
-            Debug.WriteLine("AFServerMainThread Shutting Down.");
+            Debug.WriteLine("AEServerMainThread Shutting Down.");
 
             // Stop threads
             EncodingJobFinderThread?.Stop();

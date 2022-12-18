@@ -1,9 +1,9 @@
-﻿using AutomatedFFmpegUtilities.Data;
+﻿using AutoEncodeUtilities.Data;
 using System.Collections.Generic;
 
-namespace AutomatedFFmpegUtilities.Config
+namespace AutoEncodeUtilities.Config
 {
-    public class AFServerConfig
+    public class AEServerConfig
     {
         public ServerSettings ServerSettings { get; set; }
         public JobFinderSettings JobFinderSettings { get; set; }

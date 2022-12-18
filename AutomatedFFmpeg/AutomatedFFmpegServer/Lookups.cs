@@ -3,21 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace AutomatedFFmpegServer
+namespace AutoEncodeServer
 {
     public static class Lookups
     {
         #region LINUX VS WINDOWS
         public static string ConfigFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                                    "/etc/afserver/AFServerConfig.yaml" :
-                                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer\\AFServerConfig.yaml";
+                                                    "/etc/aeserver/AEServerConfig.yaml" :
+                                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AEServer\\AEServerConfig.yaml";
         public static string NullLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/null" : "NUL";
 
         public static string LogBackupFileLocation => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
-                                    @"/var/log/afserver" :
-                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AFServer";
+                                    @"/var/log/aeserver" :
+                                    $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AEServer";
 
-        public static string PreviouslyEncodingTempFile => $"{Path.GetTempPath()}afserver.tmp";
+        public static string PreviouslyEncodingTempFile => $"{Path.GetTempPath()}aeserver.tmp";
         #endregion LINUX VS WINDOWS
 
         /// <summary> 

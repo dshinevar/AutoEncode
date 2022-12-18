@@ -1,11 +1,11 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Interfaces;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AutomatedFFmpegServer.Data
+namespace AutoEncodeServer.Data
 {
     /// <summary>
     /// Class to contain data pulled from ffprobe;  Lower-case is intentional for json serialization

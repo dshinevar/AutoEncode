@@ -1,8 +1,8 @@
-﻿using AutomatedFFmpegUtilities.Enums;
+﻿using AutoEncodeUtilities.Enums;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     public class EncodingInstructions
     {

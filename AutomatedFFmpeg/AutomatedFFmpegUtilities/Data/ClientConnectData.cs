@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     public class ClientConnectData
     {

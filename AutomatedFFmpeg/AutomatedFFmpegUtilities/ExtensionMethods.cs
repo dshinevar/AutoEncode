@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-namespace AutomatedFFmpegUtilities
+namespace AutoEncodeUtilities
 {
     public static class ExtensionMethods
     {

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AutomatedFFmpegUtilities.Enums
+namespace AutoEncodeUtilities.Enums
 {
     public enum ChromaLocation
     {

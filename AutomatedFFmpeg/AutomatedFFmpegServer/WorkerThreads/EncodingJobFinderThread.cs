@@ -1,14 +1,14 @@
-﻿using AutomatedFFmpegUtilities;
-using AutomatedFFmpegUtilities.Config;
-using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Enums;
-using AutomatedFFmpegUtilities.Logger;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Config;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace AutomatedFFmpegServer.WorkerThreads
+namespace AutoEncodeServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
@@ -29,15 +29,15 @@ namespace AutomatedFFmpegServer.WorkerThreads
         private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(5);
         private TimeSpan ThreadDeepSleep => TimeSpan.FromMinutes(ThreadSleep.TotalMinutes * 5);
 
-        private AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
-        private AFServerMainThread MainThread { get; set; }
-        private AFServerConfig State { get; set; }
+        private AEWorkerThreadStatus Status { get; set; } = AEWorkerThreadStatus.PROCESSING;
+        private AEServerMainThread MainThread { get; set; }
+        private AEServerConfig State { get; set; }
         private Logger Logger { get; set; }
 
         /// <summary>Constructor</summary>
-        /// <param name="mainThread">Main Thread handle <see cref="AFServerMainThread"/></param>
-        /// <param name="serverState">Current Server State<see cref="AFServerConfig"/></param>
-        public EncodingJobFinderThread(AFServerMainThread mainThread, AFServerConfig serverState, Logger logger, ManualResetEvent shutdownMRE)
+        /// <param name="mainThread">Main Thread handle <see cref="AEServerMainThread"/></param>
+        /// <param name="serverState">Current Server State<see cref="AEServerConfig"/></param>
+        public EncodingJobFinderThread(AEServerMainThread mainThread, AEServerConfig serverState, Logger logger, ManualResetEvent shutdownMRE)
         {
             MainThread = mainThread;
             State = serverState;
@@ -81,14 +81,14 @@ namespace AutomatedFFmpegServer.WorkerThreads
         /// <summary> Sleeps thread for certain amount of time. </summary>
         private void Sleep()
         {
-            Status = AFWorkerThreadStatus.SLEEPING;
+            Status = AEWorkerThreadStatus.SLEEPING;
             SleepARE.WaitOne(ThreadSleep);
         }
 
         /// <summary> Sleeps thread for 5x length of sleep. </summary>
         private void DeepSleep()
         {
-            Status = AFWorkerThreadStatus.DEEP_SLEEPING;
+            Status = AEWorkerThreadStatus.DEEP_SLEEPING;
             SleepARE.WaitOne(ThreadDeepSleep);
         }
         #endregion Thread Functions

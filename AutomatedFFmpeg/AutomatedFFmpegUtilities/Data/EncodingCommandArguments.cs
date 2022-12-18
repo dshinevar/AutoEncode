@@ -1,6 +1,6 @@
-﻿using AutomatedFFmpegUtilities.Interfaces;
+﻿using AutoEncodeUtilities.Interfaces;
 
-namespace AutomatedFFmpegUtilities.Data
+namespace AutoEncodeUtilities.Data
 {
     /// <summary>Basic FFmpegEncodingCommandArguments</summary>
     public class EncodingCommandArguments : IEncodingCommandArguments

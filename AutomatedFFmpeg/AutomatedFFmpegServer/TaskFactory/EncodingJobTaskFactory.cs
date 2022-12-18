@@ -1,10 +1,10 @@
-﻿using AutomatedFFmpegUtilities.Data;
-using AutomatedFFmpegUtilities.Logger;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Logger;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace AutomatedFFmpegServer.TaskFactory
+namespace AutoEncodeServer.TaskFactory
 {
     public static partial class EncodingJobTaskFactory
     {
