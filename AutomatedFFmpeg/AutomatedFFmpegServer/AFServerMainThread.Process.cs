@@ -8,6 +8,8 @@ namespace AutomatedFFmpegServer
 {
     public partial class AFServerMainThread
     {
+        private static string ProcessThreadName => $"{ThreadName}-Process";
+
         /// <summary> Process Timer: Checks, dequeues, and invokes tasks. </summary>
         /// <param name="obj"></param>
         private void OnProcessTimerElapsed(object obj)
@@ -20,7 +22,7 @@ namespace AutomatedFFmpegServer
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, $"Error processing a task in the task queue: {task?.Method?.Name ?? "NULL TASK"}");
+                Logger.LogException(ex, $"Error processing a task in the task queue: {task?.Method?.Name ?? "NULL TASK"}", ProcessThreadName);
             }
 
             if (ServerSocket?.IsConnected() ?? false) SendMessage(ServerToClientMessageFactory.CreateClientUpdateMessage(new ClientUpdateData()));

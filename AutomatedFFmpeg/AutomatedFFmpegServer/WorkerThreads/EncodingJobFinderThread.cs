@@ -3,6 +3,7 @@ using AutomatedFFmpegUtilities.Config;
 using AutomatedFFmpegUtilities.Data;
 using AutomatedFFmpegUtilities.Enums;
 using AutomatedFFmpegUtilities.Logger;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -25,8 +26,8 @@ namespace AutomatedFFmpegServer.WorkerThreads
 
         private Thread Thread { get; set; }
         private string ThreadName => Thread?.Name ?? string.Empty;
-        private int ThreadSleep { get; set; } = 5000;
-        private int ThreadDeepSleep => ThreadSleep * 5;
+        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(5);
+        private TimeSpan ThreadDeepSleep => TimeSpan.FromMinutes(ThreadSleep.TotalMinutes * 5);
 
         private AFWorkerThreadStatus Status { get; set; } = AFWorkerThreadStatus.PROCESSING;
         private AFServerMainThread MainThread { get; set; }
@@ -42,7 +43,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
             State = serverState;
             Logger = logger;
             ShutdownMRE = shutdownMRE;
-            ThreadSleep = State.ServerSettings.ThreadSleepInMS;
+            ThreadSleep = State.JobFinderSettings.ThreadSleep;
             SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
         }
 

@@ -7,6 +7,8 @@ namespace AutomatedFFmpegServer
 {
     public partial class AFServerMainThread
     {
+        private static string MaintenanceThreadName => $"{ThreadName}-Maintenance";
+
         /// <summary>
         /// Runs maintenance tasks. Should be ran infrequently.
         /// </summary>
@@ -39,13 +41,13 @@ namespace AutomatedFFmpegServer
                         }
                         else
                         {
-                            Logger.LogError($"Error removing completed {job} from queue.", ThreadName);
+                            Logger.LogError($"Error removing completed {job} from queue.", MaintenanceThreadName);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing completed {job} from queue.", ThreadName);
+                    Logger.LogException(ex, $"Error removing completed {job} from queue.", MaintenanceThreadName);
                 }
             }
 
@@ -66,20 +68,20 @@ namespace AutomatedFFmpegServer
                         }
                         else
                         {
-                            Logger.LogError($"Error removing post-processed {job} from queue.", ThreadName);
+                            Logger.LogError($"Error removing post-processed {job} from queue.", MaintenanceThreadName);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing post-processed {job} from queue.", ThreadName);
+                    Logger.LogException(ex, $"Error removing post-processed {job} from queue.", MaintenanceThreadName);
                 }
             }
 
             if (jobsRemovedLog.Any())
             {
                 jobsRemovedLog.Insert(0, "Completed Jobs Removed");
-                Logger.LogInfo(jobsRemovedLog, ThreadName);
+                Logger.LogInfo(jobsRemovedLog, MaintenanceThreadName);
             }
         }
 
@@ -104,20 +106,20 @@ namespace AutomatedFFmpegServer
                         }
                         else
                         {
-                            Logger.LogError($"Error removing errored {job} from queue.", ThreadName);
+                            Logger.LogError($"Error removing errored {job} from queue.", MaintenanceThreadName);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing errored {job} from queue.", ThreadName);
+                    Logger.LogException(ex, $"Error removing errored {job} from queue.", MaintenanceThreadName);
                 }
             }
 
             if (jobsRemovedLog.Any())
             {
                 jobsRemovedLog.Insert(0, "Errored Jobs Removed");
-                Logger.LogInfo(jobsRemovedLog, ThreadName);
+                Logger.LogInfo(jobsRemovedLog, MaintenanceThreadName);
             }
         }
     }

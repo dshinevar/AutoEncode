@@ -10,10 +10,6 @@ namespace AutomatedFFmpegUtilities.Config
 
         public int Port { get; set; }
 
-        public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v", ".avi" };
-
-        public int ThreadSleepInMS { get; set; } = 300000; // 5 minutes
-
         public string FFmpegDirectory { get; set; } = string.Empty;
 
         public string X265FullPath { get; set; } = string.Empty;

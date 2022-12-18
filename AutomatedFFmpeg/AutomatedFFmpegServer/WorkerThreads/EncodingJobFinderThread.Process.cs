@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +24,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                     Status = AFWorkerThreadStatus.PROCESSING;
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
-                    bool bFoundEncodingJob = false;
+                    bool foundEncodingJob = false;
 
                     // Don't do anything if the queue is full
                     if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
@@ -36,7 +37,7 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                bFoundEncodingJob |= moviesToEncode.Any();
+                                foundEncodingJob |= moviesToEncode.Any();
                                 moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
@@ -46,13 +47,13 @@ namespace AutomatedFFmpegServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                bFoundEncodingJob |= episodesToEncode.Any();
+                                foundEncodingJob |= episodesToEncode.Any();
                                 episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
                     }
 
-                    if (bFoundEncodingJob is false)
+                    if (foundEncodingJob is false)
                     {
                         failedToFindJobCount++;
                         if (failedToFindJobCount >= MaxFailedToFindJobCount)
@@ -103,78 +104,97 @@ namespace AutomatedFFmpegServer.WorkerThreads
         {
             Parallel.ForEach(searchDirectories, entry =>
             {
-                if (Directory.Exists(entry.Value.Source))
+                try
                 {
-                    // TV Show structured directories
-                    if (entry.Value.TVShowStructure)
+                    if (Directory.Exists(entry.Value.Source))
                     {
-                        List<ShowSourceData> shows = new();
-                        IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
-                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
-                        // Show
-                        foreach (string showPath in sourceShows)
+                        // TV Show structured directories
+                        if (entry.Value.TVShowStructure)
                         {
-                            string showName = new DirectoryInfo(showPath).Name;
-                            ShowSourceData showData = new(showName);
-                            IEnumerable<string> seasons = Directory.GetDirectories(showPath);
-                            // Season
-                            foreach (string seasonPath in seasons)
+                            List<ShowSourceData> shows = new();
+                            IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
+                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            // Show
+                            foreach (string showPath in sourceShows)
                             {
-                                string season = new DirectoryInfo(seasonPath).Name;
-                                SeasonSourceData seasonData = new(season);
-                                IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
-                                    .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
-                                // Episode
-                                foreach (string episodePath in episodes)
-                                {
-                                    VideoSourceData episodeData = new()
-                                    {
-                                        FullPath = episodePath,
-                                        Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
-                                    };
-                                    seasonData.Episodes.Add(episodeData);
-                                }
-                                seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
-                                showData.Seasons.Add(seasonData);
-                            }
-                            showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
-                            shows.Add(showData);
-                        }
-                        shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
+                                // Double check existence (in case of deletion while running)
+                                if (Directory.Exists(showPath) is false) continue;
 
-                        lock (showSourceFileLock)
+                                string showName = new DirectoryInfo(showPath).Name;
+                                ShowSourceData showData = new(showName);
+                                IEnumerable<string> seasons = Directory.GetDirectories(showPath);
+                                // Season
+                                foreach (string seasonPath in seasons)
+                                {
+                                    // Double check existence (in case of deletion while running)
+                                    if (Directory.Exists(seasonPath) is false) continue;
+
+                                    string season = new DirectoryInfo(seasonPath).Name;
+                                    SeasonSourceData seasonData = new(season);
+                                    IEnumerable<string> episodes = Directory.GetFiles(seasonPath, "*.*", SearchOption.AllDirectories)
+                                        .Where(file => ValidSourceFile(file));
+                                    // Episode
+                                    foreach (string episodePath in episodes)
+                                    {
+                                        // Double check existence (in case of deletion while running)
+                                        if (File.Exists(episodePath) is false) continue;
+
+                                        VideoSourceData episodeData = new()
+                                        {
+                                            FullPath = episodePath,
+                                            Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
+                                        };
+                                        seasonData.Episodes.Add(episodeData);
+                                    }
+                                    seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
+                                    showData.Seasons.Add(seasonData);
+                                }
+                                showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
+                                shows.Add(showData);
+                            }
+                            shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
+
+                            lock (showSourceFileLock)
+                            {
+                                ShowSourceFiles[entry.Key] = shows;
+                            }
+                        }
+                        else
                         {
-                            ShowSourceFiles[entry.Key] = shows;
+                            List<VideoSourceData> movies = new();
+                            IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
+                                .Where(file => ValidSourceFile(file));
+                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            foreach (string sourceFile in sourceFiles)
+                            {
+                                if (File.Exists(sourceFile) is false) continue;
+
+                                VideoSourceData sourceData = new()
+                                {
+                                    FullPath = sourceFile,
+                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
+                                };
+                                movies.Add(sourceData);
+                            }
+                            movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
+
+                            lock (movieSourceFileLock)
+                            {
+                                MovieSourceFiles[entry.Key] = movies;
+                            }
                         }
                     }
                     else
                     {
-                        List<VideoSourceData> movies = new();
-                        IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith));
-                        IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                            .Where(file => State.ServerSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
-                        foreach (string sourceFile in sourceFiles)
-                        {
-                            VideoSourceData sourceData = new()
-                            {
-                                FullPath = sourceFile,
-                                Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
-                            };
-                            movies.Add(sourceData);
-                        }
-                        movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
-
-                        lock (movieSourceFileLock)
-                        {
-                            MovieSourceFiles[entry.Key] = movies;
-                        }
+                        Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Logger.LogError($"{entry.Value.Source} does not exist.", ThreadName);
+                    Logger.LogException(ex, $"Error building source files for source directory {entry.Key}", ThreadName);
+                    return;
                 }
             });
         }
@@ -200,32 +220,55 @@ namespace AutomatedFFmpegServer.WorkerThreads
             }
         }
 
-        /// <summary>Check if file is accessible or file size is changing.</summary>
+        /// <summary> Checks if a file is valid for being considered a source file.
+        /// <para>Currently 2 checks:</para>
+        /// <para>1. Valid file extension</para>
+        /// <para>2. File doesn't contain the secondary skip extension</para>
+        /// </summary>
+        /// <param name="filePath">Path of the file</param>
+        /// <returns>True if valid; False, otherwise</returns>
+        private bool ValidSourceFile(string filePath)
+        {
+            // Check if it's an allowed file extension
+            bool valid = State.JobFinderSettings.VideoFileExtensions.Any(filePath.ToLower().EndsWith);
+
+            // If valid and the config has a secondary skip extension
+            if (valid is true && string.IsNullOrWhiteSpace(State.JobFinderSettings.SecondarySkipExtension) is false)
+            {
+                string fileSecondExtension = Path.GetExtension(Path.GetFileNameWithoutExtension(filePath)).Trim('.');
+
+                // If there even is a secondary extension, check if it's the skip extension
+                if (string.IsNullOrWhiteSpace(fileSecondExtension) is false)
+                {
+                    // File is NOT valid if the extension equals the skip extension
+                    valid &= !fileSecondExtension.Equals(State.JobFinderSettings.SecondarySkipExtension, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return valid;
+        }
+
+        /// <summary>Check if file size is changing.</summary>
         /// <param name="filePath"></param>
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
+            List<long> fileSizes = new();
             FileInfo fileInfo = new(filePath);
+            fileSizes.Add(fileInfo.Length);
 
-            // Check if it can be accessed first
-            try
-            {
-                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            }
-            catch (IOException)
-            {
-                return false;
-            }
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
             // If still able to access, check to see if file size is changing
-            long beforeFileSize = fileInfo.Length;
+            fileInfo = new(filePath);
+            fileSizes.Add(fileInfo.Length);
 
-            Thread.Sleep(5000);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
-            fileInfo.Refresh();
-            long afterFileSize = fileInfo.Length;
+            fileInfo = new(filePath);
+            fileSizes.Add(fileInfo.Length);
 
-            return beforeFileSize == afterFileSize;
+            return fileSizes.All(x => x.Equals(fileSizes.First()));
         }
         #endregion PRIVATE FUNCTIONS
     }

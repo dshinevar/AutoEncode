@@ -108,7 +108,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 // FILE NOT CREATED / EMPTY FILE
                 else if (nonEmptyFileExists is false)
                 {
-                    DeleteFiles(job.DestinationFullPath);
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.SetError(logger.LogError($"{job} either did not create an output or created an empty file"));
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
@@ -303,6 +303,9 @@ namespace AutomatedFFmpegServer.TaskFactory
                     encodingTokenSource.Cancel();
                 }
                 audioSubEncodeProcess.BeginErrorReadLine();
+
+                File.WriteAllLines(Lookups.PreviouslyEncodingTempFile, new string[] { job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath });
+
                 audioSubEncodeProcess.WaitForExit();
                 audioSubEncodeProcess.Close();
 
@@ -323,7 +326,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 if (taskCancellationToken.IsCancellationRequested is true)
                 {
                     // Ensure these files are deleted (should've deleted on exit)
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
                     logger.LogError($"{job} encoding was cancelled.");
                     return;
@@ -332,24 +335,24 @@ namespace AutomatedFFmpegServer.TaskFactory
                 else if (encodingToken.IsCancellationRequested is true)
                 {
                     // Ensure these files are deleted (should've deleted on exit)
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
-                    string msg = $"One of the encoding (video/audio-sub) processes errored for {job}. " +
-                        $"Video Encode Exit Code: {(videoEncodeProcess is null ? "NULL VIDEO PROCESS" : videoEncodeProcess.ExitCode)} | Audio/Sub Encode Exit Code: {(audioSubEncodeProcess is null ? "NULL AUDIO/SUB PROCESS" : audioSubEncodeProcess.ExitCode)}";
-                    job.SetError(logger.LogError(msg));
+                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
+                    string[] messages = { $"One of the encoding (video/audio-sub) processes errored for {job}.",
+                                     $"Video Encode Exit Code: {(videoEncodeProcess is null ? "NULL VIDEO PROCESS" : videoEncodeProcess.ExitCode)} | Audio/Sub Encode Exit Code: {(audioSubEncodeProcess is null ? "NULL AUDIO/SUB PROCESS" : audioSubEncodeProcess.ExitCode)}"};
+                    job.SetError(logger.LogError(messages));
                     return;
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.Error is false && job.EncodingProgress < 75)
                 {
                     // Ensure these files are deleted
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.SetError(logger.LogError($"{job} encoding job ended prematurely."));
                     return;
                 }
                 // JOB ERRORED
                 else if (job.Error is true)
                 {
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     // Log occurred in catch
                     return;
                 }
@@ -418,11 +421,11 @@ namespace AutomatedFFmpegServer.TaskFactory
                     // If failed to start, error and end
                     job.SetError(logger.LogError($"Mkvmerge failed to start for {job}"));
                     // Delete previous encoding files
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
+                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     return;
                 }
 
-                File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
+                File.AppendAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
                 mergeProcess.BeginOutputReadLine();
                 mergeProcess.WaitForExit();
                 mergeProcess.Close();
@@ -438,7 +441,7 @@ namespace AutomatedFFmpegServer.TaskFactory
                 bool nonEmptyFileExists = File.Exists(job.DestinationFullPath) && new FileInfo(job.DestinationFullPath).Length > 0;
                 stopwatch.Stop();
                 // SUCCESS
-                if (job.EncodingProgress >= 75 && job.Error is false && nonEmptyFileExists)
+                if (job.EncodingProgress >= 90 && job.Error is false && nonEmptyFileExists)
                 {
                     job.CompleteEncoding(stopwatch.Elapsed);
                     DeleteFiles(Lookups.PreviouslyEncodingTempFile, job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
@@ -452,28 +455,28 @@ namespace AutomatedFFmpegServer.TaskFactory
                 // CANCELLED
                 else if (taskCancellationToken.IsCancellationRequested is true)
                 {
-                    // Ensure these files are deleted (should've deleted on exit)
-                    DeleteFiles(job.DestinationFullPath);
+                    // Ensure these files are deleted
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
                     logger.LogError($"{job} was cancelled.");
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (job.Error is false && job.EncodingProgress < 75)
+                else if (job.Error is false && job.EncodingProgress < 90)
                 {
-                    // Ensure these files are deleted (should've deleted on exit)
-                    DeleteFiles(job.DestinationFullPath);
+                    // Ensure these files are deleted
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.SetError(logger.LogError($"{job} encoding job ended prematurely."));
                 }
                 // JOB ERRORED
                 else if (job.Error is true)
                 {
                     // Go ahead and clear out the merged file (most likely didn't finish)
-                    DeleteFiles(job.DestinationFullPath);
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     // Log occurred in catch
                 }
                 else if (nonEmptyFileExists is false)
                 {
-                    DeleteFiles(job.DestinationFullPath);
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.SetError(logger.LogError($"Output file not created for {job}"));
                 }
             }
