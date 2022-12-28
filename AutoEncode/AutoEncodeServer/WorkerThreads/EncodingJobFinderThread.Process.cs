@@ -217,7 +217,7 @@ namespace AutoEncodeServer.WorkerThreads
                             updatedCopyFilePaths = new List<string>();
                             foreach (string oldPath in postProcessingSettings.CopyFilePaths) 
                             {
-                                updatedCopyFilePaths.Add(Path.Combine(oldPath, sourceData.FullPath.Replace(sourceDirectoryPath, "")));
+                                updatedCopyFilePaths.Add($"{oldPath}{sourceData.FullPath.Replace(sourceDirectoryPath, "")}");
                             }
                         }
 

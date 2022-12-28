@@ -31,7 +31,13 @@ namespace AutoEncodeServer.TaskFactory
                     {
                         foreach (string path in job.PostProcessingSettings.CopyFilePaths)
                         {
-                            File.Copy(job.DestinationFullPath, Path.Combine(path, Path.GetFileName(job.DestinationFullPath)), true);
+                            string copyDestinationDirectory = Path.GetDirectoryName(path);
+                            if (Directory.Exists(copyDestinationDirectory) is false)
+                            {
+                                Directory.CreateDirectory(copyDestinationDirectory);
+                            }
+
+                            File.Copy(job.DestinationFullPath, path, true);
                         }
                     }
                     catch (Exception ex)
