@@ -23,12 +23,10 @@ namespace AutoEncodeServer.TaskFactory
         {
             job.SetStatus(EncodingJobStatus.ENCODING);
 
-            // Verify source file is still here
-            if (File.Exists(job.SourceFullPath) is false)
-            {
-                job.SetError(logger.LogError($"Source file no longer found for {job}"));
-                return;
-            }
+            // Ensure everything is good for encoding
+            PreEncodeVerification(job, logger);
+
+            if (job.Error is true) return;
 
             Stopwatch stopwatch = new();
             Process ffmpegProcess = null;
@@ -155,12 +153,10 @@ namespace AutoEncodeServer.TaskFactory
         {
             job.SetStatus(EncodingJobStatus.ENCODING);
 
-            // Verify source file is still here
-            if (File.Exists(job.SourceFullPath) is false)
-            {
-                job.SetError(logger.LogError($"Source file no longer found for {job}"));
-                return;
-            }
+            // Ensure everything is good for encoding
+            PreEncodeVerification(job, logger);
+
+            if (job.Error is true) return;
 
             CancellationTokenSource encodingTokenSource = new();
             CancellationToken encodingToken = encodingTokenSource.Token;
@@ -526,6 +522,31 @@ namespace AutoEncodeServer.TaskFactory
                 }
             }
             return encodingProgress;
+        }
+
+        private static void PreEncodeVerification(EncodingJob job, Logger logger)
+        {
+            try
+            {
+                // Verify source file is still here
+                if (File.Exists(job.SourceFullPath) is false)
+                {
+                    job.SetError(logger.LogError($"Source file no longer found for {job}"));
+                    return;
+                }
+
+                // Verify desination path exists (mainly for files in further subdirectories like extras, TV shows)
+                // If it doesn't exist, create it
+                if (Directory.Exists(job.DestinationFullPath) is false)
+                {
+                    Directory.CreateDirectory(job.DestinationFullPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                job.SetError(logger.LogException(ex, $"Failed PreEncodeVerification for {job}."));
+                return;
+            }
         }
 
         private static void DeleteFiles(params string[] files)
