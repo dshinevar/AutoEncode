@@ -537,9 +537,10 @@ namespace AutoEncodeServer.TaskFactory
 
                 // Verify desination path exists (mainly for files in further subdirectories like extras, TV shows)
                 // If it doesn't exist, create it
-                if (Directory.Exists(job.DestinationFullPath) is false)
+                string destinationDirectory = Path.GetDirectoryName(job.DestinationFullPath);
+                if (Directory.Exists(destinationDirectory) is false)
                 {
-                    Directory.CreateDirectory(job.DestinationFullPath);
+                    Directory.CreateDirectory(destinationDirectory);
                 }
             }
             catch (Exception ex)
