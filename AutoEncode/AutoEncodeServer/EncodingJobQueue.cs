@@ -1,6 +1,5 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,19 +43,18 @@ namespace AutoEncodeServer
         }
 
         /// <summary>Creates an EncodingJob and adds to queue based off the given info. </summary>
-        /// <param name="videoSourceData"><see cref="VideoSourceData"/></param>
-        /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
-        /// <param name="sourceDirectoryPath">Directory path of source</param>
-        /// <param name="destinationDirectoryPath">Directory path of destination</param>
+        /// <param name="sourceFileName">Source FileName</param>
+        /// <param name="sourceFullPath">Full Path of source file</param>
+        /// <param name="destinationFullPath">Full Path of what will be destination</param>
+        /// <param name="postProcessingSettings">Updated postprocessing settings for the source file</param>
         /// <returns>The JobId of the newly created job; -1, otherwise.</returns>
-        public static int CreateEncodingJob(VideoSourceData videoSourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
+        public static int CreateEncodingJob(string sourceFileName, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
         {
             int jobId = -1;
-            if (!ExistsByFileName(videoSourceData.FileName))
+            if (ExistsByFileName(sourceFileName) is false)
             {
-                EncodingJob newJob = new(IdNumber, videoSourceData.FullPath,
-                                            videoSourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath), 
-                                            postProcessingSettings);
+                EncodingJob newJob = new(IdNumber, sourceFullPath, destinationFullPath, postProcessingSettings);
+
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
