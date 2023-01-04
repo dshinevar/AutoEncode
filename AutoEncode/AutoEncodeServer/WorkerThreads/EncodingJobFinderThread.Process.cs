@@ -209,7 +209,27 @@ namespace AutoEncodeServer.WorkerThreads
                     // Only add encoding job is file is ready.
                     if (CheckFileReady(sourceData.FullPath))
                     {
-                        int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData, postProcessingSettings, sourceDirectoryPath, destinationDirectoryPath);
+                        // Prep Data for creating job
+                        List<string> updatedCopyFilePaths = null;
+                        if (postProcessingSettings?.CopyFilePaths?.Any() ?? false)
+                        {
+                            // Update copy file paths with full destination directory (for extras and shows with subdirectories)
+                            updatedCopyFilePaths = new List<string>();
+                            foreach (string oldPath in postProcessingSettings.CopyFilePaths) 
+                            {
+                                updatedCopyFilePaths.Add($"{oldPath}{sourceData.FullPath.Replace(sourceDirectoryPath, "")}");
+                            }
+                        }
+
+                        PostProcessingSettings updatedPostProcessingSettings = new()
+                        {
+                            CopyFilePaths = updatedCopyFilePaths,
+                            DeleteSourceFile = postProcessingSettings.DeleteSourceFile
+                        };
+
+                        string destinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath);
+
+                        int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData.FileName, sourceData.FullPath, destinationFullPath, updatedPostProcessingSettings);
                         if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
                     }
                 }
