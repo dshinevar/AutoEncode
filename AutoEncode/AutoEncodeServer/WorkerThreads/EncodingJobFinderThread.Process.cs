@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,16 +14,12 @@ namespace AutoEncodeServer.WorkerThreads
     {
         private void ThreadLoop()
         {
-            int failedToFindJobCount = 0;
-
             while (Shutdown is false)
             {
                 try
                 {
                     Status = AEWorkerThreadStatus.PROCESSING;
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
-
-                    bool foundEncodingJob = false;
 
                     // Don't do anything if the queue is full
                     if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
@@ -37,7 +32,6 @@ namespace AutoEncodeServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                foundEncodingJob |= moviesToEncode.Any();
                                 moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
@@ -47,28 +41,12 @@ namespace AutoEncodeServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                foundEncodingJob |= episodesToEncode.Any();
                                 episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
                             }
                         }
                     }
 
-                    if (foundEncodingJob is false)
-                    {
-                        failedToFindJobCount++;
-                        if (failedToFindJobCount >= MaxFailedToFindJobCount)
-                        {
-                            DeepSleep();
-                        }
-                        else
-                        {
-                            Sleep();
-                        }
-                    }
-                    else
-                    {
-                        failedToFindJobCount = 0;
-                    }
+                    Sleep();
                 }
                 catch (Exception ex)
                 {
@@ -199,8 +177,9 @@ namespace AutoEncodeServer.WorkerThreads
             });
         }
 
-        private void CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
+        private bool CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
         {
+            bool jobCreated = false;
             try
             {
                 // Don't create encoding job if we are at max count
@@ -230,7 +209,11 @@ namespace AutoEncodeServer.WorkerThreads
                         string destinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath);
 
                         int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData.FileName, sourceData.FullPath, destinationFullPath, updatedPostProcessingSettings);
-                        if (newJobId is not -1) Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                        if (newJobId is not -1)
+                        {
+                            jobCreated = true;
+                            Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);
+                        }
                     }
                 }
             }
@@ -238,6 +221,8 @@ namespace AutoEncodeServer.WorkerThreads
             {
                 Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName);
             }
+
+            return jobCreated;
         }
 
         /// <summary> Checks if a file is valid for being considered a source file.
@@ -277,13 +262,13 @@ namespace AutoEncodeServer.WorkerThreads
             FileInfo fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
 
-            Thread.Sleep(TimeSpan.FromSeconds(3));
+            Thread.Sleep(TimeSpan.FromSeconds(4));
 
             // If still able to access, check to see if file size is changing
             fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
 
-            Thread.Sleep(TimeSpan.FromSeconds(3));
+            Thread.Sleep(TimeSpan.FromSeconds(4));
 
             fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);

@@ -131,11 +131,13 @@ namespace AutoEncodeServer
             List<string> x265Version = null;
             bool dolbyVisionExtractorFound = !string.IsNullOrWhiteSpace(serverConfig.ServerSettings.DolbyVisionExtractorFullPath) && File.Exists(serverConfig.ServerSettings.DolbyVisionExtractorFullPath);
 
+            bool mkvmergeFound = false;
             if (serverConfig.GlobalJobSettings.DolbyVisionEncodingEnabled is true && dolbyVisionExtractorFound is true)
             {
                 try
                 {
                     mkvmergeVersion = GetMKVMergeVersion(serverConfig.ServerSettings.MkvMergeFullPath);
+                    mkvmergeFound = !string.IsNullOrWhiteSpace(mkvmergeVersion);
                 }
                 catch (Exception ex)
                 {
@@ -174,7 +176,7 @@ namespace AutoEncodeServer
             {
                 startupLog.Add($"DOLBY VISION EXTRACTOR: {serverConfig.ServerSettings.DolbyVisionExtractorFullPath} ({(dolbyVisionExtractorFound ? "FOUND" : "NOT FOUND")})");
                 startupLog.Add($"x265: {serverConfig.ServerSettings.X265FullPath}");
-                startupLog.Add($"MKVMERGE: {serverConfig.ServerSettings.MkvMergeFullPath}");
+                startupLog.Add($"MKVMERGE: {serverConfig.ServerSettings.MkvMergeFullPath} ({(mkvmergeFound ? "FOUND" : "NOT FOUND")})");
             }
             if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) 
                 startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath} ({(hdr10PlusExtractorFound ? "FOUND" : "NOT FOUND")})");

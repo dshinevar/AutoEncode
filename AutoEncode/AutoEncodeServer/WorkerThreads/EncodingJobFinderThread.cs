@@ -12,7 +12,6 @@ namespace AutoEncodeServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
-        private const int MaxFailedToFindJobCount = 6;
         private bool Shutdown = false;
         private bool DirectoryUpdate = false;
         private ManualResetEvent ShutdownMRE { get; set; }
@@ -26,8 +25,7 @@ namespace AutoEncodeServer.WorkerThreads
 
         private Thread Thread { get; set; }
         private string ThreadName => Thread?.Name ?? string.Empty;
-        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(5);
-        private TimeSpan ThreadDeepSleep => TimeSpan.FromMinutes(ThreadSleep.TotalMinutes * 5);
+        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
 
         private AEWorkerThreadStatus Status { get; set; } = AEWorkerThreadStatus.PROCESSING;
         private AEServerMainThread MainThread { get; set; }
@@ -83,13 +81,6 @@ namespace AutoEncodeServer.WorkerThreads
         {
             Status = AEWorkerThreadStatus.SLEEPING;
             SleepARE.WaitOne(ThreadSleep);
-        }
-
-        /// <summary> Sleeps thread for 5x length of sleep. </summary>
-        private void DeepSleep()
-        {
-            Status = AEWorkerThreadStatus.DEEP_SLEEPING;
-            SleepARE.WaitOne(ThreadDeepSleep);
         }
         #endregion Thread Functions
 

@@ -193,7 +193,6 @@ namespace AutoEncodeServer.Data
                 throw new Exception("No audio streams found.");
             }
 
-
             foreach (Frame frame in frames)
             {
                 // Currently don't do anything with audio (doesn't give much useful data)
