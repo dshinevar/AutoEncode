@@ -57,7 +57,7 @@ namespace AutoEncodeServer
             Config = serverConfig;
             ShutdownMRE = shutdown;
             Logger = logger;
-            ServerSocket = new AEServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
+            //ServerSocket = new AEServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
 
             MaintenanceTimerWaitTime = TimeSpan.FromHours(1);           // Doesn't need to run very often
@@ -90,8 +90,8 @@ namespace AutoEncodeServer
             EncodingJobPostProcessingCancellationToken?.Cancel();
 
             // Stop socket and timers
-            ServerSocket.Disconnect(false);
-            ServerSocket.Dispose();
+            ServerSocket?.Disconnect(false);
+            ServerSocket?.Dispose();
             EncodingJobTaskTimer.Dispose(EncodingJobTaskTimerDispose);
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();

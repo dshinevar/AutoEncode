@@ -91,8 +91,10 @@ namespace AutoEncodeServer.WorkerThreads
                         {
                             List<ShowSourceData> shows = new();
                             IEnumerable<string> sourceShows = Directory.GetDirectories(entry.Value.Source);
-                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            HashSet<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith))
+                                .Select(file => Path.GetFileNameWithoutExtension(file))
+                                .ToHashSet();
                             // Show
                             foreach (string showPath in sourceShows)
                             {
@@ -128,7 +130,7 @@ namespace AutoEncodeServer.WorkerThreads
                                     seasonData.Episodes.Sort((x, y) => x.FileName.CompareTo(y.FileName));
                                     showData.Seasons.Add(seasonData);
                                 }
-                                showData.Seasons.Sort((x, y) => x.Season.CompareTo(y.Season));
+                                showData.Seasons.Sort((x, y) => x.SeasonInt.CompareTo(y.SeasonInt));
                                 shows.Add(showData);
                             }
                             shows.Sort((x, y) => x.ShowName.CompareTo(y.ShowName));
@@ -143,8 +145,10 @@ namespace AutoEncodeServer.WorkerThreads
                             List<VideoSourceData> movies = new();
                             IEnumerable<string> sourceFiles = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
                                 .Where(file => ValidSourceFile(file));
-                            IEnumerable<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
-                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith)).Select(file => file = Path.GetFileNameWithoutExtension(file));
+                            HashSet<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
+                                .Where(file => State.JobFinderSettings.VideoFileExtensions.Any(file.ToLower().EndsWith))
+                                .Select(file => Path.GetFileNameWithoutExtension(file))
+                                .ToHashSet();
                             foreach (string sourceFile in sourceFiles)
                             {
                                 if (File.Exists(sourceFile) is false) continue;
