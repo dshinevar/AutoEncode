@@ -54,7 +54,7 @@ namespace AutoEncodeServer.ServerSocket
         {
             if (IsConnected()) Disconnect(false);
 
-            ClientHandler.Close();
+            ClientHandler?.Close();
             Listener.Dispose();
         }
 
@@ -99,8 +99,8 @@ namespace AutoEncodeServer.ServerSocket
         {
             try
             {
-                ClientHandler.Shutdown(SocketShutdown.Both);
-                ClientHandler.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), ClientHandler);
+                ClientHandler?.Shutdown(SocketShutdown.Both);
+                ClientHandler?.BeginDisconnect(true, new AsyncCallback(DisconnectCallback), ClientHandler);
                 DisconnectDone.WaitOne();
                 DisconnectDone.Reset();
             }

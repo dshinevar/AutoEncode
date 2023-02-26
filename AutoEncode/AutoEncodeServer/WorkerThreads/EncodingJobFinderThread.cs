@@ -24,7 +24,7 @@ namespace AutoEncodeServer.WorkerThreads
         private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
         private Thread Thread { get; set; }
-        private string ThreadName => Thread?.Name ?? string.Empty;
+        private string ThreadName => Thread?.Name ?? nameof(EncodingJobFinderThread);
         private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
 
         private AEWorkerThreadStatus Status { get; set; } = AEWorkerThreadStatus.PROCESSING;
