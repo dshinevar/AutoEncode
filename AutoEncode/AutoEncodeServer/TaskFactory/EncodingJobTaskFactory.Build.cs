@@ -592,7 +592,7 @@ namespace AutoEncodeServer.TaskFactory
 
             if (!string.IsNullOrWhiteSpace(deinterlace) || !string.IsNullOrWhiteSpace(crop))
             {
-                videoFilter = $"-vf \"{HelperMethods.JoinFilter(":", crop, deinterlace)}\"";
+                videoFilter = $"-vf \"{HelperMethods.JoinFilter(", ", crop, deinterlace)}\"";
             }
 
             sbArguments.AppendFormat(format, $"-pix_fmt {videoInstructions.PixelFormat}");
