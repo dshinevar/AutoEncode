@@ -11,9 +11,9 @@ namespace AutoEncodeServer.TaskFactory
     {
         /// <summary> Runs post-processing tasks marked for the encoding job. </summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be post-processed.</param>
-        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void PostProcess(EncodingJob job, Logger logger, CancellationToken cancellationToken)
+        public static void PostProcess(EncodingJob job, ILogger logger, CancellationToken cancellationToken)
         {
             // Double-check to ensure we don't post-process a job that shouldn't be
             if (job.PostProcessingFlags.Equals(PostProcessingFlags.None)) return;

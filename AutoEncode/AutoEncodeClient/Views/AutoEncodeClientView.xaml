@@ -1,0 +1,141 @@
+﻿<Window x:Class="AutoEncodeClient.Views.AutoEncodeClientView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AutoEncodeClient.Views"
+        xmlns:converters="clr-namespace:AutoEncodeClient.Converters"
+        xmlns:designData="clr-namespace:AutoEncodeClient.Views.DesignData"
+        mc:Ignorable="d"
+        Title="AutoEncodeClient" Height="450" Width="800"
+        Background="LightGray"
+        d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <converters:EnumDisplayNameConverter x:Key="EnumDisplayNameConverter"/>
+            <converters:EncodingJobStatusToVisibilityConverter x:Key="EncodingJobStatusToVisibilityConverter"/>
+            <converters:IsNullVisibilityConverter x:Key="IsNullVisibilityConverter"/>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"
+                              MaxWidth="600"/>
+            <ColumnDefinition Width="6*"
+                              MinWidth="140"/>
+        </Grid.ColumnDefinitions>
+
+        <Expander Grid.Column="0"
+                  ExpandDirection="Right"
+                  VerticalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  HorizontalAlignment="Left"
+                  VerticalContentAlignment="Top"
+                  Background="Azure"
+                  MaxWidth="600">
+            <Expander.Header>
+                <TextBlock Text="SOURCE FILES">
+                    <TextBlock.LayoutTransform>
+                        <RotateTransform Angle="270"/>
+                    </TextBlock.LayoutTransform>
+                </TextBlock>
+            </Expander.Header>
+            <TreeView ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <TreeViewItem Header="HELLOoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo">
+                    <TreeViewItem.Items>
+                        <TreeViewItem Header="TESTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"></TreeViewItem>
+                    </TreeViewItem.Items>
+                </TreeViewItem>
+                <TreeViewItem Header="HELLOoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"></TreeViewItem>
+                <TreeViewItem Header="HELLOoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"></TreeViewItem>
+                <TreeViewItem Header="HELLOoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"></TreeViewItem>
+                <TreeViewItem Header="HELLOooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"></TreeViewItem>
+                <TreeViewItem Header="HELLOooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"></TreeViewItem>
+            </TreeView>
+        </Expander>
+
+            <Grid Grid.Column="1"
+              Margin="2,0">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="4*"/>
+            </Grid.RowDefinitions>
+
+            <ListView Grid.Row="0"
+                      ItemsSource="{Binding EncodingJobs}"
+                      SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      VerticalAlignment="Stretch"
+                      HorizontalAlignment="Stretch"
+                      VerticalContentAlignment="Stretch"
+                      SelectionMode="Single"
+                      BorderBrush="Black"
+                      BorderThickness="1">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="Black"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Width="125"
+                                VerticalAlignment="Stretch"
+                                HorizontalAlignment="Stretch"
+                                Padding="4,1">
+                            <Grid MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Border}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition MinHeight="10"/>
+                                    <RowDefinition Height="2*"/>
+                                    <RowDefinition MinHeight="10"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="2*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Id, StringFormat=ID: {0}}"/>
+                                    <TextBlock Grid.Column="1"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Status, Converter={StaticResource EnumDisplayNameConverter}}"/>
+                                </Grid>
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding Name}"
+                                           TextWrapping="WrapWithOverflow"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+                                <ProgressBar Grid.Row="2"
+                                             Value="{Binding EncodingProgress}"
+                                             Visibility="{Binding Status, Converter={StaticResource EncodingJobStatusToVisibilityConverter}}"
+                                             Minimum="0" 
+                                             Maximum="100" 
+                                             MinHeight="10"
+                                             Margin="5,2"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+            </ListView>
+
+            <Grid Grid.Row="1"
+                  DataContext="{Binding SelectedEncodingJobViewModel}"
+                  Visibility="{Binding DataContext, RelativeSource={RelativeSource Mode=Self}, Converter={StaticResource IsNullVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="{Binding Name}"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

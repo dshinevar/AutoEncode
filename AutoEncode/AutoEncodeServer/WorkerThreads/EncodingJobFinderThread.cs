@@ -1,4 +1,5 @@
-﻿using AutoEncodeUtilities;
+﻿using AutoEncodeServer.Base;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
@@ -10,11 +11,9 @@ using System.Threading;
 
 namespace AutoEncodeServer.WorkerThreads
 {
-    public partial class EncodingJobFinderThread
+    public partial class EncodingJobFinderThread : AEWorkerThread
     {
-        private bool Shutdown = false;
         private bool DirectoryUpdate = false;
-        private ManualResetEvent ShutdownMRE { get; set; }
         private AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
 
         private readonly object movieSourceFileLock = new();
@@ -23,53 +22,23 @@ namespace AutoEncodeServer.WorkerThreads
         private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
         private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
 
-        private Thread Thread { get; set; }
-        private string ThreadName => Thread?.Name ?? nameof(EncodingJobFinderThread);
         private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
 
-        private AEWorkerThreadStatus Status { get; set; } = AEWorkerThreadStatus.PROCESSING;
-        private AEServerMainThread MainThread { get; set; }
-        private AEServerConfig State { get; set; }
-        private Logger Logger { get; set; }
 
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Main Thread handle <see cref="AEServerMainThread"/></param>
         /// <param name="serverState">Current Server State<see cref="AEServerConfig"/></param>
-        public EncodingJobFinderThread(AEServerMainThread mainThread, AEServerConfig serverState, Logger logger, ManualResetEvent shutdownMRE)
+        public EncodingJobFinderThread(AEServerMainThread mainThread, AEServerConfig serverState, ILogger logger, ManualResetEvent shutdownMRE)
+            : base(nameof(EncodingJobFinderThread), mainThread, serverState, logger, shutdownMRE)
         {
-            MainThread = mainThread;
-            State = serverState;
-            Logger = logger;
-            ShutdownMRE = shutdownMRE;
             ThreadSleep = State.JobFinderSettings.ThreadSleep;
             SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
         }
 
         #region Start/Stop Functions
-        public void Start()
-        {
-            Thread = new Thread(() => ThreadLoop())
-            {
-                Name = nameof(EncodingJobFinderThread),
-                IsBackground = true
-            };
+        public override void Start(Action preThreadStart = null) => base.Start(BuildSourceFiles);
 
-            Logger.LogInfo($"{ThreadName} Starting", ThreadName);
-            // Update the source files initially before starting thread
-            BuildSourceFiles(SearchDirectories);
-            Thread.Start();
-        }
-
-        public void Stop()
-        {
-            Logger.LogInfo($"{ThreadName} Shutting Down", ThreadName);
-            Shutdown = true;
-
-            Wake();
-            Thread.Join();
-
-            ShutdownMRE.Set();
-        }
+        public override void Stop() => base.Stop();
         #endregion Start/Stop Functions
 
         #region Thread Functions
@@ -79,14 +48,12 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary> Sleeps thread for certain amount of time. </summary>
         private void Sleep()
         {
-            Status = AEWorkerThreadStatus.SLEEPING;
+            ThreadStatus = AEWorkerThreadStatus.Sleeping;
             SleepARE.WaitOne(ThreadSleep);
         }
         #endregion Thread Functions
 
         #region Public Functions
-        public ThreadStatusData GetThreadStatus() => new ThreadStatusData(ThreadName, Status);
-
         /// <summary>Signal to thread to update directories to search for jobs.</summary>
         public void UpdateSearchDirectories() => DirectoryUpdate = true;
 

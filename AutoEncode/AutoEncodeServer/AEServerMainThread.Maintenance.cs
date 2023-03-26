@@ -7,7 +7,7 @@ namespace AutoEncodeServer
 {
     public partial class AEServerMainThread
     {
-        private static string MaintenanceThreadName => $"{ThreadName}-Maintenance";
+        private string MaintenanceThreadName => $"{ThreadName}-Maintenance";
 
         /// <summary>
         /// Runs maintenance tasks. Should be ran infrequently.

@@ -8,6 +8,15 @@ namespace AutoEncodeServer
 {
     public partial class AEServerMainThread
     {
+        private Task EncodingJobBuilderTask { get; set; }
+        private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; }
+
+        private Task EncodingTask { get; set; }
+        private CancellationTokenSource EncodingCancellationToken { get; set; }
+
+        private Task EncodingJobPostProcessingTask { get; set; }
+        private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; }
+
         /// <summary>Server timer task: Send update to client; Spin up threads for other tasks</summary>
         private void OnEncodingJobTaskTimerElapsed(object obj)
         {

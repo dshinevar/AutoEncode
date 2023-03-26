@@ -9,7 +9,7 @@ using System.Text;
 
 namespace AutoEncodeUtilities.Logger
 {
-    public enum Severity
+    internal enum Severity
     {
         [Description("Debug")]
         DEBUG = 0,
@@ -23,7 +23,7 @@ namespace AutoEncodeUtilities.Logger
         FATAL = 4
     }
 
-    public class Logger
+    public class Logger : ILogger
     {
         private readonly string LogFileFullPath;
         private long MaxSizeInBytes { get; set; }
@@ -38,23 +38,11 @@ namespace AutoEncodeUtilities.Logger
         }
 
         #region Log Functions
-        /// <summary>Log a Debug message; Only available in Debug builds.</summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
-        [Conditional("DEBUG")]
-        public void LogDebug(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, new string[] { msg }, threadName, callingMemberName);
-        /// <summary>Log a list of debug messages; Only available in Debug builds</summary>
-        /// <param name="messages">Messages to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
-        [Conditional("DEBUG")]
-        public void LogDebug(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.DEBUG, messages, threadName, callingMemberName);
         /// <summary> Log an Info Message </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        public string LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, new string[] { msg }, threadName, callingMemberName);
+        public string LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogInfo(new string[] { msg }, threadName, callingMemberName);
         /// <summary>Log a list of info messages.</summary>
         /// <param name="messages">Messages to log</param>
         /// <param name="threadName">Thread calling log</param>
@@ -64,7 +52,7 @@ namespace AutoEncodeUtilities.Logger
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        public string LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, new string[] { msg }, threadName, callingMemberName);
+        public string LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogWarning(new string[] { msg }, threadName, callingMemberName);
         /// <summary>Log a list of warning messages.</summary>
         /// <param name="messages">Messages to log</param>
         /// <param name="threadName">Thread calling log</param>
@@ -74,7 +62,7 @@ namespace AutoEncodeUtilities.Logger
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        public string LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, new string[] { msg }, threadName, callingMemberName);
+        public string LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogError(new string[] { msg }, threadName, callingMemberName);
         /// <summary>Log a list of Error messages.</summary>
         /// <param name="messages">Messages to log</param>
         /// <param name="threadName">Thread calling log</param>

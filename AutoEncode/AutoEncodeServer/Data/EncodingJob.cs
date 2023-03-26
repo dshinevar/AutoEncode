@@ -1,4 +1,5 @@
-﻿using AutoEncodeUtilities.Enums;
+﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using System;
 using System.IO;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJob
+    public class EncodingJob : IEncodingJobData
     {
         /// <summary> Default Constructor </summary>
         public EncodingJob() { }
@@ -158,6 +159,13 @@ namespace AutoEncodeUtilities.Data
             {
                 Status -= 1;
             }
+        }
+
+        public EncodingJobData ExportData()
+        {
+            EncodingJobData data = new();
+            this.CopyProperties(data);
+            return data;
         }
         #endregion Public Functions
 

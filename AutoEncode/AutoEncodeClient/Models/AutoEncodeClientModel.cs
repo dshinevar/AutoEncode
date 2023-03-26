@@ -1,0 +1,54 @@
+﻿using AutoEncodeClient.ApiClient;
+using AutoEncodeClient.Config;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Logger;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace AutoEncodeClient.Models
+{
+    public class AutoEncodeClientModel
+    {
+        #region Private Properties
+        private StatusApiClient StatusApiClient { get; set; }
+
+        private ILogger Logger { get; set; }
+        private AEClientConfig Config { get; set; }
+        #endregion Private Properties
+
+        #region Properties
+        #endregion Properties
+
+        public AutoEncodeClientModel(ILogger logger, AEClientConfig config)
+        {
+            Logger = logger;
+            Config = config;
+            StatusApiClient = new StatusApiClient(logger, 
+                                                    config.ConnectionSettings.IPAddress, 
+                                                    config.ConnectionSettings.Port);
+
+            
+        }
+
+        public List<EncodingJobData> GetCurrentEncodingJobQueue()
+        {
+            List<EncodingJobData> encodingJobQueue = null;
+            try
+            {
+                encodingJobQueue = StatusApiClient.GetEncodingJobQueueCurrentState();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to get current encoding job queue");
+            }
+
+            return encodingJobQueue;
+        }
+
+
+    }
+}

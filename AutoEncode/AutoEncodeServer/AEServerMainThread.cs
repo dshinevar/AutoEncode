@@ -1,7 +1,9 @@
-﻿using AutoEncodeServer.ServerSocket;
+﻿using AutoEncodeServer.Pipe;
 using AutoEncodeServer.WorkerThreads;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Logger;
+using AutoEncodeUtilities.Messages;
+using H.Pipes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,15 +14,14 @@ namespace AutoEncodeServer
 {
     public partial class AEServerMainThread
     {
-        private static string ThreadName => "MainThread";
-        private Task EncodingJobBuilderTask { get; set; }
-        private CancellationTokenSource EncodingJobBuilderCancellationToken { get; set; }
+        public readonly string ThreadName = "MainThread";
 
-        private Task EncodingTask { get; set; }
-        private CancellationTokenSource EncodingCancellationToken { get; set; }
-
-        private Task EncodingJobPostProcessingTask { get; set; }
-        private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; }
+        /// <summary>Config as in file </summary>
+        private AEServerConfig Config { get; set; }
+        /// <summary>Config to be used; Does not have to match what is saved to file</summary>
+        private AEServerConfig State { get; set; }
+        private ManualResetEvent ShutdownMRE { get; set; }
+        private ILogger Logger { get; set; }
 
         private EncodingJobFinderThread EncodingJobFinderThread { get; set; }
         private ManualResetEvent EncodingJobShutdown { get; set; } = new ManualResetEvent(false);
@@ -39,26 +40,19 @@ namespace AutoEncodeServer
         private readonly TimeSpan ProcessTimerWaitTime;
         private Timer ProcessTimer { get; set; }
         private ManualResetEvent ProcessTimerDispose { get; set; } = new ManualResetEvent(false);
-        private Queue<Action> TaskQueue { get; set; } = new Queue<Action>();
 
-        private AEServerSocket ServerSocket { get; set; }
-        /// <summary>Config as in file </summary>
-        private AEServerConfig Config { get; set; }
-        /// <summary>Config to be used; Does not have to match what is saved to file</summary>
-        private AEServerConfig State { get; set; }
-        private ManualResetEvent ShutdownMRE { get; set; }
-        private Logger Logger { get; set; }
+        private IServerPipeManager ServerPipeManager { get; set; }
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
         /// <param name="serverConfig">Server Config</param>
-        public AEServerMainThread(AEServerConfig serverState, AEServerConfig serverConfig, Logger logger, ManualResetEvent shutdown)
+        public AEServerMainThread(AEServerConfig serverState, AEServerConfig serverConfig, ILogger logger, ManualResetEvent shutdown)
         {
             State = serverState;
             Config = serverConfig;
             ShutdownMRE = shutdown;
             Logger = logger;
-            //ServerSocket = new AEServerSocket(this, Logger, Config.ServerSettings.IP, Config.ServerSettings.Port);
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
+            ServerPipeManager = new ServerPipeManager(this, Logger);
 
             MaintenanceTimerWaitTime = TimeSpan.FromHours(1);           // Doesn't need to run very often
             EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(5);     // Run a bit slower than process; Is mainly managing the tasks so doesn't need to spin often
@@ -71,17 +65,20 @@ namespace AutoEncodeServer
         {
             Debug.WriteLine("AEServerMainThread Starting");
             EncodingJobFinderThread.Start();
-            //ServerSocket?.StartListening();
+            ServerPipeManager?.Start();
 
             MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(30), MaintenanceTimerWaitTime);
             EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
             ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
 
-        /// <summary>Shuts down AEServerMainThread; Disconnects server socket. </summary>
+        /// <summary>Shuts down AEServerMainThread; Disconnects Pipe </summary>
         public void Shutdown()
         {
             Debug.WriteLine("AEServerMainThread Shutting Down.");
+
+            // Stop Pipe
+            ServerPipeManager?.Stop();
 
             // Stop threads
             EncodingJobFinderThread?.Stop();
@@ -89,20 +86,18 @@ namespace AutoEncodeServer
             EncodingCancellationToken?.Cancel();
             EncodingJobPostProcessingCancellationToken?.Cancel();
 
-            // Stop socket and timers
-            ServerSocket?.Disconnect(false);
-            ServerSocket?.Dispose();
-            EncodingJobTaskTimer.Dispose(EncodingJobTaskTimerDispose);
+            // Stop Timers timers
+            EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();
 
-            MaintenanceTimer.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
             MaintenanceTimerDispose.WaitOne();
             MaintenanceTimerDispose.Dispose();
 
             // Clear Task Queue and Stop processsing timer
             TaskQueue.Clear();
-            ProcessTimer.Dispose(ProcessTimerDispose);
+            ProcessTimer?.Dispose(ProcessTimerDispose);
             ProcessTimerDispose.WaitOne();
             ProcessTimerDispose.Dispose();
 

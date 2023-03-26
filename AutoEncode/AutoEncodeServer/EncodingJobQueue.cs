@@ -1,5 +1,6 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using AutoEncodeServer.Data;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -34,11 +35,11 @@ namespace AutoEncodeServer
             }
         }
 
-        public static List<EncodingJobClientData> GetEncodingJobsForClient()
+        public static List<EncodingJobData> GetEncodingJobsData()
         {
             lock (jobLock)
             {
-                return jobQueue.Count > 0 ? jobQueue.ConvertAll(x => new EncodingJobClientData(x)).ToList() : new List<EncodingJobClientData>();
+                return jobQueue.Select(x => x.ExportData()).ToList();
             }
         }
 

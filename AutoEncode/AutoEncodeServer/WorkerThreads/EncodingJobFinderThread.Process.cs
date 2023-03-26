@@ -1,4 +1,5 @@
-﻿using AutoEncodeUtilities;
+﻿using AutoEncodeServer.Base;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
@@ -10,21 +11,21 @@ using System.Threading.Tasks;
 
 namespace AutoEncodeServer.WorkerThreads
 {
-    public partial class EncodingJobFinderThread
+    public partial class EncodingJobFinderThread : AEWorkerThread
     {
-        private void ThreadLoop()
+        protected override void ThreadLoop()
         {
             while (Shutdown is false)
             {
                 try
                 {
-                    Status = AEWorkerThreadStatus.PROCESSING;
+                    ThreadStatus = AEWorkerThreadStatus.Processing;
                     if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
                     // Don't do anything if the queue is full
                     if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                     {
-                        BuildSourceFiles(SearchDirectories);
+                        BuildSourceFiles();
 
                         // Add encoding jobs for automated search directories and files not encoded
                         foreach (KeyValuePair<string, List<VideoSourceData>> entry in MovieSourceFiles)
@@ -77,10 +78,9 @@ namespace AutoEncodeServer.WorkerThreads
         }
 
         /// <summary> Builds out SourceFiles from the search directories </summary>
-        /// <param name="searchDirectories">Search Directories</param>
-        private void BuildSourceFiles(Dictionary<string, SearchDirectory> searchDirectories)
+        private void BuildSourceFiles()
         {
-            Parallel.ForEach(searchDirectories, entry =>
+            Parallel.ForEach(SearchDirectories, entry =>
             {
                 try
                 {

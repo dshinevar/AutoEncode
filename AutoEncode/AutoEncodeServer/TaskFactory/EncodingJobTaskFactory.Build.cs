@@ -25,10 +25,10 @@ namespace AutoEncodeServer.TaskFactory
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
         /// <param name="hdr10plusExtractorPath">The full path of the hdr10plus extractor program (hdr10plus_tool)</param>
         /// <param name="dolbyVisionExtractorPath">The full path of the dolby vision extractor program (dovi_tool)</param>
-        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
-                                            string x265Path, Logger logger, CancellationToken cancellationToken)
+                                            string x265Path, ILogger logger, CancellationToken cancellationToken)
         {
             job.SetStatus(EncodingJobStatus.BUILDING);
 

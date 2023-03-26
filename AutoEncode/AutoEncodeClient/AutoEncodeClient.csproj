@@ -10,13 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="RestSharp" Version="108.0.3" />
     <PackageReference Include="YamlDotNet" Version="12.2.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
-    <Folder Include="ViewModels\" />
-    <Folder Include="Views\" />
   </ItemGroup>
 
   <ItemGroup>

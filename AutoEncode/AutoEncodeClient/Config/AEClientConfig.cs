@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoEncodeUtilities.Config;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,7 +7,8 @@ namespace AutoEncodeClient.Config
 {
     public class AEClientConfig
     {
-        public string ServerIP { get; set; }
-        public int Port { get; set; }
+        public ConnectionSettings ConnectionSettings { get; set; }
+
+        public LoggerSettings LoggerSettings { get; set; }
     }
 }

@@ -2,11 +2,12 @@
 {
     public enum AEMessageType
     {
-        DISCONNECT = 0,
-        CLIENT_REQUEST = 1,
-        SERVER_MESSAGE = 2,
+        Connected = 0,
+        Disconnected = 1,
 
-        CLIENT_CONNECT = 10,
-        CLIENT_UPDATE = 11
+        #region Status
+        Status_Queue_Response,
+        Status_Queue_Request,
+        #endregion Status
     }
 }
