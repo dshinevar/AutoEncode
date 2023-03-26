@@ -42,7 +42,8 @@ namespace AutoEncodeServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        job.SetError(logger.LogException(ex, $"Error copying output file to other locations for {job}"));
+                        job.SetError(logger.LogException(ex, $"Error copying output file to other locations for {job}", 
+                            details: new {job.Id, job.Name, job.PostProcessingSettings.CopyFilePaths, job.DestinationFullPath}));
                         return;
                     }
                 }
@@ -58,7 +59,7 @@ namespace AutoEncodeServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        job.SetError(logger.LogException(ex, $"Error deleting source file for {job}"));
+                        job.SetError(logger.LogException(ex, $"Error deleting source file for {job}", details: new {job.Id, job.Name, job.SourceFullPath}));
                         return;
                     }
                 }
@@ -71,7 +72,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error post-processing {job}"));
+                job.SetError(logger.LogException(ex, $"Error post-processing {job}", details: new { job.Id, job.Name, job.Status }));
                 return;
             }
 

@@ -148,13 +148,21 @@ namespace AutoEncodeServer.Data
                         audioStream.ChannelLayout = $"{stream.channels}-channel(s)";
                     }
 
-                    if (stream.codec_name.Equals("dts"))
+                    if (string.IsNullOrWhiteSpace(stream.codec_name) is false)
                     {
-                        audioStream.CodecName = stream.profile;
+                        if (stream.codec_name.Equals("dts"))
+                        {
+                            // Make sure profile is set, is not always -- fallback to codec_name
+                            audioStream.CodecName = string.IsNullOrWhiteSpace(stream.profile) ? stream.codec_name : stream.profile;
+                        }
+                        else
+                        {
+                            audioStream.CodecName = stream.codec_name;
+                        }
                     }
                     else
                     {
-                        audioStream.CodecName = stream.codec_name;
+                        throw new Exception($"Unable to determine audio codec name for stream index {stream.index}");
                     }
 
                     if (stream.disposition.comment == 1 || stream.tags.title.Contains("Commentary"))

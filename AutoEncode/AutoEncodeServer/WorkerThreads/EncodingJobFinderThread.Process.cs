@@ -50,7 +50,8 @@ namespace AutoEncodeServer.WorkerThreads
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, "Error during looking for encoding jobs.", ThreadName);
+                    Logger.LogException(ex, "Error during looking for encoding jobs. Thread stopping.", ThreadName, 
+                        details: new {Status, EncodingJobQueueCount = EncodingJobQueue.Count, SearchDirectoriesCount = SearchDirectories.Count});
                     return;
                 }
             }
@@ -175,7 +176,8 @@ namespace AutoEncodeServer.WorkerThreads
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error building source files for source directory {entry.Key}", ThreadName);
+                    Logger.LogException(ex, $"Error building source files for source directory {entry.Key}", ThreadName, 
+                        new {SourceDirName = entry.Key, entry.Value.Source, entry.Value.Destination, entry.Value.Automated, entry.Value.TVShowStructure});
                     return;
                 }
             });
@@ -223,7 +225,7 @@ namespace AutoEncodeServer.WorkerThreads
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName);
+                Logger.LogException(ex, $"Error creating encoding job for {sourceData.FileName}.", ThreadName, new {sourceData.FullPath, sourceDirectoryPath, destinationDirectoryPath});
             }
 
             return jobCreated;

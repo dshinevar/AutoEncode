@@ -61,7 +61,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error getting probe or source file data for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error getting probe or source file data for {job}", details: new {job.SourceFullPath, ffmpegDir}));
                     return;
                 }
 
@@ -84,7 +84,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error determining VideoScanType for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error determining VideoScanType for {job}", details: new {job.SourceFullPath, ffmpegDir}));
                     return;
                 }
 
@@ -107,7 +107,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error determining crop for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error determining crop for {job}", details: new {job.SourceFullPath, ffmpegDir}));
                     return;
                 }
 
@@ -116,7 +116,7 @@ namespace AutoEncodeServer.TaskFactory
                 // OPTIONAL STEP: Create HDR metadata file if needed
                 try
                 {
-                    if (job.SourceStreamData?.VideoStream?.IsDynamicHDR ?? false)
+                    if (job.SourceStreamData.VideoStream.IsDynamicHDR is true)
                     {
                         HDRFlags hdrFlags = job.SourceStreamData.VideoStream.HDRData.HDRFlags;
                         if (hdrFlags.HasFlag(HDRFlags.HDR10PLUS))
@@ -150,7 +150,8 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error creating HDR metadata file for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error creating HDR metadata file for {job}", 
+                        details: new {job.Id, job.Name, DynamicHDR = job.SourceStreamData.VideoStream.IsDynamicHDR, dolbyVisionEnabled, dolbyVisionExtractorPath, hdr10plusExtractorPath }));
                     return;
                 }
 
@@ -163,7 +164,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error building encoding instructions for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error building encoding instructions for {job}", details: new {job.Id, job.Name}));
                     return;
                 }
 
@@ -211,7 +212,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(logger.LogException(ex, $"Error building FFmpeg command for {job}"));
+                    job.SetError(logger.LogException(ex, $"Error building FFmpeg command for {job}", details: new {job.Id, job.Name}));
                     return;
                 }
             }
@@ -224,7 +225,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error building encoding job for {job}"));
+                job.SetError(logger.LogException(ex, $"Error building encoding job for {job}", details: new {job.Id, job.Name, job.Status}));
                 return;
             }
 

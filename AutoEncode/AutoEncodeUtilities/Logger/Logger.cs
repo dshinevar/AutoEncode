@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -89,9 +90,20 @@ namespace AutoEncodeUtilities.Logger
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        public string LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "")
+        public string LogException(Exception ex, string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "")
         {
-            List<string> messages = new() { msg, $"Exception: {ex.Message}" };
+            List<string> messages = new() { msg };
+            if (details is not null)
+            {
+                StringBuilder detailsSb = new("Details: ");
+                foreach(var prop in details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    detailsSb.Append($"{prop.Name} = {prop.GetValue(details).ToString()} | ");
+                }
+                messages.Add(detailsSb.ToString());
+            }
+
+            messages.Add($"Exception: {ex.Message}");
             messages.AddRange(ex.StackTrace.Split(Environment.NewLine));
             return LogError(messages, threadName, callingMemberName);
         }
@@ -177,7 +189,7 @@ namespace AutoEncodeUtilities.Logger
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to do log file rollover: {ex.Message}");
-                LogException(ex, "Failed to do log file rollover", "Logger");
+                LogException(ex, "Failed to do log file rollover", "Logger", new {LogFileFullPath, MaxSizeInBytes});
                 bSuccess = false;
             }
 
