@@ -119,7 +119,7 @@ namespace AutoEncodeServer
             catch (Exception ex)
             {
                 Debug.WriteLine($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}");
-                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", LOG_THREAD_NAME);
+                logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", LOG_THREAD_NAME, serverConfig.ServerSettings.FFmpegDirectory);
                 Environment.Exit(-2);
             }
 
@@ -142,7 +142,7 @@ namespace AutoEncodeServer
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to find/call mkvmerge. DolbyVision disabled. Exception: {ex.Message}");
-                    logger.LogException(ex, "Failed to find/call mkvmerge. DolbyVision disabled.", LOG_THREAD_NAME);
+                    logger.LogException(ex, "Failed to find/call mkvmerge. DolbyVision disabled.", LOG_THREAD_NAME, serverConfig.ServerSettings.MkvMergeFullPath);
                 }
 
                 try
@@ -155,7 +155,7 @@ namespace AutoEncodeServer
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to find/call x265. DolbyVision disabled. Exception: {ex.Message}");
-                    logger.LogException(ex, "Failed to find/call x265. DolbyVision disabled.", LOG_THREAD_NAME);
+                    logger.LogException(ex, "Failed to find/call x265. DolbyVision disabled.", LOG_THREAD_NAME, serverConfig.ServerSettings.X265FullPath);
                 }
             }
 
@@ -213,7 +213,7 @@ namespace AutoEncodeServer
             {
                 // Can continue if an error occurs here
                 Debug.WriteLine($"Failed to delete previously encoding file or temp file. Exception: {ex.Message}");
-                logger.LogException(ex, "Failed to delete previously encoding file or temp file.", threadName: LOG_THREAD_NAME);
+                logger.LogException(ex, "Failed to delete previously encoding file or temp file.", LOG_THREAD_NAME);
             }
 
             mainThread = new AEServerMainThread(serverState, serverConfig, logger, Shutdown);
