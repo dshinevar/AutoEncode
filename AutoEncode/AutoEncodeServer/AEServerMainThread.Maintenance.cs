@@ -47,7 +47,7 @@ namespace AutoEncodeServer
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing completed {job} from queue.", MaintenanceThreadName);
+                    Logger.LogException(ex, $"Error removing completed {job} from queue.", MaintenanceThreadName, new {job.Id, job.Name});
                 }
             }
 
@@ -74,7 +74,7 @@ namespace AutoEncodeServer
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing post-processed {job} from queue.", MaintenanceThreadName);
+                    Logger.LogException(ex, $"Error removing post-processed {job} from queue.", MaintenanceThreadName, new { job.Id, job.Name });
                 }
             }
 
@@ -112,7 +112,7 @@ namespace AutoEncodeServer
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, $"Error removing errored {job} from queue.", MaintenanceThreadName);
+                    Logger.LogException(ex, $"Error removing errored {job} from queue.", MaintenanceThreadName, new { job.Id, job.Name });
                 }
             }
 

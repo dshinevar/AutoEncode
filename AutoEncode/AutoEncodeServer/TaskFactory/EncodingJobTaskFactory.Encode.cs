@@ -81,7 +81,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error encoding {job}."));
+                job.SetError(logger.LogException(ex, $"Error encoding {job}.", details: new {job.Id, job.Name, ffmpegDir}));
             }
 
             stopwatch.Stop();
@@ -139,7 +139,7 @@ namespace AutoEncodeServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                logger.LogException(ex, $"Error cleaning up encoding job.");
+                logger.LogException(ex, $"Error cleaning up encoding job.", details: new {job.Id, job.Name, job.EncodingProgress, job.Error});
                 // Don't error the job for now
             }
         }
@@ -220,7 +220,7 @@ namespace AutoEncodeServer.TaskFactory
                     catch (Exception ex)
                     {
                         // Just log for now
-                        logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {job}.");
+                        logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {job}.", details: new {job.Id, job.Name, VideoEncodeProcess = proc?.ProcessName});
                         return;
                     }
                 };
@@ -277,7 +277,7 @@ namespace AutoEncodeServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        logger.LogException(ex, $"Exception occurred during data receive of audio/sub encoding process for {job}.");
+                        logger.LogException(ex, $"Exception occurred during data receive of audio/sub encoding process for {job}.", details: new {job.Id, job.Name, AudioSubEncodeProcess = proc?.ProcessName});
                         return;
                     }
                 };
@@ -310,7 +310,8 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error encoding {job}."));
+                job.SetError(logger.LogException(ex, $"Error encoding {job}.", 
+                    details: new {job.Id, job.Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName}));
                 videoEncodeProcess.Kill(true);
                 audioSubEncodeProcess.Kill();
             }
@@ -361,7 +362,7 @@ namespace AutoEncodeServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                logger.LogException(ex, $"Error cleaning up dolby vision encoding job for {job}.");
+                logger.LogException(ex, $"Error cleaning up dolby vision encoding job for {job}.", details: new { job.Id, job.Name, job.EncodingProgress, job.Error });
                 return;
                 // Don't error the job for now
             }
@@ -399,7 +400,7 @@ namespace AutoEncodeServer.TaskFactory
                     }
                     catch (Exception ex)
                     {
-                        logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {job}.");
+                        logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {job}.", details: new {job.Id, job.Name, MkvMergeProcess = proc?.ProcessName});
                         return;
                     }
                 };
@@ -428,7 +429,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error merging {job}."));
+                job.SetError(logger.LogException(ex, $"Error merging {job}.", details: new {job.Id, job.Name, mkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName}));
                 mergeProcess.Kill();
             }
 
@@ -479,7 +480,7 @@ namespace AutoEncodeServer.TaskFactory
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                logger.LogException(ex, $"Error cleaning up dolby vision merging job for {job}.");
+                logger.LogException(ex, $"Error cleaning up dolby vision merging job for {job}.", details: new { job.Id, job.Name, job.EncodingProgress, job.Error });
                 return;
                 // Don't error the job for now
             }
@@ -545,7 +546,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Failed PreEncodeVerification for {job}."));
+                job.SetError(logger.LogException(ex, $"Failed PreEncodeVerification for {job}.", details: new {job.Id, job.Name, job.SourceFullPath, job.DestinationFullPath}));
                 return;
             }
         }
