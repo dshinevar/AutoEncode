@@ -2,11 +2,11 @@ all: clean build publish
 
 clean:
 	@echo "#\t CLEANING"
-	dotnet clean ../AutoEncode/AutoEncodeServer --configuration Release --nologo --verbosity m
+	dotnet clean ../../AutoEncode/AutoEncodeServer --configuration Release --nologo --verbosity m
 
 build:
 	@echo "###\t BUILDING"
-	dotnet build ../AutoEncode/AutoEncodeServer --configuration Release --os linux --no-self-contained --nologo --verbosity m
+	dotnet build ../../AutoEncode/AutoEncodeServer --configuration Release --os linux --no-self-contained --nologo --verbosity m
 
 publish:
 	@echo "#####\t PUBLISHING FILES TO /usr/local/bin/aeserver"
