@@ -11,7 +11,7 @@ build:
 publish:
 	@echo "#####\t PUBLISHING FILES TO /usr/local/bin/aeserver"
 	@sudo mkdir -p /usr/local/bin/aeserver
-	sudo dotnet publish ../AutoEncode/AutoEncodeServer --configuration Release --os linux --output /usr/local/bin/aeserver --no-build --verbosity m
+	sudo dotnet publish ../../AutoEncode/AutoEncodeServer --configuration Release --os linux --output /usr/local/bin/aeserver --no-build --verbosity m
 	@sudo mkdir -p /etc/aeserver
 	@sudo cp -n ../Configs/AEServerConfig.yaml /etc/aeserver
 	@echo "#######\t MAKE/INSTALL COMPLETE"
