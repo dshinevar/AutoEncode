@@ -34,7 +34,7 @@ else
 {
     app.UseForwardedHeaders();
     app.UseExceptionHandler("/Error");
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
 }
 
 app.UseAuthorization();
