@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Interfaces;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -6,7 +8,9 @@ using System.Linq;
 
 namespace AutoEncodeUtilities.Collections
 {
-    public class BulkObservableCollection<T> : ObservableCollection<T>
+    public class BulkObservableCollection<T> : 
+        ObservableCollection<T>,
+        IUpdateable<BulkObservableCollection<T>>
     {
         public BulkObservableCollection()
             : base() { }
@@ -40,6 +44,26 @@ namespace AutoEncodeUtilities.Collections
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
             OnPropertyChanged(new PropertyChangedEventArgs(nameof(Items)));
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove));
+        }
+
+        public void Update(BulkObservableCollection<T> oldCollection)
+        {
+            IEnumerable<T> remove = oldCollection.Where(x => !Items.Any(y => y.Equals(x)));
+            oldCollection.RemoveRange(remove);
+
+            foreach (T item in Items)
+            {
+                T oldData = oldCollection.SingleOrDefault(x => x.Equals(item));
+                if (oldData is not null)
+                {
+                    if (oldData is IUpdateable<T> updateAbleOldData) updateAbleOldData.Update(item);
+                    else item.CopyProperties(oldData);
+                }
+                else
+                {
+                    oldCollection.Add(item);
+                }
+            }
         }
     }
 }

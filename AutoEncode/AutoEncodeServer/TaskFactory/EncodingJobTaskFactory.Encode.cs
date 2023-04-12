@@ -131,7 +131,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
                     {
                         // Delete all possible HDRMetadata files
-                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }
@@ -445,7 +445,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
                     {
                         // Delete all possible HDRMetadata files
-                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }

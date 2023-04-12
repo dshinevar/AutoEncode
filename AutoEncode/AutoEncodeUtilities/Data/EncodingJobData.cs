@@ -1,5 +1,7 @@
 ﻿using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
+using AutoEncodeUtilities.Json;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 
@@ -55,9 +57,24 @@ namespace AutoEncodeUtilities.Data
         /// <summary>Settings for PostProcessing; Initially copied over from AEServerConfig file. </summary>
         public PostProcessingSettings PostProcessingSettings { get; set; }
         /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
+        [JsonConverter(typeof(EncodingCommandArgumentsConverter<IEncodingCommandArguments>))]
         public IEncodingCommandArguments EncodingCommandArguments { get; set; }
         #endregion Processing Data
 
         public EncodingJobData() { }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is IEncodingJobData)
+            {
+                return Equals(obj as IEncodingJobData);
+            }
+
+            return false;
+        }
+
+        public bool Equals(IEncodingJobData data) => Id == data.Id;
+
+        public override int GetHashCode() => Id.GetHashCode();
     }
 }

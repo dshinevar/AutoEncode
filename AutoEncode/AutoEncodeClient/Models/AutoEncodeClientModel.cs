@@ -49,6 +49,34 @@ namespace AutoEncodeClient.Models
             return encodingJobQueue;
         }
 
+        public Dictionary<string, List<VideoSourceData>> GetCurrentMovieSourceData() 
+        {
+            Dictionary<string, List<VideoSourceData>> movieSourceFiles = null;
+            try
+            {
+                movieSourceFiles = StatusApiClient.GetMovieSourceData();
+            }
+            catch (Exception ex) 
+            {
+                Logger.LogException(ex, "Failed to get movie source files.");
+            }
 
+            return movieSourceFiles;
+        }
+
+        public Dictionary<string, List<ShowSourceData>> GetCurrentShowSourceData()
+        {
+            Dictionary<string, List<ShowSourceData>> showSourceData = null;
+            try
+            {
+                showSourceData = StatusApiClient.GetShowSourceData();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to get show source files.");
+            }
+
+            return showSourceData;
+        }
     }
 }

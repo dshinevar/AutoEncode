@@ -44,5 +44,49 @@ namespace AutoEncodeClient.ApiClient
 
             return encodingQueue;
         }
+
+        public Dictionary<string, List<VideoSourceData>> GetMovieSourceData()
+        {
+            Dictionary<string, List<VideoSourceData>> sourceFiles = null;
+            try
+            {
+                RestRequest request = new()
+                {
+                    Resource = $"{BaseUrl}/movie-source-files",
+                    Method = Method.Get,
+                    Timeout = 20_000
+                };
+
+                sourceFiles = Execute<Dictionary<string, List<VideoSourceData>>>(request);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to get Movie Source Files.", LoggerName);
+            }
+
+            return sourceFiles;
+        }
+
+        public Dictionary<string, List<ShowSourceData>> GetShowSourceData()
+        {
+            Dictionary<string, List<ShowSourceData>> sourceFiles = null;
+            try
+            {
+                RestRequest request = new()
+                {
+                    Resource = $"{BaseUrl}/show-source-files",
+                    Method = Method.Get,
+                    Timeout = 20_000
+                };
+
+                sourceFiles = Execute<Dictionary<string, List<ShowSourceData>>>(request);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to get Show Source Files.", LoggerName);
+            }
+
+            return sourceFiles;
+        }
     }
 }

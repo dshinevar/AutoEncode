@@ -37,6 +37,7 @@ namespace AutoEncodeServer
                     }
                 }
 
+                /*
                 // Check if task is done (or null -- first time setup)
                 if (EncodingTask?.IsCompletedSuccessfully ?? true)
                 {
@@ -68,6 +69,7 @@ namespace AutoEncodeServer
                             => EncodingJobTaskFactory.PostProcess(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
                     }
                 }
+                */
             }
         }
     }

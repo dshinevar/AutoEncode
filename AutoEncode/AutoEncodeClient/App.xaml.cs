@@ -19,7 +19,7 @@ namespace AutoEncodeClient
     /// </summary>
     public partial class App : Application
     {
-        private const string LOG_FILENAME = "aeserver.log";
+        private const string LOG_FILENAME = "aeclient.log";
 
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {

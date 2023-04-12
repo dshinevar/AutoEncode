@@ -2,12 +2,16 @@
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
+using AutoEncodeUtilities.Json;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 
 namespace AutoEncodeClient.Models
 {
-    public class EncodingJobClientModel : IEncodingJobData
+    public class EncodingJobClientModel : 
+        IEncodingJobData,
+        IUpdateable<IEncodingJobData>
     {
         #region Properties
         /// <summary>Unique job identifier </summary>
@@ -58,6 +62,7 @@ namespace AutoEncodeClient.Models
         /// <summary>Settings for PostProcessing; Initially copied over from AEServerConfig file. </summary>
         public PostProcessingSettings PostProcessingSettings { get; set; }
         /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
+        [JsonConverter(typeof(EncodingCommandArgumentsConverter<IEncodingCommandArguments>))]
         public IEncodingCommandArguments EncodingCommandArguments { get; set; }
         #endregion Processing Data
         #endregion Properties
@@ -68,5 +73,21 @@ namespace AutoEncodeClient.Models
         {
             encodingJobData.CopyProperties(this);
         }
+
+        public void Update(IEncodingJobData encodingJobData) => encodingJobData.CopyProperties(this);
+
+        public override bool Equals(object obj)
+        {
+            if (obj is IEncodingJobData)
+            {
+                return Equals(obj as IEncodingJobData);
+            }
+
+            return false;
+        }
+
+        public bool Equals(IEncodingJobData data) => Id == data.Id;
+
+        public override int GetHashCode() => Id.GetHashCode();
     }
 }

@@ -1,6 +1,8 @@
 ﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Logger;
+using Newtonsoft.Json;
 using RestSharp;
+using RestSharp.Serializers.NewtonsoftJson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +25,12 @@ namespace AutoEncodeClient.ApiClient
             Logger = logger;
             IpAddress = ipAddress;
             Port = port;
-            Client = new RestClient(BaseUrl);
+            JsonSerializerSettings settings = new()
+            {
+                TypeNameHandling = TypeNameHandling.All,
+                NullValueHandling = NullValueHandling.Ignore,
+            };
+            Client = new RestClient(BaseUrl, configureSerialization: s => s.UseNewtonsoftJson(settings));
         }
 
         protected T Execute<T>(RestRequest request) 

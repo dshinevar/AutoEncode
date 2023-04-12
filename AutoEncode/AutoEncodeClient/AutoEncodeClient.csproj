@@ -9,13 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="RestSharp" Version="108.0.3" />
+    <None Remove="Resources\error.png" />
+    <None Remove="Resources\refresh.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="RestSharp" Version="110.1.0" />
+    <PackageReference Include="RestSharp.Serializers.NewtonsoftJson" Version="110.1.0" />
     <PackageReference Include="YamlDotNet" Version="12.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AutoEncodeUtilities\AutoEncodeUtilities.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\error.png" />
+    <Resource Include="Resources\refresh.png" />
   </ItemGroup>
 
 </Project>

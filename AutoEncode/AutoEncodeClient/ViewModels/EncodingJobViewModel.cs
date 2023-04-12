@@ -1,14 +1,16 @@
 ﻿using AutoEncodeClient.Models;
+using AutoEncodeUtilities;
+using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AutoEncodeClient.ViewModels
 {
-    public class EncodingJobViewModel : ViewModelBase<EncodingJobClientModel>
+    public class EncodingJobViewModel :
+        ViewModelBase<EncodingJobClientModel>,
+        IUpdateable<IEncodingJobData>,
+        IEquatable<IEncodingJobData>
     {
         public EncodingJobViewModel(EncodingJobClientModel model)
             : base(model) { }
@@ -23,30 +25,80 @@ namespace AutoEncodeClient.ViewModels
 
         public string DestinationFullPath => Model.DestinationFullPath;
 
+        #region Processing Data
+        public SourceStreamData SourceStreamData
+        {
+            get => Model.SourceStreamData;
+            set => SetAndNotify(Model.SourceStreamData, value, () =>
+            {
+                if (Model.SourceStreamData is null) Model.SourceStreamData = value;
+                else Model.SourceStreamData.Update(value);
+            });
+        }
+
+        public PostProcessingSettings PostProcessingSettings
+        {
+            get => Model.PostProcessingSettings;
+            set => SetAndNotify(Model.PostProcessingSettings, value, () =>
+            {
+                if (Model.PostProcessingSettings is null) Model.PostProcessingSettings = value;
+                else Model.PostProcessingSettings.Update(value);
+            });
+        }
+        #endregion Processing Data
+
+        #region Status
         public EncodingJobStatus Status
         {
             get => Model.Status;
-            set 
-            {
-                if (value != Model.Status)
-                {
-                    Model.Status = value;
-                    OnPropertyChanged();
-                }
-            }
+            set => SetAndNotify(Model.Status, value, () => Model.Status = value);
         }
 
         public int EncodingProgress
         {
             get => Model.EncodingProgress;
-            set
-            {
-                if (value != Model.EncodingProgress)
-                {
-                    Model.EncodingProgress = value;
-                    OnPropertyChanged();
-                }
-            }
+            set => SetAndNotify(Model.EncodingProgress, value, () => Model.EncodingProgress = value);
         }
+
+        public bool Error
+        {
+            get => Model.Error;
+            set => SetAndNotify(Model.Error, value, () => Model.Error = value);
+        }
+
+        public string LastErrorMessage
+        {
+            get => Model.LastErrorMessage;
+            set => SetAndNotify(Model.LastErrorMessage, value, () => Model.LastErrorMessage = value);
+        }
+
+        public DateTime? ErrorTime
+        {
+            get => Model.ErrorTime;
+            set => SetAndNotify(Model.ErrorTime, value, () => Model.ErrorTime = value);
+        }
+
+        public TimeSpan? ElapsedEncodingTime
+        {
+            get => Model.ElapsedEncodingTime;
+            set => SetAndNotify(Model.ElapsedEncodingTime, value, () => Model.ElapsedEncodingTime = value);
+        }
+
+        public DateTime? CompletedEncodingDateTime
+        {
+            get => Model.CompletedEncodingDateTime;
+            set => SetAndNotify(Model.CompletedEncodingDateTime, value, () => Model.CompletedEncodingDateTime = value);
+        }
+
+        public DateTime? CompletedPostProcessingTime
+        {
+            get => Model.CompletedPostProcessingTime;
+            set => SetAndNotify(Model.CompletedPostProcessingTime, value, () => Model.CompletedPostProcessingTime = value);
+        }
+        #endregion Status
+
+        public void Update(IEncodingJobData updatedData) => updatedData.CopyProperties(this);
+
+        public bool Equals(IEncodingJobData data) => Id == data.Id;
     }
 }

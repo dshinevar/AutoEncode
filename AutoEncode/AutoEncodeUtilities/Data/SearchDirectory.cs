@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace AutoEncodeUtilities.Data
+﻿namespace AutoEncodeUtilities.Data
 {
     public class SearchDirectory
     {
@@ -9,12 +7,5 @@ namespace AutoEncodeUtilities.Data
         public bool Automated { get; set; }
         public bool TVShowStructure { get; set; }
         public PostProcessingSettings PostProcessing { get; set; }
-    }
-
-    public class PostProcessingSettings
-    {
-        public List<string> CopyFilePaths { get; set; }
-
-        public bool DeleteSourceFile { get; set; }
     }
 }

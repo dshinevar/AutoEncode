@@ -52,7 +52,7 @@ namespace AutoEncodeServer.WorkerThreads
                 catch (Exception ex)
                 {
                     Logger.LogException(ex, "Error during looking for encoding jobs. Thread stopping.", ThreadName, 
-                        details: new {Status, EncodingJobQueueCount = EncodingJobQueue.Count, SearchDirectoriesCount = SearchDirectories.Count});
+                        details: new {ThreadStatus, EncodingJobQueueCount = EncodingJobQueue.Count, SearchDirectoriesCount = SearchDirectories.Count});
                     return;
                 }
             }
@@ -209,7 +209,7 @@ namespace AutoEncodeServer.WorkerThreads
                         PostProcessingSettings updatedPostProcessingSettings = new()
                         {
                             CopyFilePaths = updatedCopyFilePaths,
-                            DeleteSourceFile = postProcessingSettings.DeleteSourceFile
+                            DeleteSourceFile = postProcessingSettings?.DeleteSourceFile ?? false
                         };
 
                         string destinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath);

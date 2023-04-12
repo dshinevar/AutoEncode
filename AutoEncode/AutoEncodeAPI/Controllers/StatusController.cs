@@ -15,6 +15,16 @@ namespace AutoEncodeAPI.Controllers
         [HttpGet]
         [Route("job-queue")]
         public ActionResult<List<EncodingJobData>> GetEncodingJobQueueCurrentState()
-            => HandleRequest(ClientPipeManager.GetEncodingJobQueueAsync(), TimeSpan.FromSeconds(20));
+            => HandleRequest(ClientPipeManager.GetEncodingJobQueueAsync(), TimeSpan.FromSeconds(60));
+
+        [HttpGet]
+        [Route("movie-source-files")]
+        public ActionResult<Dictionary<string, List<VideoSourceData>>> GetMovieSourceFiles()
+            => HandleRequest(ClientPipeManager.GetMovieSourceFilesAsync(), TimeSpan.FromSeconds(60));
+
+        [HttpGet]
+        [Route("show-source-files")]
+        public ActionResult<Dictionary<string, List<ShowSourceData>>> GetShowSourceFiles()
+            => HandleRequest(ClientPipeManager.GetShowSourceFilesAsync(), TimeSpan.FromSeconds(60));
     }
 }

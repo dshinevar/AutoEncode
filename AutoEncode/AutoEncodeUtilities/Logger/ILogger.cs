@@ -48,8 +48,9 @@ namespace AutoEncodeUtilities.Logger
         /// <summary> Log an <see cref="Exception"/>. Will log the message, Exception message, and stack trace. </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
+        /// <param name="details">Additional details to be logged</param>
         /// <param name="callingMemberName">Calling function.</param>
-        string LogException(Exception ex, string msg, string threadName = "", [CallerMemberName] string callingMemberName = "");
+        string LogException(Exception ex, string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "");
 
         /// <summary>Checks to see if Log file is ready for rollover and does it if so.</summary>
         /// <returns>True if success</returns>

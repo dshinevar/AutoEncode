@@ -1,18 +1,6 @@
-﻿using AutoEncodeClient.Interfaces;
-using AutoEncodeClient.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AutoEncodeClient.ViewModels.Interfaces;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace AutoEncodeClient.Views
 {
@@ -25,6 +13,15 @@ namespace AutoEncodeClient.Views
         {
             InitializeComponent();
             DataContext = viewModel;
+        }
+
+        private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (sender is ScrollViewer scrollViewer)
+            {
+                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+                e.Handled = true;
+            }
         }
     }
 }

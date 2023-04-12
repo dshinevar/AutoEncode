@@ -1,11 +1,13 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Json;
+using Newtonsoft.Json;
 using System;
 
 namespace AutoEncodeUtilities.Interfaces
 {
     /// <summary>Interface that inidicates what any Encoding Job object should have</summary>
-    public interface IEncodingJobData
+    public interface IEncodingJobData : IEquatable<IEncodingJobData>
     {
         /// <summary>Unique job identifier </summary>
         int Id { get; }
@@ -54,8 +56,8 @@ namespace AutoEncodeUtilities.Interfaces
         /// <summary>Settings for PostProcessing; Initially copied over from AEServerConfig file. </summary>
         PostProcessingSettings PostProcessingSettings { get; }
         /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
+        [JsonConverter(typeof(EncodingCommandArgumentsConverter<IEncodingCommandArguments>))]
         IEncodingCommandArguments EncodingCommandArguments { get; }
         #endregion Processing Data
-
     }
 }

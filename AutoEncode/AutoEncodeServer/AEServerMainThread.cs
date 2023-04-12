@@ -1,6 +1,8 @@
 ﻿using AutoEncodeServer.Pipe;
 using AutoEncodeServer.WorkerThreads;
 using AutoEncodeUtilities.Config;
+using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Messages;
 using H.Pipes;
@@ -109,5 +111,8 @@ namespace AutoEncodeServer
             ShutdownMRE.Set();
         }
         #endregion START/SHUTDOWN FUNCTIONS
+
+        public Dictionary<string, List<VideoSourceData>> GetMovieSourceData() => EncodingJobFinderThread.GetMovieSourceFiles();
+        public Dictionary<string, List<ShowSourceData>> GetShowSourceData() => EncodingJobFinderThread.GetShowSourceFiles();
     }
 }

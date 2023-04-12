@@ -95,7 +95,17 @@ namespace AutoEncodeServer.Pipe
                     {
                         case AEMessageType.Status_Queue_Request:
                         {
-                            SendQueue(EncodingJobQueue.GetEncodingJobsData());
+                            SendQueue(EncodingJobQueue.GetEncodingJobsData(), msg.Guid);
+                            break;
+                        }
+                        case AEMessageType.Status_MovieSourceFiles_Request:
+                        {
+                            SendMovieSourceFiles(MainThread.GetMovieSourceData(), msg.Guid);
+                            break;
+                        }
+                        case AEMessageType.Status_ShowSourceFiles_Request:
+                        {
+                            SendShowSourceFiles(MainThread.GetShowSourceData(), msg.Guid);
                             break;
                         }
                         default:
@@ -116,10 +126,22 @@ namespace AutoEncodeServer.Pipe
             }
         }
 
-        private async void SendQueue(List<EncodingJobData> encodingJobQueue)
+        private async void SendQueue(List<EncodingJobData> encodingJobQueue, Guid messageGuid)
         {
             Console.WriteLine($"[{LoggerName}] Sent queue to client.");
-            await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue));
+            await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue, messageGuid));
+        }
+
+        private async void SendMovieSourceFiles(Dictionary<string, List<VideoSourceData>> movieSourceFiles, Guid messageGuid)
+        {
+            Console.WriteLine($"[{LoggerName}] Sent movie source files to client.");
+            await ServerPipe.WriteAsync(AEMessageFactory.CreateMovieSourceFilesResponse(movieSourceFiles, messageGuid));
+        }
+
+        private async void SendShowSourceFiles(Dictionary<string, List<ShowSourceData>> movieSourceFiles, Guid messageGuid)
+        {
+            Console.WriteLine($"[{LoggerName}] Sent show source files to client.");
+            await ServerPipe.WriteAsync(AEMessageFactory.CreateShowSourceFilesResponse(movieSourceFiles, messageGuid));
         }
 
         private void OnExceptionOccurred(ExceptionEventArgs args)
