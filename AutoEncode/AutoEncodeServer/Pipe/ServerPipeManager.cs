@@ -128,8 +128,16 @@ namespace AutoEncodeServer.Pipe
 
         private async void SendQueue(List<EncodingJobData> encodingJobQueue, Guid messageGuid)
         {
-            Console.WriteLine($"[{LoggerName}] Sent queue to client.");
-            await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue, messageGuid));
+            try
+            {
+                Console.WriteLine($"[{LoggerName}] Sent queue to client.");
+                await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue, messageGuid));
+            }
+            catch (Exception ex) 
+            {
+                Logger.LogException(ex, "Failed to send queue to client.", LoggerName);
+            }
+
         }
 
         private async void SendMovieSourceFiles(Dictionary<string, List<VideoSourceData>> movieSourceFiles, Guid messageGuid)
