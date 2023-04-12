@@ -1,17 +1,15 @@
 all: clean build
 
 clean:
-	@echo "#\t CLEANING"
+	@echo "[#   ] CLEANING"
 	dotnet clean ../../AutoEncode/AutoEncodeAPI --configuration Release --nologo --verbosity m
 
 build:
-	@echo "###\t BUILDING"
+	@echo "[##  ] BUILDING"
 	dotnet build ../../AutoEncode/AutoEncodeAPI --configuration Release --os linux --no-self-contained --nologo --verbosity m
 
 publish:
-	@echo "#####\t PUBLISHING FILES TO /usr/local/bin/aeserver"
-	@sudo mkdir -p /usr/local/bin/aeserver
-	sudo dotnet publish ../AutoEncode/AutoEncodeAPI --configuration Release --os linux --output /usr/local/bin/aeserver --no-build --verbosity m
-	@sudo mkdir -p /etc/aeserver
-	@sudo cp -n ../Configs/AEServerConfig.yaml /etc/aeserver
-	@echo "#######\t MAKE/INSTALL COMPLETE"
+	@echo "[### ] PUBLISHING FILES TO /var/www/aeapi"
+	@sudo mkdir -p /var/www/aeapi
+	sudo dotnet publish ../../AutoEncode/AutoEncodeAPI --configuration Release --os linux --output /var/www/aeapi --no-build --verbosity m
+	@echo "[####] MAKE/INSTALL COMPLETE"
