@@ -17,6 +17,10 @@ builder.Services.AddSingleton<IClientPipeManager, ClientPipeManager>();
 builder.Services.AddSwaggerGen();
 // Allow long timeout to ensure Pipes can close
 builder.Services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(45));
+builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+{
+    opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 var app = builder.Build();
 
@@ -28,14 +32,10 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseForwardedHeaders();
+    app.UseExceptionHandler("/Error");
     app.UseHttpsRedirection();
 }
-
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
 
 app.UseAuthorization();
 
