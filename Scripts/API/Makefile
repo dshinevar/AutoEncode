@@ -1,4 +1,4 @@
-all: clean build
+all: clean build publish
 
 clean:
 	@echo "[#   ] CLEANING"
