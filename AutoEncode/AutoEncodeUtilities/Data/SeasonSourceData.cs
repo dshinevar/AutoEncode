@@ -45,5 +45,7 @@ namespace AutoEncodeUtilities.Data
             }
             return false;
         }
+
+        public override int GetHashCode() => Season.GetHashCode();
     }
 }

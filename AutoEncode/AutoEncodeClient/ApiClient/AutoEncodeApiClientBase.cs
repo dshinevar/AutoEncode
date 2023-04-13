@@ -15,7 +15,12 @@ namespace AutoEncodeClient.ApiClient
     {
         private string IpAddress { get; }
         private int Port { get; }
-        private string BaseUrl => $"http://{IpAddress}:5221/{ApiRouteConstants.BaseRoute}";
+#if DEBUG
+        private string BaseUrl => $"http://127.0.0.1:5221/{ApiRouteConstants.BaseRoute}";
+#else
+        private string BaseUrl => $"http://{IpAddress}:80/{ApiRouteConstants.BaseRoute}";
+#endif
+
         protected ILogger Logger { get; }
 
         protected RestClient Client { get; set; }

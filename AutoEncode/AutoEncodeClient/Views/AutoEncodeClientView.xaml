@@ -534,9 +534,11 @@
                                                             <Run Text="{Binding HasDynamicHDR, Mode=OneWay}"/>
                                                         </TextBlock.Inlines>
                                                     </TextBlock>
-                                                    <TextBlock Text="HDR Data:" FontWeight="DemiBold"/>
+                                                    <TextBlock Text="HDR Data:" FontWeight="DemiBold"
+                                                               Visibility="{Binding HDRData, Converter={StaticResource IsNullVisibilityConverter}}"/>
                                                     <StackPanel DataContext="{Binding HDRData}"
-                                                                Margin="10,0,0,0">
+                                                                Margin="10,0,0,0"
+                                                                Visibility="{Binding ., Converter={StaticResource IsNullVisibilityConverter}}">
                                                         <StackPanel.Resources>
                                                             <Style TargetType="Ellipse">
                                                                 <Setter Property="Stroke"
@@ -560,12 +562,6 @@
                                                                 <Ellipse/>
                                                             </BulletDecorator.Bullet>
                                                             <TextBlock Text="{Binding HDRFlags}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Red_X, StringFormat=Red X: {0}}"/>
                                                         </BulletDecorator>
                                                         <BulletDecorator>
                                                             <BulletDecorator.Bullet>

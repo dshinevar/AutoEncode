@@ -17,6 +17,17 @@ namespace AutoEncodeUtilities.Data
         {
             DurationInSeconds = data.DurationInSeconds;
             NumberOfFrames = data.NumberOfFrames;
+            VideoStream.Update(data.VideoStream);
+            foreach (AudioStreamData audioStream in data.AudioStreams)
+            {
+                AudioStreamData current = AudioStreams.Find(x => x.StreamIndex == audioStream.StreamIndex);
+                current?.Update(audioStream);
+            }
+            foreach (SubtitleStreamData subStream in data.SubtitleStreams)
+            {
+                SubtitleStreamData current = SubtitleStreams.Find(x => x.StreamIndex == subStream.StreamIndex);
+                current?.Update(subStream);
+            }
         }
     }
 
@@ -48,6 +59,8 @@ namespace AutoEncodeUtilities.Data
         public ChromaLocation? ChromaLocation { get; set; } = null;
         public void Update(VideoStreamData data)
         {
+            StreamIndex = data.StreamIndex;
+            Title = data.Title;
             CodecName = data.CodecName;
             PixelFormat = data.PixelFormat;
             Resolution = data.Resolution;
@@ -60,7 +73,7 @@ namespace AutoEncodeUtilities.Data
             Animated = data.Animated;
             ScanType = data.ScanType;
             ChromaLocation = data.ChromaLocation;
-            HDRData.Update(data.HDRData);
+            HDRData?.Update(data.HDRData);
         }
     }
 
@@ -97,11 +110,15 @@ namespace AutoEncodeUtilities.Data
         public void Update(AudioStreamData data) => data.CopyProperties(this);
     }
 
-    public class SubtitleStreamData : StreamData
+    public class SubtitleStreamData : 
+        StreamData,
+        IUpdateable<SubtitleStreamData>
     {
         public int SubtitleIndex { get; set; } = -1;
         public string Language { get; set; }
         public string Descriptor { get; set; }
         public bool Forced { get; set; }
+
+        public void Update(SubtitleStreamData data) => data.CopyProperties(this);
     }
 }

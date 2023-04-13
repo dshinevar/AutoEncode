@@ -5,7 +5,6 @@ using System.Linq;
 namespace AutoEncodeUtilities.Data
 {
     public class ShowSourceData
-        //: IUpdateable<ShowSourceData>
     {
         public string ShowName { get; set; }
         public List<SeasonSourceData> Seasons { get; set; }
@@ -45,5 +44,7 @@ namespace AutoEncodeUtilities.Data
             }
             return false;
         }
+
+        public override int GetHashCode() => ShowName.GetHashCode();
     }
 }

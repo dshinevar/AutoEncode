@@ -2,6 +2,7 @@
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using Microsoft.AspNetCore.Mvc;
+using IAELogger = AutoEncodeUtilities.Logger.ILogger;
 
 namespace AutoEncodeAPI.Controllers
 {
@@ -9,8 +10,8 @@ namespace AutoEncodeAPI.Controllers
     [ApiController]
     public class StatusController : AutoEncodeControllerBase
     {
-        public StatusController(IClientPipeManager clientPipeManager)
-            : base(clientPipeManager) { }
+        public StatusController(IAELogger logger, IClientPipeManager clientPipeManager)
+            : base(logger, clientPipeManager) { }
 
         [HttpGet]
         [Route("job-queue")]

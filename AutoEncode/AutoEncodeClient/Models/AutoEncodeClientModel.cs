@@ -31,7 +31,7 @@ namespace AutoEncodeClient.Models
                                                     config.ConnectionSettings.IPAddress, 
                                                     config.ConnectionSettings.Port);
 
-            
+            Logger.CheckAndDoRollover();   
         }
 
         public List<EncodingJobData> GetCurrentEncodingJobQueue()

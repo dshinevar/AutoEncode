@@ -1,14 +1,17 @@
 ﻿using AutoEncodeAPI.Pipe;
 using Microsoft.AspNetCore.Mvc;
+using IAELogger = AutoEncodeUtilities.Logger.ILogger;
 
 namespace AutoEncodeAPI.Controllers
 {
     public abstract class AutoEncodeControllerBase : ControllerBase
     {
         protected IClientPipeManager ClientPipeManager;
+        protected IAELogger Logger;
 
-        public AutoEncodeControllerBase(IClientPipeManager clientPipeManager)
+        public AutoEncodeControllerBase(IAELogger logger, IClientPipeManager clientPipeManager)
         {
+            Logger = logger;
             ClientPipeManager = clientPipeManager;
         }
 
@@ -27,12 +30,14 @@ namespace AutoEncodeAPI.Controllers
                     return Ok(result);
                 }
             }
-            catch (TimeoutException)
+            catch (TimeoutException tex)
             {
+                Logger.LogException(tex, "Request timed out.", "AutoEncodeAPI", new { TaskException = task?.Exception ?? null });
                 return StatusCode(StatusCodes.Status408RequestTimeout);
             }
             catch (Exception ex)
             {
+                Logger.LogException(ex, "Error handling request.", "AutoEncodeAPI", new { TaskException = task?.Exception ?? null });
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }

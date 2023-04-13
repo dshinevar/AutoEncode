@@ -20,8 +20,6 @@ namespace AutoEncodeServer.Pipe
         private ILogger Logger { get; set; }
         #endregion Properties
 
-        public bool IsStarted => ServerPipe?.IsStarted ?? false;
-
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Handle of main thread.</param>
         /// <param name="logger"><see cref="ILogger"/></param>
@@ -75,13 +73,13 @@ namespace AutoEncodeServer.Pipe
         #region Private Functions
         private void OnClientConnected(ConnectionEventArgs<AEMessage> args)
         {
-            Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} connected.");
+            //Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} connected.");
             Logger.LogInfo($"Client {args.Connection.PipeName} connected.", LoggerName);
         }
 
         private void OnClientDisconnected(ConnectionEventArgs<AEMessage> args)
         {
-            Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} disconnected.");
+            //Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} disconnected.");
             Logger.LogInfo($"Client {args.Connection.PipeName} disconnected.", LoggerName);
         }
 
@@ -132,7 +130,7 @@ namespace AutoEncodeServer.Pipe
         {
             try
             {
-                Console.WriteLine($"[{LoggerName}] Sent queue to client.");
+                //Console.WriteLine($"[{LoggerName}] Sent queue to client.");
                 await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue, messageGuid));
             }
             catch (Exception ex) 
@@ -143,13 +141,13 @@ namespace AutoEncodeServer.Pipe
 
         private async void SendMovieSourceFiles(Dictionary<string, List<VideoSourceData>> movieSourceFiles, Guid messageGuid)
         {
-            Console.WriteLine($"[{LoggerName}] Sent movie source files to client.");
+            //Console.WriteLine($"[{LoggerName}] Sent movie source files to client.");
             await ServerPipe.WriteAsync(AEMessageFactory.CreateMovieSourceFilesResponse(movieSourceFiles, messageGuid));
         }
 
         private async void SendShowSourceFiles(Dictionary<string, List<ShowSourceData>> movieSourceFiles, Guid messageGuid)
         {
-            Console.WriteLine($"[{LoggerName}] Sent show source files to client.");
+            //Console.WriteLine($"[{LoggerName}] Sent show source files to client.");
             await ServerPipe.WriteAsync(AEMessageFactory.CreateShowSourceFilesResponse(movieSourceFiles, messageGuid));
         }
 
