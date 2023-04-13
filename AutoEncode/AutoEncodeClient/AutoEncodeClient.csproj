@@ -11,6 +11,7 @@
   <ItemGroup>
     <None Remove="Resources\error.png" />
     <None Remove="Resources\refresh.png" />
+    <None Remove="Resources\success.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +28,7 @@
   <ItemGroup>
     <Resource Include="Resources\error.png" />
     <Resource Include="Resources\refresh.png" />
+    <Resource Include="Resources\success.png" />
   </ItemGroup>
 
 </Project>
