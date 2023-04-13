@@ -1,32 +1,27 @@
-﻿using AutoEncodeClient.ApiClient;
-using AutoEncodeClient.ViewModels.Interfaces;
+﻿using AutoEncodeClient.Command;
 using AutoEncodeClient.Models;
-using AutoEncodeUtilities;
-using AutoEncodeUtilities.Collections;
+using AutoEncodeClient.ViewModels.Interfaces;
+using AutoEncodeClient.Collections;
 using AutoEncodeUtilities.Data;
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Timers;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
-using System.Windows.Threading;
 using System.Windows.Input;
-using AutoEncodeClient.Command;
 
 namespace AutoEncodeClient.ViewModels
 {
-    public class AutoEncodeClientViewModel : 
+    public class AutoEncodeClientViewModel :
         ViewModelBase<AutoEncodeClientModel>,
         IAutoEncodeClientViewModel
     {
         private Timer EncodingJobQueueStateTimer { get; set; }
 
+        private Task RefreshSourceFilesTask { get; set; }
+
         public AutoEncodeClientViewModel(AutoEncodeClientModel model)
-            : base(model) 
+            : base(model)
         {
             AECommand refreshSourceFilesCommand = new(RefreshSourceFiles);
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
@@ -63,7 +58,7 @@ namespace AutoEncodeClient.ViewModels
         {
             List<EncodingJobData> encodingJobQueue = Model.GetCurrentEncodingJobQueue();
 
-            if (encodingJobQueue != null && encodingJobQueue.Any())
+            if (encodingJobQueue is not null && encodingJobQueue.Any())
             {
                 // Remove jobs no longer in queue first
                 IEnumerable<EncodingJobViewModel> viewModelsToRemove = EncodingJobs.Where(x => !encodingJobQueue.Any(y => y.Id == x.Id));
@@ -82,7 +77,7 @@ namespace AutoEncodeClient.ViewModels
 
                         bool isSelectedViewModel = job.Id == SelectedEncodingJobViewModel?.Id;
 
-                        if (currentIndex != newIndex) 
+                        if (currentIndex != newIndex)
                         {
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
@@ -106,31 +101,34 @@ namespace AutoEncodeClient.ViewModels
 
         private void RefreshSourceFiles()
         {
-            Task.Factory.StartNew(() =>
+            if (RefreshSourceFilesTask?.IsCompleted ?? true)
             {
-                Dictionary<string, List<VideoSourceData>> movieSourceData = Model.GetCurrentMovieSourceData();
-                Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
-
-                if (movieSourceData != null) 
+                RefreshSourceFilesTask = Task.Factory.StartNew(() =>
                 {
-                    var converted = new Dictionary<string, BulkObservableCollection<VideoSourceData>>(movieSourceData
-                                            .ToDictionary(x => x.Key, x => new BulkObservableCollection<VideoSourceData>(x.Value)));
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        MovieSourceFiles.Refresh(converted);
-                    });
-                }
+                    Dictionary<string, List<VideoSourceData>> movieSourceData = Model.GetCurrentMovieSourceData();
+                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
 
-                if (showSourceData != null) 
-                {
-                    var converted = new Dictionary<string, BulkObservableCollection<ShowSourceData>>(showSourceData
-                                            .ToDictionary(x => x.Key, x => new BulkObservableCollection<ShowSourceData>(x.Value)));
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (movieSourceData is not null)
                     {
-                        ShowSourceFiles.Refresh(converted);
-                    });
-                }
-            });
+                        var converted = new Dictionary<string, BulkObservableCollection<VideoSourceData>>(movieSourceData
+                                                .ToDictionary(x => x.Key, x => new BulkObservableCollection<VideoSourceData>(x.Value)));
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            MovieSourceFiles.Refresh(converted);
+                        });
+                    }
+
+                    if (showSourceData is not null)
+                    {
+                        var converted = new Dictionary<string, BulkObservableCollection<ShowSourceData>>(showSourceData
+                                                .ToDictionary(x => x.Key, x => new BulkObservableCollection<ShowSourceData>(x.Value)));
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            ShowSourceFiles.Refresh(converted);
+                        });
+                    }
+                });
+            }
         }
     }
 }

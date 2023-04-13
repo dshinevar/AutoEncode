@@ -1,4 +1,5 @@
 ﻿using AutoEncodeClient.Models;
+using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
@@ -26,16 +27,11 @@ namespace AutoEncodeClient.ViewModels
         public string DestinationFullPath => Model.DestinationFullPath;
 
         #region Processing Data
-        public SourceStreamData SourceStreamData
+        public SourceStreamDataClientModel SourceStreamData
         {
             get => Model.SourceStreamData;
-            set => SetAndNotify(Model.SourceStreamData, value, () =>
-            {
-                if (Model.SourceStreamData is null) Model.SourceStreamData = value;
-                else Model.SourceStreamData.Update(value);
-            });
+            set => SetAndNotify(Model.SourceStreamData, value, () => Model.SourceStreamData = value);
         }
-
         public PostProcessingSettings PostProcessingSettings
         {
             get => Model.PostProcessingSettings;
@@ -52,6 +48,12 @@ namespace AutoEncodeClient.ViewModels
         {
             get => Model.Status;
             set => SetAndNotify(Model.Status, value, () => Model.Status = value);
+        }
+
+        public EncodingJobBuildingStatus BuildingStatus
+        {
+            get => Model.BuildingStatus;
+            set => SetAndNotify(Model.BuildingStatus, value, () => Model.BuildingStatus = value);
         }
 
         public int EncodingProgress
@@ -95,9 +97,26 @@ namespace AutoEncodeClient.ViewModels
             get => Model.CompletedPostProcessingTime;
             set => SetAndNotify(Model.CompletedPostProcessingTime, value, () => Model.CompletedPostProcessingTime = value);
         }
+
+        public bool Complete
+        {
+            get => Model.Complete;
+            set => SetAndNotify(Model.Complete, value, () => Model.Complete = value);
+        }
         #endregion Status
 
-        public void Update(IEncodingJobData updatedData) => updatedData.CopyProperties(this);
+        public void Update(IEncodingJobData updatedData)
+        {
+            updatedData.CopyProperties(this);
+
+            if (updatedData.SourceStreamData is not null)
+            {
+                if (SourceStreamData is null) SourceStreamData = new(updatedData.SourceStreamData);
+                else SourceStreamData.Update(updatedData.SourceStreamData);
+
+                OnPropertyChanged(nameof(SourceStreamData));
+            }   
+        }
 
         public bool Equals(IEncodingJobData data) => Id == data.Id;
     }

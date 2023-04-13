@@ -1,27 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using AutoEncodeUtilities;
+﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
 using RestSharp;
-using RestSharp.Authenticators;
+using System;
+using System.Collections.Generic;
 
 namespace AutoEncodeClient.ApiClient
 {
     public class StatusApiClient : AutoEncodeApiClientBase
     {
         private static readonly string BaseUrl = ApiRouteConstants.StatusController;
-        private string LoggerName = "StatusApiClient";
+        private readonly string LoggerName = "StatusApiClient";
 
         public StatusApiClient(ILogger logger, string ipAddress, int port)
-            : base(logger, ipAddress, port)
-        {
-
-        }
+            : base(logger, ipAddress, port) { }
 
         public List<EncodingJobData> GetEncodingJobQueueCurrentState()
         {

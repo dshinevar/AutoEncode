@@ -44,6 +44,8 @@ namespace AutoEncodeUtilities.Data
         #region Status
         /// <summary>Overall Status of the Job </summary>
         public EncodingJobStatus Status { get; private set; } = EncodingJobStatus.NEW;
+        /// <summary>Current substatus of the job building</summary>
+        public EncodingJobBuildingStatus BuildingStatus { get; private set; } = EncodingJobBuildingStatus.BUILDING;
         /// <summary>Flag showing if a job is in error </summary>
         public bool Error { get; private set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
@@ -62,11 +64,15 @@ namespace AutoEncodeUtilities.Data
         public DateTime? CompletedPostProcessingTime { get; private set; } = null;
         /// <summary> DateTime when job was errored </summary>
         public DateTime? ErrorTime { get; private set; } = null;
+
+        public bool Complete => (Error is false && EncodingProgress == 100) && // Ensure not errored and EncodingProgress is at 100%
+            ((Status.Equals(EncodingJobStatus.ENCODED) && NeedsPostProcessing is false) || // If post-processing not needed, make sure status is ENCODED
+            (Status.Equals(EncodingJobStatus.POST_PROCESSED) && NeedsPostProcessing is true)); // Or, If post-processing needed, make sure status is POST_PROCESSED
         #endregion Status
 
         #region Processing Data
         /// <summary>The raw stream (video, audio subtitle) data </summary>
-        public SourceStreamData SourceStreamData { get; set; }
+        public ISourceStreamData SourceStreamData { get; set; }
         /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         public EncodingInstructions EncodingInstructions { get; set; }
         /// <summary>Determines if the job needs PostProcessing</summary>
@@ -85,8 +91,12 @@ namespace AutoEncodeUtilities.Data
         public override string ToString() => $"(JobID: {Id}) {Name}";
 
         /// <summary>Sets the current status of the job.</summary>
-        /// <param name="status"></param>
+        /// <param name="status"><see cref="EncodingJobStatus"/></param>
         public void SetStatus(EncodingJobStatus status) => Status = status;
+
+        /// <summary>Sets the current building substatus </summary>
+        /// <param name="buildingStatus"><see cref="EncodingJobBuildingStatus"/></param>
+        public void SetBuildingStatus(EncodingJobBuildingStatus buildingStatus) => BuildingStatus = buildingStatus;
 
         /// <summary>Handles updating of encoding progress.</summary>
         /// <param name="progress"></param>

@@ -7,7 +7,7 @@ using System;
 namespace AutoEncodeUtilities.Interfaces
 {
     /// <summary>Interface that inidicates what any Encoding Job object should have</summary>
-    public interface IEncodingJobData : IEquatable<IEncodingJobData>
+    public interface IEncodingJobData
     {
         /// <summary>Unique job identifier </summary>
         int Id { get; }
@@ -24,6 +24,8 @@ namespace AutoEncodeUtilities.Interfaces
 
         #region Status
         EncodingJobStatus Status { get; }
+
+        EncodingJobBuildingStatus BuildingStatus { get; }
         /// <summary>Flag showing if a job is in error </summary>
         bool Error { get; }
         /// <summary>Error message from when a job was last marked in error. </summary>
@@ -42,11 +44,13 @@ namespace AutoEncodeUtilities.Interfaces
         DateTime? CompletedPostProcessingTime { get; }
         /// <summary> DateTime when job was errored </summary>
         DateTime? ErrorTime { get; }
+        /// <summary>Flag showing if job is fully complete </summary>
+        bool Complete { get; }
         #endregion Status
 
         #region Processing Data
         /// <summary>The raw stream (video, audio subtitle) data </summary>
-        SourceStreamData SourceStreamData { get; }
+        ISourceStreamData SourceStreamData { get; }
         /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         EncodingInstructions EncodingInstructions { get; }
         /// <summary>Determines if the job needs PostProcessing</summary>

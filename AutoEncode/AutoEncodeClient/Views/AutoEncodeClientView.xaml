@@ -23,6 +23,7 @@
             <converters:EncodedColorConverter x:Key="EncodedColorConverter"/>
             <converters:EnumDisplayNameConverter x:Key="EnumDisplayNameConverter"/>
             <converters:EnumDisplayShortNameConverter x:Key="EnumDisplayShortNameConverter"/>
+            <converters:EnumDisplayDescriptionConverter x:Key="EnumDisplayDescriptionConverter"/>
             <converters:EncodingJobStatusToVisibilityConverter x:Key="EncodingJobStatusToVisibilityConverter"/>
             <converters:IsNullVisibilityConverter x:Key="IsNullVisibilityConverter"/>
             <converters:VisibleWhenGreaterThanConverter x:Key="VisibleWhenGreaterThanConverter" />
@@ -118,26 +119,26 @@
                     <Grid>
                         <Grid.Resources>
                             <Style x:Key="LibraryHeaderBorder"
-                               TargetType="Border">
+                                   TargetType="Border">
                                 <Setter Property="BorderBrush"
-                                Value="Gray"/>
+                                        Value="Gray"/>
                                 <Setter Property="BorderThickness"
-                                Value="0,0,0,1"/>
+                                        Value="0,0,0,1"/>
                                 <Setter Property="Background"
-                                Value="WhiteSmoke"/>
+                                        Value="WhiteSmoke"/>
                                 <Setter Property="HorizontalAlignment"
-                                Value="Stretch"/>
+                                        Value="Stretch"/>
                             </Style>
                             <Style x:Key="LibraryHeaderText"
-                               TargetType="TextBlock">
+                                   TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment"
-                                    Value="Center"/>
+                                        Value="Center"/>
                                 <Setter Property="VerticalAlignment"
-                                    Value="Center"/>
+                                        Value="Center"/>
                                 <Setter Property="Padding"
-                                    Value="2,0"/>
+                                        Value="2,0"/>
                                 <Setter Property="FontWeight"
-                                    Value="SemiBold"/>
+                                        Value="SemiBold"/>
                             </Style>
                         </Grid.Resources>
                         <Grid.RowDefinitions>
@@ -148,25 +149,25 @@
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0"
-                            Style="{StaticResource LibraryHeaderBorder}"
-                            Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                Style="{StaticResource LibraryHeaderBorder}"
+                                Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
                             <TextBlock Text="Movie Libraries"
-                                   Style="{StaticResource LibraryHeaderText}"/>
+                                       Style="{StaticResource LibraryHeaderText}"/>
                         </Border>
                         <TreeView Grid.Row="1"
-                              Margin="0,0,0,0"
-                              Style="{StaticResource TreeViewStyle}"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                              ItemsSource="{Binding MovieSourceFiles}"
-                              Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                  Margin="0,0,5,0"
+                                  Style="{StaticResource TreeViewStyle}"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  ItemsSource="{Binding MovieSourceFiles}"
+                                  Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Value}">
                                     <TextBlock Text="{Binding Key}"/>
                                     <HierarchicalDataTemplate.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding FileName}"
-                                                   Foreground="{Binding Encoded, Converter={StaticResource EncodedColorConverter}}"/>
+                                                       Foreground="{Binding Encoded, Converter={StaticResource EncodedColorConverter}}"/>
                                         </DataTemplate>
                                     </HierarchicalDataTemplate.ItemTemplate>
                                 </HierarchicalDataTemplate>
@@ -174,24 +175,24 @@
                         </TreeView>
 
                         <Border Grid.Row="2"
-                            Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
                             <Border.Style>
                                 <Style TargetType="Border"
-                                   BasedOn="{StaticResource LibraryHeaderBorder}">
+                                       BasedOn="{StaticResource LibraryHeaderBorder}">
                                     <Setter Property="BorderThickness"
-                                        Value="0,1,0,1"/>
+                                            Value="0,1,0,1"/>
                                 </Style>
                             </Border.Style>
                             <TextBlock Text="Show Libraries"
                                    Style="{StaticResource LibraryHeaderText}"/>
                         </Border>
                         <TreeView Grid.Row="3"
-                          Margin="0,0,0,0"
-                          Style="{StaticResource TreeViewStyle}"
-                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                          ItemsSource="{Binding ShowSourceFiles}"
-                          Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                  Margin="0,0,5,0"
+                                  Style="{StaticResource TreeViewStyle}"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                  ItemsSource="{Binding ShowSourceFiles}"
+                                  Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
                             <TreeView.ItemTemplate>
                                 <HierarchicalDataTemplate ItemsSource="{Binding Value}">
                                     <TextBlock Text="{Binding Key}"/>
@@ -222,7 +223,8 @@
         <Grid Grid.Column="1"
               Margin="0,2,2,2">
             <Grid.RowDefinitions>
-                <RowDefinition/>
+                <RowDefinition Height="*"
+                               MaxHeight="150"/>
                 <RowDefinition Height="2.75*"/>
             </Grid.RowDefinitions>
 
@@ -235,17 +237,17 @@
                     Background="LightGray">
                 <Grid>
                     <ListView Grid.Row="0"
-                          ItemsSource="{Binding EncodingJobs}"
-                          SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          ItemContainerStyle="{StaticResource ListViewItemContainerStyle}"
-                          Visibility="{Binding EncodingJobs.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}"
-                          VerticalAlignment="Stretch"
-                          HorizontalAlignment="Stretch"
-                          VerticalContentAlignment="Stretch"
-                          SelectionMode="Single"
-                          Background="{StaticResource BackgroundBrush}"
-                          BorderBrush="Transparent"
-                          BorderThickness="0">
+                              ItemsSource="{Binding EncodingJobs}"
+                              SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              ItemContainerStyle="{StaticResource ListViewItemContainerStyle}"
+                              Visibility="{Binding EncodingJobs.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}"
+                              VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"
+                              VerticalContentAlignment="Stretch"
+                              SelectionMode="Single"
+                              Background="{StaticResource BackgroundBrush}"
+                              BorderBrush="Transparent"
+                              BorderThickness="0">
                         <ListView.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal"/>
@@ -302,24 +304,63 @@
                         <StackPanel Grid.Column="0"
                                     Orientation="Vertical">
                             <TextBlock Text="{Binding Name}"
-                                       FontSize="12"
+                                       FontSize="14"
                                        FontWeight="DemiBold"/>
-                            <TextBlock Text="{Binding Id, StringFormat=ID: {0}}"
-                                       TextWrapping="NoWrap"/>
-                            <TextBlock Text="{Binding SourceFullPath, StringFormat=Source Full Path: {0}}"
-                                       TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding DestinationFullPath, StringFormat=Destination Full Path: {0}}"
-                                       TextWrapping="Wrap"/>
+                            <TextBlock TextWrapping="NoWrap">
+                                <TextBlock.Inlines>
+                                    <Run Text="ID:" FontWeight="DemiBold"/>
+                                    <Run Text="{Binding Id, Mode=OneWay}"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap">
+                                <TextBlock.Inlines>
+                                    <Run Text="Source Full Path:" FontWeight="DemiBold"/>
+                                    <Run Text="{Binding SourceFullPath, Mode=OneWay}"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap">
+                                <TextBlock.Inlines>
+                                    <Run Text="Destination Full Path:" FontWeight="DemiBold"/>
+                                    <Run Text="{Binding DestinationFullPath, Mode=OneWay}"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
                         </StackPanel>
 
-                        <!-- Error Image -->
+                        <!-- Error/Success Image -->
                         <Image Grid.Column="1"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Left"
-                               Margin="0,0,10,0"
-                               Visibility="{Binding Error, Converter={StaticResource BoolToVisibilityConverter}}"
-                               ToolTip="Encoding Job has errored."
-                               Source="../Resources/error.png"/>
+                               Margin="0,0,10,0">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility"
+                                            Value="Hidden"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Error}"
+                                                     Value="True">
+                                            <Setter Property="Visibility"
+                                                    Value="Visible"/>
+                                            <Setter Property="Source"
+                                                    Value="../Resources/error.png"/>
+                                            <Setter Property="ToolTip"
+                                                    Value="Encoding Job has errored."/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Error}" Value="False"/>
+                                                <Condition Binding="{Binding Complete}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility"
+                                                    Value="Visible"/>
+                                            <Setter Property="Source"
+                                                    Value="../Resources/success.png"/>
+                                            <Setter Property="ToolTip"
+                                                    Value="Encoding Job has successfully completed."/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Grid>
 
                     <!-- Encoding Progress Bar -->
@@ -334,6 +375,17 @@
                                     <Setter Property="Text"
                                             Value="{Binding Status, Converter={StaticResource EnumDisplayShortNameConverter}}"/>
                                     <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Status}"
+                                                     Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
+                                            <Setter Property="Text">
+                                                <Setter.Value>
+                                                    <MultiBinding StringFormat="{}{0} ({1})">
+                                                        <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
+                                                        <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Path=Status}"
                                                      Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
                                             <Setter Property="Text">
@@ -373,10 +425,18 @@
                     <!-- Encoding Completion -->
                     <StackPanel Grid.Row="2"
                                 Orientation="Vertical">
-                        <TextBlock Text="{Binding ElapsedEncodingTime, StringFormat=Encoding Time Elapsed: {0}, Converter={StaticResource FormatTimeSpanConverter}, TargetNullValue={x:Static sys:String.Empty}}"
-                                       TextWrapping="NoWrap"/>
-                        <TextBlock Text="{Binding CompletedEncodingDateTime, StringFormat=Encoding Completed: {0}}"
-                                       TextWrapping="Wrap"/>
+                        <TextBlock TextWrapping="NoWrap">
+                            <TextBlock.Inlines>
+                                <Run Text="Encoding Time Elapsed:" FontWeight="DemiBold"/>
+                                <Run Text="{Binding ElapsedEncodingTime, Converter={StaticResource FormatTimeSpanConverter}, TargetNullValue='-', FallbackValue={x:Static sys:String.Empty}}"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                        <TextBlock TextWrapping="NoWrap">
+                            <TextBlock.Inlines>
+                                <Run Text="Encoding Completed:" FontWeight="DemiBold"/>
+                                <Run Text="{Binding CompletedEncodingDateTime, TargetNullValue='-', FallbackValue={x:Static sys:String.Empty}}"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
                     </StackPanel>
 
                     <TabControl Grid.Row="3"
@@ -392,7 +452,8 @@
                         </TabControl.Resources>
                         <!-- Source Data Tab -->
                         <TabItem Header="Source Data">
-                            <Grid DataContext="{Binding SourceStreamData}">
+                            <Grid DataContext="{Binding SourceStreamData}"
+                                  Margin="2">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition/>
@@ -400,19 +461,29 @@
 
                                 <StackPanel Grid.Row="0">
                                     <TextBlock>
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}Duration: {0} ({1} seconds)">
-                                                <Binding Path="DurationInSeconds" 
-                                                         Converter="{StaticResource SecondsToTimestampConverter}" 
-                                                         TargetNullValue="-" 
-                                                         FallbackValue="-"/>
-                                                <Binding Path="DurationInSeconds" 
-                                                         TargetNullValue="-" 
-                                                         FallbackValue="-"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
+                                        <TextBlock.Inlines>
+                                            <Run Text="Duration:" FontWeight="DemiBold"/>
+                                            <Run>
+                                                <Run.Text>
+                                                    <MultiBinding StringFormat="{}{0} ({1} seconds)">
+                                                        <Binding Path="DurationInSeconds" 
+                                                                 Converter="{StaticResource SecondsToTimestampConverter}" 
+                                                                 TargetNullValue="-" 
+                                                                 FallbackValue="-"/>
+                                                        <Binding Path="DurationInSeconds" 
+                                                                 TargetNullValue="-" 
+                                                                 FallbackValue="-"/>
+                                                    </MultiBinding>
+                                                </Run.Text>
+                                            </Run>
+                                        </TextBlock.Inlines>
                                     </TextBlock>
-                                    <TextBlock Text="{Binding NumberOfFrames, StringFormat=Number of Frames: {0}, TargetNullValue='Number of Frames: -', FallbackValue='Number of Frames: -'}"/>
+                                    <TextBlock>
+                                        <TextBlock.Inlines>
+                                            <Run Text="Number of Frames:" FontWeight="DemiBold"/>
+                                            <Run Text="{Binding NumberOfFrames, TargetNullValue='-',FallbackValue='-'}"/>
+                                        </TextBlock.Inlines>
+                                    </TextBlock>
                                 </StackPanel>
 
                                 <Grid Grid.Row="1"
@@ -519,7 +590,7 @@
                                                     <TextBlock>
                                                         <TextBlock.Inlines>
                                                             <Run Text="Crop: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding Crop}"/>
+                                                            <Run Text="{Binding Crop, TargetNullValue='-'}"/>
                                                         </TextBlock.Inlines>
                                                     </TextBlock>
                                                     <TextBlock>
@@ -748,7 +819,8 @@
                                            VerticalAlignment="Center"/>
                                 </StackPanel>
                             </TabItem.Header>
-                            <StackPanel Orientation="Vertical">
+                            <StackPanel Orientation="Vertical"
+                                        Margin="2">
                                 <TextBlock Text="{Binding ErrorTime, StringFormat=Error Occurred: {0}}"/>
                                 <TextBlock Text="Last Error Message:"/>
                                 <TextBlock Text="{Binding LastErrorMessage}"

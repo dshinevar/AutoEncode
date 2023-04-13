@@ -1,7 +1,7 @@
 ﻿using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeClient.Models;
 using AutoEncodeClient.ViewModels;
-using AutoEncodeUtilities.Collections;
+using AutoEncodeClient.Collections;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
@@ -37,7 +37,8 @@ namespace AutoEncodeClient.Views.DesignData
                 EncodingProgress = 0,
                 ElapsedEncodingTime = new TimeSpan(1, 2, 23, 56),
                 CompletedEncodingDateTime = DateTime.Now,
-                Error = true,
+                Complete = true,
+                Error = false,
                 LastErrorMessage = "A really, really, bad thing happened. There was a fire. Everything burnt to the ground.",
                 ErrorTime = DateTime.Now,
                 SourceStreamData = new SourceStreamData()

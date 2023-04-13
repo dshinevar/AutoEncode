@@ -12,6 +12,11 @@ namespace AutoEncodeClient.Converters
         {
             if (value is EncodingJobStatus status)
             {
+                if (parameter is EncodingJobStatus maxStatus)
+                {
+                    return (EncodingJobStatus.ENCODED <= status && status <= maxStatus) ? Visibility.Visible : Visibility.Collapsed;
+                }
+
                 return status >= EncodingJobStatus.ENCODING ? Visibility.Visible : Visibility.Collapsed;
             }
 

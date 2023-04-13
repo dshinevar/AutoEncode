@@ -69,8 +69,6 @@ namespace AutoEncodeServer
                             => EncodingJobTaskFactory.PostProcess(jobToPostProcess, Logger, EncodingJobPostProcessingCancellationToken.Token), EncodingJobPostProcessingCancellationToken.Token);
                     }
                 }
-                
-
             }
         }
     }

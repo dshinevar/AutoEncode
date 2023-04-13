@@ -31,6 +31,7 @@ namespace AutoEncodeServer.TaskFactory
                                             string x265Path, ILogger logger, CancellationToken cancellationToken)
         {
             job.SetStatus(EncodingJobStatus.BUILDING);
+            job.SetBuildingStatus(EncodingJobBuildingStatus.BUILDING);
 
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
@@ -46,6 +47,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 1: Initial ffprobe
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.PROBING);
                     ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
 
                     if (probeData is not null)
@@ -70,6 +72,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 2: Get ScanType
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.SCAN_TYPE);
                     VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
 
                     if (scanType.Equals(VideoScanType.UNDETERMINED))
@@ -93,6 +96,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 3: Determine Crop
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.CROP);
                     string crop = GetCrop(job.SourceFullPath, ffmpegDir);
 
                     if (string.IsNullOrWhiteSpace(crop))
@@ -118,6 +122,7 @@ namespace AutoEncodeServer.TaskFactory
                 {
                     if (job.SourceStreamData.VideoStream.HasDynamicHDR is true)
                     {
+                        job.SetBuildingStatus(EncodingJobBuildingStatus.DYNAMIC_HDR);
                         HDRData hdrData = job.SourceStreamData.VideoStream.HDRData;
                         if (hdrData.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
                         {
@@ -158,6 +163,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 4: Decide Encoding Options
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.INSTRUCTIONS);
                     job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
                 }
                 catch (Exception ex)
@@ -171,6 +177,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 5: Create FFMPEG command
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.COMMAND);
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
                     {
                         (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments)
@@ -229,6 +236,7 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             job.SetStatus(EncodingJobStatus.BUILT);
+            job.SetBuildingStatus(EncodingJobBuildingStatus.BUILT);
             logger.LogInfo($"Successfully built {job} encoding job.");
         }
 
@@ -425,7 +433,7 @@ namespace AutoEncodeServer.TaskFactory
         /// <summary> Determines/Builds <see cref="EncodingInstructions"/> for the given stream data. </summary>
         /// <param name="streamData"><see cref="SourceStreamData"/></param>
         /// <returns><see cref="EncodingInstructions"/></returns>
-        private static EncodingInstructions DetermineEncodingInstructions(SourceStreamData streamData, string destinationFullPath)
+        private static EncodingInstructions DetermineEncodingInstructions(ISourceStreamData streamData, string destinationFullPath)
         {
             EncodingInstructions instructions = new();
 
@@ -560,7 +568,7 @@ namespace AutoEncodeServer.TaskFactory
         /// <returns>A string of the FFmpeg arguments</returns>
         /// <exception cref="Exception">Something went wrong/invalid instructions.</exception>
         /// <exception cref="NotImplementedException">Potentially unimplemented instructions.</exception>
-        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
+        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
         {
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
 
@@ -678,7 +686,7 @@ namespace AutoEncodeServer.TaskFactory
             return sbArguments.ToString();
         }
 
-        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, SourceStreamData streamData,
+        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData,
             string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265FullPath)
         {
             const string format = "{0} ";

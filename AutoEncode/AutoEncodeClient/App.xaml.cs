@@ -93,11 +93,18 @@ namespace AutoEncodeClient
                                             clientConfig.LoggerSettings.MaxFileSizeInBytes,
                                             clientConfig.LoggerSettings.BackupFileCount);
 
-            AutoEncodeClientModel model = new AutoEncodeClientModel(logger, clientConfig);
-            AutoEncodeClientViewModel viewModel = new AutoEncodeClientViewModel(model);
-            AutoEncodeClientView view = new AutoEncodeClientView(viewModel);
-            var b = view.ShowDialog();
-
+            // Build and show view
+            try
+            {
+                AutoEncodeClientModel model = new(logger, clientConfig);
+                AutoEncodeClientViewModel viewModel = new(model);
+                AutoEncodeClientView view = new(viewModel);
+                view.Show();
+            }
+            catch (Exception ex) 
+            {
+                logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
+            }
         }
     }
 }

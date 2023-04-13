@@ -6,16 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace AutoEncodeClient.ViewModels
 {
-    public abstract class ViewModelBase<T> : INotifyPropertyChanged
+    /// <summary>ViewModelBase for when functionality is needed but not a backing model.</summary>
+    public abstract class ViewModelBase : INotifyPropertyChanged
     {
-        protected T Model { get; private set; }
-
         private Dictionary<string, List<AECommand>> Commands = null;
-
-        protected ViewModelBase(T model)
-        {
-            Model = model;
-        }
 
         protected void AddCommand(AECommand command, string propertyName) => AddCommand(command, new string[] { propertyName });
 
@@ -52,5 +46,17 @@ namespace AutoEncodeClient.ViewModels
             }
         }
         #endregion Property Changed
+    }
+
+    /// <summary>ViewModelBase for when a backing model is used.</summary>
+    /// <typeparam name="T">Model Type</typeparam>
+    public abstract class ViewModelBase<T> : ViewModelBase
+    {
+        protected T Model { get; private set; }
+
+        protected ViewModelBase(T model)
+        {
+            Model = model;
+        }
     }
 }

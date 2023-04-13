@@ -1,4 +1,4 @@
-﻿using AutoEncodeUtilities.Data;
+﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Interfaces;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,11 +6,11 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 
-namespace AutoEncodeUtilities.Collections
+namespace AutoEncodeClient.Collections
 {
     public class BulkObservableCollection<T> : 
         ObservableCollection<T>,
-        IUpdateable<BulkObservableCollection<T>>
+        IUpdateable<IEnumerable<T>>
     {
         public BulkObservableCollection()
             : base() { }
@@ -46,22 +46,22 @@ namespace AutoEncodeUtilities.Collections
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove));
         }
 
-        public void Update(BulkObservableCollection<T> oldCollection)
+        public void Update(IEnumerable<T> newCollection)
         {
-            IEnumerable<T> remove = oldCollection.Where(x => !Items.Any(y => y.Equals(x)));
-            oldCollection.RemoveRange(remove);
+            IEnumerable<T> remove = newCollection.Where(x => !Items.Any(y => y.Equals(x)));
+            RemoveRange(remove);
 
-            foreach (T item in Items)
+            foreach (T item in newCollection)
             {
-                T oldData = oldCollection.SingleOrDefault(x => x.Equals(item));
-                if (oldData is not null)
+                T oldItem = Items.SingleOrDefault(x => x.Equals(item));
+                if (oldItem is not null)
                 {
-                    if (oldData is IUpdateable<T> updateAbleOldData) updateAbleOldData.Update(item);
-                    else item.CopyProperties(oldData);
+                    if (oldItem is IUpdateable<T> updateableOldData) updateableOldData.Update(item);
+                    else item.CopyProperties(oldItem);
                 }
                 else
                 {
-                    oldCollection.Add(item);
+                    Add(item);
                 }
             }
         }

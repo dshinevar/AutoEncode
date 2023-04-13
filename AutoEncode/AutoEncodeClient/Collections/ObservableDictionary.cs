@@ -1,5 +1,4 @@
 ﻿using AutoEncodeUtilities.Interfaces;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,7 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace AutoEncodeUtilities.Collections
+namespace AutoEncodeClient.Collections
 {
     public class ObservableDictionary<TKey, TValue> :
         IDictionary<TKey, TValue>,
@@ -57,12 +56,12 @@ namespace AutoEncodeUtilities.Collections
         {
             if (Dictionary.TryGetValue(key, out TValue oldValue))
             {
-                if (oldValue is IUpdateable<TValue> updateableOldValue) 
+                if (oldValue is IUpdateable<TValue> updateableOldValue)
                 {
                     updateableOldValue.Update(value);
                 }
-                else 
-                { 
+                else
+                {
                     Dictionary[key] = value;
                     OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,
                                                             new KeyValuePair<TKey, TValue>(key, value),

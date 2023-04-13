@@ -25,6 +25,8 @@ namespace AutoEncodeUtilities.Data
         #region Status
         /// <summary>Overall Status of the Job </summary>
         public EncodingJobStatus Status { get; set; } = EncodingJobStatus.NEW;
+        /// <summary>Building SubStatus</summary>
+        public EncodingJobBuildingStatus BuildingStatus { get; set; } = EncodingJobBuildingStatus.BUILDING;
         /// <summary>Flag showing if a job is in error </summary>
         public bool Error { get; set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
@@ -43,11 +45,13 @@ namespace AutoEncodeUtilities.Data
         public DateTime? CompletedPostProcessingTime { get; set; } = null;
         /// <summary> DateTime when job was errored </summary>
         public DateTime? ErrorTime { get; set; } = null;
+        /// <summary>Flag for showing if a job is fully completed. </summary>
+        public bool Complete { get; set; } = false;
         #endregion Status
 
         #region Processing Data
         /// <summary>The raw stream (video, audio subtitle) data </summary>
-        public SourceStreamData SourceStreamData { get; set; }
+        public ISourceStreamData SourceStreamData { get; set; }
         /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         public EncodingInstructions EncodingInstructions { get; set; }
         /// <summary>Determines if the job needs PostProcessing</summary>
@@ -65,15 +69,13 @@ namespace AutoEncodeUtilities.Data
 
         public override bool Equals(object obj)
         {
-            if (obj is IEncodingJobData)
+            if (obj is IEncodingJobData data)
             {
-                return Equals(obj as IEncodingJobData);
+                return Id == data.Id;
             }
 
             return false;
         }
-
-        public bool Equals(IEncodingJobData data) => Id == data.Id;
 
         public override int GetHashCode() => Id.GetHashCode();
     }
