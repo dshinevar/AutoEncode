@@ -39,7 +39,6 @@ namespace AutoEncodeUtilities.Json
             {
                 serializer.Serialize(writer, value, value.GetType());
             }
-            writer.WriteEndObject();
         }
     }
 }

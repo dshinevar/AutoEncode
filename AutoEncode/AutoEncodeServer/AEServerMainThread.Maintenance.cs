@@ -15,8 +15,11 @@ namespace AutoEncodeServer
         /// <param name="obj"></param>
         private void OnMaintenanceTimerElapsed(object obj)
         {
-            ClearCompletedJobs();
-            ClearErroredJobs();
+            if (_shutdown is false)
+            {
+                ClearCompletedJobs();
+                ClearErroredJobs();
+            }
         }
 
         /// <summary>Clears out completed encoding jobs.</summary>

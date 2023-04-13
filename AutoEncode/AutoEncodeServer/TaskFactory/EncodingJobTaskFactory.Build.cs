@@ -89,7 +89,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // STEP 3: Determine Crop
                 try
                 {
@@ -154,7 +154,7 @@ namespace AutoEncodeServer.TaskFactory
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // STEP 4: Decide Encoding Options
                 try
                 {
@@ -213,6 +213,7 @@ namespace AutoEncodeServer.TaskFactory
                     job.SetError(logger.LogException(ex, $"Error building FFmpeg command for {job}", details: new {job.Id, job.Name}));
                     return;
                 }
+                
             }
             catch (OperationCanceledException)
             {

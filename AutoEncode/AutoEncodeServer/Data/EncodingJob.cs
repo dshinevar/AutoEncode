@@ -168,7 +168,7 @@ namespace AutoEncodeUtilities.Data
         public EncodingJobData ExportData()
         {
             EncodingJobData data = new();
-            this.CopyProperties((IEncodingJobData)data);
+            this.CopyProperties(data);
             return data;
         }
         #endregion Public Functions

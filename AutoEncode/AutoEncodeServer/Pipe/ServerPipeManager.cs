@@ -20,6 +20,8 @@ namespace AutoEncodeServer.Pipe
         private ILogger Logger { get; set; }
         #endregion Properties
 
+        public bool IsStarted => ServerPipe?.IsStarted ?? false;
+
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Handle of main thread.</param>
         /// <param name="logger"><see cref="ILogger"/></param>
@@ -137,7 +139,6 @@ namespace AutoEncodeServer.Pipe
             {
                 Logger.LogException(ex, "Failed to send queue to client.", LoggerName);
             }
-
         }
 
         private async void SendMovieSourceFiles(Dictionary<string, List<VideoSourceData>> movieSourceFiles, Guid messageGuid)

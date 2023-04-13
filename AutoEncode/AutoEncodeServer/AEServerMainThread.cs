@@ -18,6 +18,7 @@ namespace AutoEncodeServer
     {
         public readonly string ThreadName = "MainThread";
 
+        private bool _shutdown = false;
         /// <summary>Config as in file </summary>
         private AEServerConfig Config { get; set; }
         /// <summary>Config to be used; Does not have to match what is saved to file</summary>
@@ -56,7 +57,7 @@ namespace AutoEncodeServer
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
             ServerPipeManager = new ServerPipeManager(this, Logger);
 
-            MaintenanceTimerWaitTime = TimeSpan.FromHours(1);           // Doesn't need to run very often
+            MaintenanceTimerWaitTime = TimeSpan.FromSeconds(45);        // Doesn't need to run as often
             EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(5);     // Run a bit slower than process; Is mainly managing the tasks so doesn't need to spin often
             ProcessTimerWaitTime = TimeSpan.FromSeconds(1.5);           // Handle processes pretty frequently
         }
@@ -69,7 +70,7 @@ namespace AutoEncodeServer
             EncodingJobFinderThread.Start();
             ServerPipeManager?.Start();
 
-            MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(30), MaintenanceTimerWaitTime);
+            MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(1), MaintenanceTimerWaitTime);
             EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
             ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
@@ -78,9 +79,14 @@ namespace AutoEncodeServer
         public void Shutdown()
         {
             Debug.WriteLine("AEServerMainThread Shutting Down.");
+            _shutdown = true;
 
             // Stop Pipe
             ServerPipeManager?.Stop();
+
+            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimerDispose.WaitOne();
+            MaintenanceTimerDispose.Dispose();
 
             // Stop threads
             EncodingJobFinderThread?.Stop();
@@ -92,10 +98,6 @@ namespace AutoEncodeServer
             EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();
-
-            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
-            MaintenanceTimerDispose.WaitOne();
-            MaintenanceTimerDispose.Dispose();
 
             // Clear Task Queue and Stop processsing timer
             TaskQueue.Clear();
