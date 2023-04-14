@@ -26,14 +26,14 @@ namespace AutoEncodeClient.ViewModels
             AECommand refreshSourceFilesCommand = new(RefreshSourceFiles);
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
 
+            RefreshSourceFiles();
+
             EncodingJobQueueStateTimer = new Timer(3000)
             {
                 AutoReset = false
             };
             EncodingJobQueueStateTimer.Elapsed += EncodingJobQueueStateTimerElapsed;
             EncodingJobQueueStateTimer.Start();
-
-            RefreshSourceFiles();
         }
 
         #region Commands

@@ -113,6 +113,14 @@ namespace AutoEncodeServer
             }
         }
 
+        public static bool IsEncodingByFileName(string filename)
+        {
+            lock (jobLock) 
+            {
+                return jobQueue.Find(x => x.FileName.Equals(filename))?.Status.Equals(EncodingJobStatus.ENCODING) ?? false;
+            }
+        }
+
         /// <summary> Gets first EncodingJob (not paused or in error) from list with the given status. </summary>
         /// <param name="status">EncodingJobStatus</param>
         /// <returns><see cref="EncodingJob"/></returns>

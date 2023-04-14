@@ -26,13 +26,11 @@ namespace AutoEncodeClient
             AEClientConfig clientConfig = null;
             try
             {
-                using (var reader = new StreamReader(Lookups.ConfigFileLocation))
-                {
-                    string str = reader.ReadToEnd();
-                    var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
+                using var reader = new StreamReader(Lookups.ConfigFileLocation);
+                string str = reader.ReadToEnd();
+                var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
 
-                    clientConfig = deserializer.Deserialize<AEClientConfig>(str);
-                }
+                clientConfig = deserializer.Deserialize<AEClientConfig>(str);
             }
             catch (Exception ex)
             {

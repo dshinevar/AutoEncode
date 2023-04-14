@@ -10,7 +10,8 @@ namespace AutoEncodeClient.Collections
 {
     public class BulkObservableCollection<T> : 
         ObservableCollection<T>,
-        IUpdateable<IEnumerable<T>>
+        IUpdateable<IEnumerable<T>>,
+        IUpdateable<BulkObservableCollection<T>>
     {
         public BulkObservableCollection()
             : base() { }
@@ -65,5 +66,7 @@ namespace AutoEncodeClient.Collections
                 }
             }
         }
+
+        public void Update(BulkObservableCollection<T> newCollection) => Update((IEnumerable<T>)newCollection);
     }
 }

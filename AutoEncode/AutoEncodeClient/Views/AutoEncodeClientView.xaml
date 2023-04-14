@@ -10,7 +10,8 @@
         xmlns:utilData="clr-namespace:AutoEncodeUtilities.Data;assembly=AutoEncodeUtilities"
         xmlns:utilEnums="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
         mc:Ignorable="d"
-        Title="AutoEncodeClient" 
+        Title="AutoEncodeClient"
+        Icon="../Resources/AutoEncode.png"
         Height="450" Width="800"
         Background="LightSlateGray"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
@@ -734,7 +735,7 @@
                                                        FontWeight="DemiBold"
                                                        Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
                                             <TreeView Grid.Row="1" ItemsSource="{Binding}"
-                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Style="{StaticResource TreeViewStyle}"
                                                           ItemTemplate="{StaticResource AudioSourceData}">
@@ -777,7 +778,7 @@
                                                        FontWeight="DemiBold"
                                                        Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
                                             <TreeView Grid.Row="1" ItemsSource="{Binding}"
-                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                           Style="{StaticResource TreeViewStyle}"
                                                           ItemTemplate="{StaticResource SubtitleSourceData}">

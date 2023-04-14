@@ -124,7 +124,8 @@ namespace AutoEncodeServer.WorkerThreads
                                         VideoSourceData episodeData = new()
                                         {
                                             FullPath = episodePath,
-                                            Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath))
+                                            Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(episodePath)) && 
+                                                        (EncodingJobQueue.IsEncodingByFileName(Path.GetFileName(episodePath)) is false)
                                         };
                                         seasonData.Episodes.Add(episodeData);
                                     }
@@ -157,7 +158,8 @@ namespace AutoEncodeServer.WorkerThreads
                                 VideoSourceData sourceData = new()
                                 {
                                     FullPath = sourceFile,
-                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile))
+                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFile)) &&
+                                                (EncodingJobQueue.IsEncodingByFileName(Path.GetFileName(sourceFile)) is false)
                                 };
                                 movies.Add(sourceData);
                             }

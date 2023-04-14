@@ -14,7 +14,7 @@ namespace AutoEncodeClient.ApiClient
 #if RELEASE
         private string BaseUrl => $"http://127.0.0.1:5221/{ApiRouteConstants.BaseRoute}";
 #else
-        private string BaseUrl => $"http://{IpAddress}:80/{ApiRouteConstants.BaseRoute}";
+        private string BaseUrl => $"http://{IpAddress}:{Port}/{ApiRouteConstants.BaseRoute}";
 #endif
 
         protected ILogger Logger { get; }
@@ -44,7 +44,7 @@ namespace AutoEncodeClient.ApiClient
                 {
                     response.ThrowIfError();
 
-                    if (string.IsNullOrEmpty(response.ErrorMessage) is false)
+                    if (string.IsNullOrWhiteSpace(response.ErrorMessage) is false)
                     {
                         throw new Exception(response.ErrorMessage);
                     }

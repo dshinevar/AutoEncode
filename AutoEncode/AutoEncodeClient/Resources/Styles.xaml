@@ -146,7 +146,7 @@
                                              Style="{StaticResource ProgressBarBaseStyle}"
                                              VerticalAlignment="Stretch"
                                              MinHeight="15"
-                                             Margin="5,5">
+                                             Margin="5,3">
                                     <ProgressBar.Visibility>
                                         <MultiBinding Converter="{StaticResource MultiVisibilityConverter}">
                                             <Binding Path="Error" Converter="{StaticResource BoolToInvisibilityConverter}"/>

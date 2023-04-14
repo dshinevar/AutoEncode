@@ -21,28 +21,14 @@ namespace AutoEncodeClient.Models.StreamDataModels
         public int DurationInSeconds
         {
             get => _durationInSeconds;
-            set
-            {
-                if (_durationInSeconds != value) 
-                {
-                    _durationInSeconds = value;
-                    OnPropertyChanged();
-                }
-            }
+            set => SetAndNotify(_durationInSeconds, value, () => _durationInSeconds = value);
         }
 
         private int _numberOfFrames;
         public int NumberOfFrames
         {
             get => _numberOfFrames;
-            set
-            {
-                if (_numberOfFrames != value) 
-                {
-                    _numberOfFrames = value;
-                    OnPropertyChanged();
-                }
-            }
+            set => SetAndNotify(_numberOfFrames, value, () => _numberOfFrames = value);
         }
         public VideoStreamDataClientModel VideoStream { get; set; }
         public BulkObservableCollection<AudioStreamData> AudioStreams { get; set; }

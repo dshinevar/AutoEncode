@@ -54,7 +54,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (cancellationToken.IsCancellationRequested is true)
                     {
                         proc.CancelErrorRead();
-                        proc.Kill();
+                        proc.Kill(true);
                         return;
                     }
                     job.ElapsedEncodingTime = stopwatch.Elapsed;

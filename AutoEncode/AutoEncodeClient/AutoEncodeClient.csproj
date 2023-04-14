@@ -6,9 +6,11 @@
     <UseWPF>true</UseWPF>
     <Authors>Daniel Shinevar</Authors>
     <Description>Client for connecting/interacting with AutoEncode Server.</Description>
+    <PackageIcon>AutoEncode.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\AutoEncode.png" />
     <None Remove="Resources\error.png" />
     <None Remove="Resources\refresh.png" />
     <None Remove="Resources\success.png" />
@@ -26,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\AutoEncode.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </Resource>
     <Resource Include="Resources\error.png" />
     <Resource Include="Resources\refresh.png" />
     <Resource Include="Resources\success.png" />
