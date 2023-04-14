@@ -11,7 +11,7 @@
         xmlns:utilEnums="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
         mc:Ignorable="d"
         Title="AutoEncodeClient"
-        Icon="../Resources/AutoEncode.png"
+        Icon="../Resources/AutoEncode.ico"
         Height="450" Width="800"
         Background="LightSlateGray"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">

@@ -7,6 +7,7 @@
     <Authors>Daniel Shinevar</Authors>
     <Description>Client for connecting/interacting with AutoEncode Server.</Description>
     <PackageIcon>AutoEncode.png</PackageIcon>
+    <ApplicationIcon>Resources\AutoEncode.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,10 @@
     <None Remove="Resources\error.png" />
     <None Remove="Resources\refresh.png" />
     <None Remove="Resources\success.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\AutoEncode.ico" />
   </ItemGroup>
 
   <ItemGroup>
