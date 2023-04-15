@@ -106,8 +106,7 @@ namespace AutoEncodeClient.ViewModels
                 RefreshSourceFilesTask = Task.Factory.StartNew(() =>
                 {
                     Dictionary<string, List<VideoSourceData>> movieSourceData = Model.GetCurrentMovieSourceData();
-                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
-
+                    
                     if (movieSourceData is not null)
                     {
                         var converted = new Dictionary<string, BulkObservableCollection<VideoSourceData>>(movieSourceData
@@ -117,6 +116,8 @@ namespace AutoEncodeClient.ViewModels
                             MovieSourceFiles.Refresh(converted);
                         });
                     }
+
+                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
 
                     if (showSourceData is not null)
                     {

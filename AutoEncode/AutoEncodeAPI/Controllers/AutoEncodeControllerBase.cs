@@ -6,6 +6,8 @@ namespace AutoEncodeAPI.Controllers
 {
     public abstract class AutoEncodeControllerBase : ControllerBase
     {
+        // Really long timeout to ensure task ends API side
+        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(120);
         protected IClientPipeManager ClientPipeManager;
         protected IAELogger Logger;
 
@@ -15,11 +17,11 @@ namespace AutoEncodeAPI.Controllers
             ClientPipeManager = clientPipeManager;
         }
 
-        protected ActionResult<T> HandleRequest<T>(Task<T> task, TimeSpan timeout)
+        protected ActionResult<T> HandleRequest<T>(Task<T> task)
         {
             try
             {
-                T result = TryWait(task, timeout);
+                T result = TryWait(task);
 
                 if (result is null)
                 {
@@ -42,9 +44,9 @@ namespace AutoEncodeAPI.Controllers
             }
         }
 
-        protected T TryWait<T>(Task<T> task, TimeSpan timeout)
+        protected T TryWait<T>(Task<T> task)
         {
-            bool success = task.Wait(timeout);
+            bool success = task.Wait(_timeout);
 
             if (success is true)
             {

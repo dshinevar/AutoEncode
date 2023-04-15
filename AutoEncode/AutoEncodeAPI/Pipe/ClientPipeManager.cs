@@ -24,6 +24,7 @@ namespace AutoEncodeAPI.Pipe
         {
             ClientPipe?.DisconnectAsync();
             ClientPipe?.DisposeAsync();
+            GC.SuppressFinalize(this);
         }
 
         public async Task<List<EncodingJobData>> GetEncodingJobQueueAsync()
@@ -102,7 +103,7 @@ namespace AutoEncodeAPI.Pipe
             AEMessage? message;
             while (ReceivedMessages.TryRemove(guid, out message) is false)
             {
-                await Task.Delay(200);
+                await Task.Delay(100);
             }
 
             if (message is AEMessage<T> messageWithData && (message?.MessageType.Equals(messageType) ?? false))
