@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace AutoEncodeUtilities.Enums
 {
     [Flags]
-    public enum HDRFlags
+    public enum HDRFlags : int
     {
         [Display(Name = "None", Description = "No HDR", ShortName = "None")]
         NONE = 0,

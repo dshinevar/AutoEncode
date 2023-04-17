@@ -163,7 +163,7 @@ namespace AutoEncodeServer.WorkerThreads
                                 };
                                 movies.Add(sourceData);
                             }
-                            movies.Sort((x, y) => x.FileName.CompareTo(y.FileName));
+                            movies.Sort(VideoSourceData.CompareByFileName);
 
                             lock (movieSourceFileLock)
                             {

@@ -126,7 +126,7 @@ namespace AutoEncodeClient.Collections
             }
             else
             {
-                IEnumerable<TKey> keysToRemove = dictionary.Keys.Where(x => !Dictionary.ContainsKey(x));
+                IEnumerable<TKey> keysToRemove = Dictionary.Keys.Where(x => !dictionary.ContainsKey(x));
                 Remove(keysToRemove);
 
                 foreach (KeyValuePair<TKey, TValue> item in dictionary)

@@ -56,7 +56,8 @@ namespace AutoEncodeClient.Views.DesignData
                         ColorTransfer = "smpte2084",
                         Resolution = "3842x2160",
                         Crop = "200:200:200:300",
-                        FrameRate = "24000/1001"
+                        FrameRate = "24000/1001",
+                        HDRData = new HDRData()
                     },
                     AudioStreams = new List<AudioStreamData>()
                     {

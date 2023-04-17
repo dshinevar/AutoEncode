@@ -73,13 +73,11 @@ namespace AutoEncodeServer.Pipe
         #region Private Functions
         private void OnClientConnected(ConnectionEventArgs<AEMessage> args)
         {
-            //Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} connected.");
             Logger.LogInfo($"Client {args.Connection.PipeName} connected.", LoggerName);
         }
 
         private void OnClientDisconnected(ConnectionEventArgs<AEMessage> args)
         {
-            //Console.WriteLine($"[{LoggerName}] Client {args.Connection.PipeName} disconnected.");
             Logger.LogInfo($"Client {args.Connection.PipeName} disconnected.", LoggerName);
         }
 
@@ -130,7 +128,6 @@ namespace AutoEncodeServer.Pipe
         {
             try
             {
-                //Console.WriteLine($"[{LoggerName}] Sent queue to client.");
                 await ServerPipe.WriteAsync(AEMessageFactory.CreateEncodingJobQueueResponse(encodingJobQueue, messageGuid));
             }
             catch (Exception ex) 
@@ -141,14 +138,26 @@ namespace AutoEncodeServer.Pipe
 
         private async void SendMovieSourceFiles(Dictionary<string, List<VideoSourceData>> movieSourceFiles, Guid messageGuid)
         {
-            //Console.WriteLine($"[{LoggerName}] Sent movie source files to client.");
-            await ServerPipe.WriteAsync(AEMessageFactory.CreateMovieSourceFilesResponse(movieSourceFiles, messageGuid));
+            try
+            {
+                await ServerPipe.WriteAsync(AEMessageFactory.CreateMovieSourceFilesResponse(movieSourceFiles, messageGuid));
+            }
+            catch (Exception ex) 
+            {
+                Logger.LogException(ex, "Failed to send movie source files to client.", LoggerName);
+            }
         }
 
-        private async void SendShowSourceFiles(Dictionary<string, List<ShowSourceData>> movieSourceFiles, Guid messageGuid)
+        private async void SendShowSourceFiles(Dictionary<string, List<ShowSourceData>> showSourceFiles, Guid messageGuid)
         {
-            //Console.WriteLine($"[{LoggerName}] Sent show source files to client.");
-            await ServerPipe.WriteAsync(AEMessageFactory.CreateShowSourceFilesResponse(movieSourceFiles, messageGuid));
+            try
+            {
+                await ServerPipe.WriteAsync(AEMessageFactory.CreateShowSourceFilesResponse(showSourceFiles, messageGuid));
+            }
+            catch (Exception ex) 
+            {
+                Logger.LogException(ex, "Failed to send show source files to client.", LoggerName);
+            }  
         }
 
         private void OnExceptionOccurred(ExceptionEventArgs args)

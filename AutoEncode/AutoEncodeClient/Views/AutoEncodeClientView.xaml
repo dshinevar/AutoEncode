@@ -12,7 +12,7 @@
         mc:Ignorable="d"
         Title="AutoEncodeClient"
         Icon="../Resources/AutoEncode.ico"
-        Height="450" Width="800"
+        Height="500" Width="800"
         Background="LightSlateGray"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
     <Window.Resources>
@@ -31,6 +31,7 @@
             <converters:FormatTimeSpanConverter x:Key="FormatTimeSpanConverter"/>
             <converters:SecondsToTimestampConverter x:Key="SecondsToTimestampConverter" />
             <converters:IsNotNullVisibilityConverter x:Key="IsNotNullVisibilityConverter"/>
+            <converters:FlagToNamesConverter x:Key="FlagToNamesConverter" />
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
@@ -239,7 +240,7 @@
                 <Grid>
                     <ListView Grid.Row="0"
                               ItemsSource="{Binding EncodingJobs}"
-                              SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay}"
                               ItemContainerStyle="{StaticResource ListViewItemContainerStyle}"
                               Visibility="{Binding EncodingJobs.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}"
                               VerticalAlignment="Stretch"
@@ -633,7 +634,7 @@
                                                             <BulletDecorator.Bullet>
                                                                 <Ellipse/>
                                                             </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding HDRFlags}"/>
+                                                            <TextBlock Text="{Binding HDRFlags, Converter={StaticResource FlagToNamesConverter}}"/>
                                                         </BulletDecorator>
                                                         <BulletDecorator>
                                                             <BulletDecorator.Bullet>

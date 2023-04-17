@@ -15,7 +15,12 @@ namespace AutoEncodeClient.Models.StreamDataModels
         }
 
         #region Properties
-        public HDRData HDRData { get; set; }
+        private HDRData _hdrData = new();
+        public HDRData HDRData
+        {
+            get => _hdrData;
+            set => SetAndNotify(_hdrData, value, () => _hdrData.Update(value));
+        }
 
         private bool _hasHDR;
         public bool HasHDR
@@ -119,7 +124,7 @@ namespace AutoEncodeClient.Models.StreamDataModels
         public void Update(VideoStreamData data)
         {
             base.Update(data);
-            HDRData = data.HDRData; // TODO: CHANGE
+            HDRData = data.HDRData;
             HasHDR = data.HasHDR;
             HasDynamicHDR = data.HasDynamicHDR;
             CodecName = data.CodecName;

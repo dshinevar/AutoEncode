@@ -20,7 +20,7 @@ namespace AutoEncodeClient
     public partial class App : Application
     {
         private const string LOG_FILENAME = "aeclient.log";
-
+        private ILogger logger = null;
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {
             AEClientConfig clientConfig = null;
@@ -86,10 +86,12 @@ namespace AutoEncodeClient
                 }
             }
 
-            ILogger logger = new Logger(LogFileLocation,
+            logger = new Logger(LogFileLocation,
                                             LOG_FILENAME,
                                             clientConfig.LoggerSettings.MaxFileSizeInBytes,
                                             clientConfig.LoggerSettings.BackupFileCount);
+
+            Current.Dispatcher.UnhandledException += Dispatcher_UnhandledException;
 
             // Build and show view
             try
@@ -104,5 +106,8 @@ namespace AutoEncodeClient
                 logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
             }
         }
+
+        private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+            => logger?.LogException(e.Exception, "Unhandled Dispatcher Exception");
     }
 }

@@ -62,8 +62,13 @@ namespace AutoEncodeClient.ViewModels
             {
                 // Remove jobs no longer in queue first
                 IEnumerable<EncodingJobViewModel> viewModelsToRemove = EncodingJobs.Where(x => !encodingJobQueue.Any(y => y.Id == x.Id));
+                bool selectedViewModelWillBeRemoved = viewModelsToRemove.Any(x => x.Id == SelectedEncodingJobViewModel?.Id);
 
-                Application.Current.Dispatcher.BeginInvoke(() => EncodingJobs.RemoveRange(viewModelsToRemove));
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    if (selectedViewModelWillBeRemoved is true) SelectedEncodingJobViewModel = null;
+                    EncodingJobs.RemoveRange(viewModelsToRemove);
+                });
 
                 // Update or Create the rest
                 foreach (EncodingJobData data in encodingJobQueue)
@@ -114,6 +119,12 @@ namespace AutoEncodeClient.ViewModels
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             MovieSourceFiles.Refresh(converted);
+
+                            foreach (KeyValuePair<string, BulkObservableCollection<VideoSourceData>> keyValuePair in MovieSourceFiles)
+                            {
+                                keyValuePair.Value.Sort(VideoSourceData.CompareByFileName);
+                            }
+
                         });
                     }
 

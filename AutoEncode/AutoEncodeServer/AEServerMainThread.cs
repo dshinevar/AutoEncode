@@ -39,11 +39,6 @@ namespace AutoEncodeServer
         private Timer EncodingJobTaskTimer { get; set; }
         private ManualResetEvent EncodingJobTaskTimerDispose { get; set; } = new ManualResetEvent(false);
 
-        // Process Timer - Processes Actions / Client Interactions
-        private readonly TimeSpan ProcessTimerWaitTime;
-        private Timer ProcessTimer { get; set; }
-        private ManualResetEvent ProcessTimerDispose { get; set; } = new ManualResetEvent(false);
-
         private IServerPipeManager ServerPipeManager { get; set; }
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
@@ -59,7 +54,6 @@ namespace AutoEncodeServer
 
             MaintenanceTimerWaitTime = TimeSpan.FromSeconds(45);        // Doesn't need to run as often
             EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(5);     // Run a bit slower than process; Is mainly managing the tasks so doesn't need to spin often
-            ProcessTimerWaitTime = TimeSpan.FromSeconds(1.5);           // Handle processes pretty frequently
         }
 
         #region START/SHUTDOWN FUNCTIONS
@@ -72,7 +66,6 @@ namespace AutoEncodeServer
 
             MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(1), MaintenanceTimerWaitTime);
             EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
-            ProcessTimer = new Timer(OnProcessTimerElapsed, null, TimeSpan.FromSeconds(10), ProcessTimerWaitTime);
         }
 
         /// <summary>Shuts down AEServerMainThread; Disconnects Pipe </summary>
@@ -98,12 +91,6 @@ namespace AutoEncodeServer
             EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();
-
-            // Clear Task Queue and Stop processsing timer
-            TaskQueue.Clear();
-            ProcessTimer?.Dispose(ProcessTimerDispose);
-            ProcessTimerDispose.WaitOne();
-            ProcessTimerDispose.Dispose();
 
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
