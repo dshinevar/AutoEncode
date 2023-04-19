@@ -662,7 +662,7 @@ namespace AutoEncodeServer.TaskFactory
                 {
                     sbArguments.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
                         .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"{audioInstruction.Title} (Stereo {audioInstruction.AudioCodec.GetDescription()})\"")
+                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
                         .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
                 }
             }
@@ -786,7 +786,7 @@ namespace AutoEncodeServer.TaskFactory
                 {
                     sbAudioSubs.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
                         .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"{audioInstruction.Title} (Stereo {audioInstruction.AudioCodec.GetDescription()})\"")
+                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
                         .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
                 }
             }
