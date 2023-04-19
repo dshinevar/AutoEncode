@@ -16,6 +16,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config Templates", "Config 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoEncodeAPI", "AutoEncodeAPI\AutoEncodeAPI.csproj", "{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{268ED721-E1BE-44C5-8658-9CCAA7968F3A}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

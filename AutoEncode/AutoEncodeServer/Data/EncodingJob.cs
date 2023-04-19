@@ -100,11 +100,14 @@ namespace AutoEncodeUtilities.Data
 
         /// <summary>Handles updating of encoding progress.</summary>
         /// <param name="progress"></param>
-        public void UpdateEncodingProgress(int progress)
+        public void UpdateEncodingProgress(int? progress)
         {
-            if (progress > 100) EncodingProgress = 100;
-            else if (progress < 0) EncodingProgress = 0;
-            else EncodingProgress = progress;
+            if (progress is int progressInt)
+            {
+                if (progressInt > 100) EncodingProgress = 100;
+                else if (progressInt < 0) EncodingProgress = 0;
+                else EncodingProgress = progressInt;
+            }
         }
         /// <summary>Marks the job as completed encoding </summary>
         /// <param name="timeCompleted"></param>

@@ -5,7 +5,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <Authors>Daniel Shinevar</Authors>
     <Description>Server that automates the calling of FFmpeg to encode video files.</Description>
-    <Version>1.0.0.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

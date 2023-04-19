@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <Authors>Daniel Shinevar</Authors>
     <Description>Common data and functions for AutoEncode Server/Client.</Description>
-	  <Version>1.0.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

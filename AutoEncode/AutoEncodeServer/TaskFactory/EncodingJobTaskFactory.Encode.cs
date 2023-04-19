@@ -63,7 +63,7 @@ namespace AutoEncodeServer.TaskFactory
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
                         {
-                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds) ?? job.EncodingProgress);
+                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds));
                         }
                         count = 0;
                     }
@@ -201,7 +201,7 @@ namespace AutoEncodeServer.TaskFactory
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
-                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9) ?? job.EncodingProgress);
+                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9));
                             }
                             count = 0;
                         }
