@@ -9,15 +9,15 @@ namespace AutoEncodeClient.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            SolidColorBrush brush = new SolidColorBrush();
-            bool isEncoded = (bool)value;
-            brush.Color = isEncoded ? Colors.Green : Colors.Red;
-            return brush;
+            Color color = Colors.Black;
+            if (value is bool encoded)
+            {
+                color = encoded ? Colors.ForestGreen : Colors.Red;
+            }
+
+            return new SolidColorBrush(color);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 }

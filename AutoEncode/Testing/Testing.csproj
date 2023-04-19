@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.Formatters" Version="2.0.47" />
+    <PackageReference Include="H.Formatters.Newtonsoft.Json" Version="13.0.47" />
+    <PackageReference Include="H.Pipes" Version="2.0.47" />
+    <PackageReference Include="Swashbuckle" Version="5.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AutoEncodeUtilities\AutoEncodeUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

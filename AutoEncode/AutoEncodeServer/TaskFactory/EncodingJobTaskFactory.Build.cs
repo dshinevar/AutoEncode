@@ -25,12 +25,13 @@ namespace AutoEncodeServer.TaskFactory
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
         /// <param name="hdr10plusExtractorPath">The full path of the hdr10plus extractor program (hdr10plus_tool)</param>
         /// <param name="dolbyVisionExtractorPath">The full path of the dolby vision extractor program (dovi_tool)</param>
-        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
         public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
-                                            string x265Path, Logger logger, CancellationToken cancellationToken)
+                                            string x265Path, ILogger logger, CancellationToken cancellationToken)
         {
             job.SetStatus(EncodingJobStatus.BUILDING);
+            job.SetBuildingStatus(EncodingJobBuildingStatus.BUILDING);
 
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
@@ -46,6 +47,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 1: Initial ffprobe
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.PROBING);
                     ProbeData probeData = GetProbeData(job.SourceFullPath, ffmpegDir);
 
                     if (probeData is not null)
@@ -70,6 +72,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 2: Get ScanType
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.SCAN_TYPE);
                     VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
 
                     if (scanType.Equals(VideoScanType.UNDETERMINED))
@@ -89,11 +92,12 @@ namespace AutoEncodeServer.TaskFactory
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // STEP 3: Determine Crop
                 try
                 {
-                    string crop = GetCrop(job.SourceFullPath, ffmpegDir, job.SourceStreamData.DurationInSeconds);
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.CROP);
+                    string crop = GetCrop(job.SourceFullPath, ffmpegDir);
 
                     if (string.IsNullOrWhiteSpace(crop))
                     {
@@ -116,16 +120,16 @@ namespace AutoEncodeServer.TaskFactory
                 // OPTIONAL STEP: Create HDR metadata file if needed
                 try
                 {
-                    if (job.SourceStreamData.VideoStream.IsDynamicHDR is true)
+                    if (job.SourceStreamData.VideoStream.HasDynamicHDR is true)
                     {
-                        HDRFlags hdrFlags = job.SourceStreamData.VideoStream.HDRData.HDRFlags;
-                        if (hdrFlags.HasFlag(HDRFlags.HDR10PLUS))
+                        job.SetBuildingStatus(EncodingJobBuildingStatus.DYNAMIC_HDR);
+                        HDRData hdrData = job.SourceStreamData.VideoStream.HDRData;
+                        if (hdrData.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
                         {
                             // If we aren't given a path, skip this step;  It will be treated as HDR10
                             if (!string.IsNullOrWhiteSpace(hdr10plusExtractorPath))
                             {
-                                ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
-                                    .Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath));
+                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath));
                             }
                             else
                             {
@@ -133,13 +137,12 @@ namespace AutoEncodeServer.TaskFactory
                             }
                         }
 
-                        if (hdrFlags.HasFlag(HDRFlags.DOLBY_VISION) && dolbyVisionEnabled is true)
+                        if (hdrData.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION) && dolbyVisionEnabled is true)
                         {
                             // If we aren't given a path, skip this step;  It will be treated as HDR10
                             if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
                             {
-                                ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths
-                                    .Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath));
+                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath));
                             }
                             else
                             {
@@ -151,15 +154,16 @@ namespace AutoEncodeServer.TaskFactory
                 catch (Exception ex)
                 {
                     job.SetError(logger.LogException(ex, $"Error creating HDR metadata file for {job}", 
-                        details: new {job.Id, job.Name, DynamicHDR = job.SourceStreamData.VideoStream.IsDynamicHDR, dolbyVisionEnabled, dolbyVisionExtractorPath, hdr10plusExtractorPath }));
+                        details: new {job.Id, job.Name, DynamicHDR = job.SourceStreamData.VideoStream.HasDynamicHDR, dolbyVisionEnabled, dolbyVisionExtractorPath, hdr10plusExtractorPath }));
                     return;
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // STEP 4: Decide Encoding Options
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.INSTRUCTIONS);
                     job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
                 }
                 catch (Exception ex)
@@ -173,6 +177,7 @@ namespace AutoEncodeServer.TaskFactory
                 // STEP 5: Create FFMPEG command
                 try
                 {
+                    job.SetBuildingStatus(EncodingJobBuildingStatus.COMMAND);
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
                     {
                         (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments)
@@ -215,6 +220,7 @@ namespace AutoEncodeServer.TaskFactory
                     job.SetError(logger.LogException(ex, $"Error building FFmpeg command for {job}", details: new {job.Id, job.Name}));
                     return;
                 }
+                
             }
             catch (OperationCanceledException)
             {
@@ -230,6 +236,7 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             job.SetStatus(EncodingJobStatus.BUILT);
+            job.SetBuildingStatus(EncodingJobBuildingStatus.BUILT);
             logger.LogInfo($"Successfully built {job} encoding job.");
         }
 
@@ -269,15 +276,13 @@ namespace AutoEncodeServer.TaskFactory
             return JsonConvert.DeserializeObject<ProbeData>(sbFfprobeOutput.ToString());
         }
 
-        /// <summary> Gets crop of source file by determining the most frequently detected crop by ffmpeg. </summary>
+        /// <summary> Gets crop of source file from ffmpeg. </summary>
         /// <param name="sourceFullPath">Full path of source file.</param>
         /// <param name="ffmpegDir">Directory FFmpeg is located in</param>
-        /// <param name="duration">Duration in seconds of file.</param>
-        /// <returns>String of crop in this format: "crop=XXXX:YYYY:AA:BB"</returns>
-        private static string GetCrop(string sourceFullPath, string ffmpegDir, int duration)
+        /// <returns>String of crop in this format: "XXXX:YYYY:AA:BB"</returns>
+        private static string GetCrop(string sourceFullPath, string ffmpegDir)
         {
-            int halfwayInSeconds = duration / 2;
-            string ffmpegArgs = $"-ss {HelperMethods.ConvertSecondsToTimestamp(halfwayInSeconds)} -t 00:05:00 -i \"{sourceFullPath}\" -vf cropdetect -f null -";
+            string ffmpegArgs = $"-i \"{sourceFullPath}\" -vf cropdetect -f null -";
 
             ProcessStartInfo startInfo = new()
             {
@@ -289,28 +294,21 @@ namespace AutoEncodeServer.TaskFactory
                 RedirectStandardError = true
             };
 
-            StringBuilder sbCrop = new();
+            string latestCropLine = string.Empty;
 
             using (Process ffmpegProcess = new())
             {
                 ffmpegProcess.StartInfo = startInfo;
                 ffmpegProcess.ErrorDataReceived += (sender, e) =>
                 {
-                    if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("crop=")) sbCrop.AppendLine(e.Data);
+                    if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("crop=")) latestCropLine = e.Data;
                 };
                 ffmpegProcess.Start();
                 ffmpegProcess.BeginErrorReadLine();
                 ffmpegProcess.WaitForExit();
             }
 
-            IEnumerable<string> cropLines = sbCrop.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
-            List<string> crops = new();
-            foreach (string line in cropLines)
-            {
-                crops.Add(line[line.IndexOf("crop=")..]);
-            }
-            // Grab most frequent crop
-            return crops.GroupBy(x => x).MaxBy(y => y.Count()).Key;
+            return latestCropLine.TrimEnd(Environment.NewLine.ToCharArray())[latestCropLine.IndexOf("crop=")..].Remove(0,5);
         }
 
         /// <summary> Gets the <see cref="VideoScanType"/> of the file. </summary>
@@ -435,7 +433,7 @@ namespace AutoEncodeServer.TaskFactory
         /// <summary> Determines/Builds <see cref="EncodingInstructions"/> for the given stream data. </summary>
         /// <param name="streamData"><see cref="SourceStreamData"/></param>
         /// <returns><see cref="EncodingInstructions"/></returns>
-        private static EncodingInstructions DetermineEncodingInstructions(SourceStreamData streamData, string destinationFullPath)
+        private static EncodingInstructions DetermineEncodingInstructions(ISourceStreamData streamData, string destinationFullPath)
         {
             EncodingInstructions instructions = new();
 
@@ -447,12 +445,13 @@ namespace AutoEncodeServer.TaskFactory
                 Crop = true
             };
 
-            if (streamData.VideoStream.IsDynamicHDR)
+            if (streamData.VideoStream.HasDynamicHDR)
             {
+                HDRData hdrData = streamData.VideoStream.HDRData;
                 videoStreamEncodingInstructions.HDRFlags |= HDRFlags.HDR10;
                 videoStreamEncodingInstructions.DynamicHDRMetadataFullPaths = new Dictionary<HDRFlags, string>();
                 // Go through each possible metadata entry
-                foreach (KeyValuePair<HDRFlags, string> path in ((IDynamicHDRData)streamData.VideoStream.HDRData).MetadataFullPaths)
+                foreach (KeyValuePair<HDRFlags, string> path in hdrData.DynamicMetadataFullPaths)
                 {
                     // If added, shouldn't be null/empty but double check anyways
                     if (!string.IsNullOrWhiteSpace(path.Value))
@@ -470,7 +469,7 @@ namespace AutoEncodeServer.TaskFactory
                     }
                 }
             }
-            else if (streamData.VideoStream.IsHDR)
+            else if (streamData.VideoStream.HasHDR)
             {
                 videoStreamEncodingInstructions.HDRFlags = HDRFlags.HDR10;
             }
@@ -542,14 +541,17 @@ namespace AutoEncodeServer.TaskFactory
                 .ToList();
 
             List<SubtitleStreamEncodingInstructions> subtitleInstructions = new();
-            foreach (SubtitleStreamData stream in streamData.SubtitleStreams)
+            if (streamData.SubtitleStreams?.Any() ?? false)
             {
-                subtitleInstructions.Add(new()
+                foreach (SubtitleStreamData stream in streamData.SubtitleStreams)
                 {
-                    SourceIndex = stream.SubtitleIndex,
-                    Forced = stream.Forced,
-                    Title = stream.Title
-                });
+                    subtitleInstructions.Add(new()
+                    {
+                        SourceIndex = stream.SubtitleIndex,
+                        Forced = stream.Forced,
+                        Title = stream.Title
+                    });
+                }
             }
 
             instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
@@ -566,7 +568,7 @@ namespace AutoEncodeServer.TaskFactory
         /// <returns>A string of the FFmpeg arguments</returns>
         /// <exception cref="Exception">Something went wrong/invalid instructions.</exception>
         /// <exception cref="NotImplementedException">Potentially unimplemented instructions.</exception>
-        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, SourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
+        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
         {
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
 
@@ -588,7 +590,7 @@ namespace AutoEncodeServer.TaskFactory
 
             // Video Section
             string deinterlace = videoInstructions.Deinterlace is true ? $"yadif=1:{(int)streamData.VideoStream.ScanType}:0" : string.Empty;
-            string crop = videoInstructions.Crop is true ? streamData.VideoStream.Crop : string.Empty;
+            string crop = videoInstructions.Crop is true ? $"crop={streamData.VideoStream.Crop}" : string.Empty;
             string videoFilter = string.Empty;
 
             if (!string.IsNullOrWhiteSpace(deinterlace) || !string.IsNullOrWhiteSpace(crop))
@@ -599,7 +601,7 @@ namespace AutoEncodeServer.TaskFactory
             sbArguments.AppendFormat(format, $"-pix_fmt {videoInstructions.PixelFormat}");
             if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265))
             {
-                IHDRData hdr = streamData.VideoStream.HDRData;
+                HDRData hdr = streamData.VideoStream.HDRData;
                 sbArguments.AppendFormat(format, "-c:v libx265").AppendFormat(format, "-preset slow").AppendFormat(format, $"-crf {videoInstructions.CRF}");
                 if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
                 sbArguments.Append($"-x265-params \"bframes={videoInstructions.BFrames}:keyint=120:repeat-headers=1:")
@@ -684,7 +686,7 @@ namespace AutoEncodeServer.TaskFactory
             return sbArguments.ToString();
         }
 
-        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, SourceStreamData streamData,
+        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData,
             string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265FullPath)
         {
             const string format = "{0} ";
@@ -702,7 +704,7 @@ namespace AutoEncodeServer.TaskFactory
             string maxCLLFormatted;
 
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
-            IHDRData hdr = streamData.VideoStream.HDRData;
+            HDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -729,7 +731,7 @@ namespace AutoEncodeServer.TaskFactory
             sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")}")
                 .AppendFormat(format, $"\"{ffmpegFormatted} -y -hide_banner -loglevel error -nostdin -i {sourceFormatted}");
 
-            if (videoInstructions.Crop is true) sbVideo.AppendFormat(format, $"-vf {streamData.VideoStream.Crop}");
+            if (videoInstructions.Crop is true) sbVideo.AppendFormat(format, $"-vf crop={streamData.VideoStream.Crop}");
              
             sbVideo.AppendFormat(format, $"-an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
                 .AppendFormat(format, $"{x265Formatted} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")

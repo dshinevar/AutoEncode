@@ -4,30 +4,31 @@ using System.Collections.Generic;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class SourceStreamData
+    public class SourceStreamData : ISourceStreamData
     {
         public int DurationInSeconds { get; set; }
         /// <summary>This is an approx. number; Used for dolby vision jobs</summary>
         public int NumberOfFrames { get; set; }
         public VideoStreamData VideoStream { get; set; }
-        public List<AudioStreamData> AudioStreams { get; set; } = new();
-        public List<SubtitleStreamData> SubtitleStreams { get; set; } = new();
+        public List<AudioStreamData> AudioStreams { get; set; } = new List<AudioStreamData>();
+        public List<SubtitleStreamData> SubtitleStreams { get; set; }
     }
 
-    public class StreamData
+    public abstract class StreamData
     {
         public int StreamIndex { get; set; } = -1;
         public string Title { get; set; }
     }
 
-    public class VideoStreamData : StreamData
+    public class VideoStreamData : 
+        StreamData
     {
-        public IHDRData HDRData { get; set; }
-        public bool IsHDR => (!HDRData?.HDRFlags.Equals(HDRFlags.NONE)) ?? false;
-        public bool IsDynamicHDR => (HDRData is IDynamicHDRData) && ((HDRData?.HDRFlags.HasFlag(HDRFlags.HDR10PLUS) ?? false) || (HDRData?.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION) ?? false));
+        public HDRData HDRData { get; set; }
+        public bool HasHDR => (!HDRData?.HDRFlags.Equals(HDRFlags.NONE)) ?? false;
+        public bool HasDynamicHDR => HasHDR && (HDRData?.IsDynamic ?? false);
         public string CodecName { get; set; }
         public string PixelFormat { get; set; }
-        /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: crop=XXXX:YYYY:AA:BB </summary>
+        /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: XXXX:YYYY:AA:BB </summary>
         public string Crop { get; set; }
         public string Resolution { get; set; }
         public int ResoultionInt { get; set; }
@@ -40,7 +41,7 @@ namespace AutoEncodeUtilities.Data
         public ChromaLocation? ChromaLocation { get; set; } = null;
     }
 
-    public class HDR10Data : IHDRData
+    public class HDRData : IUpdateable<HDRData>
     {
         public HDRFlags HDRFlags { get; set; } = HDRFlags.NONE;
         public string Red_X { get; set; }
@@ -54,14 +55,14 @@ namespace AutoEncodeUtilities.Data
         public string MinLuminance { get; set; }
         public string MaxLuminance { get; set; }
         public string MaxCLL { get; set; }
+        public Dictionary<HDRFlags, string> DynamicMetadataFullPaths { get; set; }
+        public bool IsDynamic => HDRFlags.HasFlag(HDRFlags.HDR10PLUS) || HDRFlags.HasFlag(HDRFlags.DOLBY_VISION);
+        public void Update(HDRData data) => data.CopyProperties(this);
     }
 
-    public class DynamicHDRData : HDR10Data, IDynamicHDRData
-    {
-        public Dictionary<HDRFlags, string> MetadataFullPaths { get; set; } = new Dictionary<HDRFlags, string>();
-    }
-
-    public class AudioStreamData : StreamData
+    public class AudioStreamData : 
+        StreamData,
+        IUpdateable<AudioStreamData>
     {
         public int AudioIndex { get; set; } = -1;
         public string CodecName { get; set; }
@@ -70,13 +71,43 @@ namespace AutoEncodeUtilities.Data
         public string ChannelLayout { get; set; }
         public string Language { get; set; }
         public bool Commentary { get; set; }
+        public void Update(AudioStreamData data) => data.CopyProperties(this);
+        public override bool Equals(object obj)
+        {
+            if (obj is AudioStreamData data)
+            {
+                return (StreamIndex == data.StreamIndex) &&
+                        (AudioIndex == data.AudioIndex) &&
+                        CodecName.Equals(data.CodecName);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => StreamIndex.GetHashCode() ^ AudioIndex.GetHashCode() ^ CodecName.GetHashCode();
     }
 
-    public class SubtitleStreamData : StreamData
+    public class SubtitleStreamData : 
+        StreamData,
+        IUpdateable<SubtitleStreamData>
     {
         public int SubtitleIndex { get; set; } = -1;
         public string Language { get; set; }
         public string Descriptor { get; set; }
         public bool Forced { get; set; }
+
+        public void Update(SubtitleStreamData data) => data.CopyProperties(this);
+        public override bool Equals(object obj)
+        {
+            if (obj is SubtitleStreamData data)
+            {
+                return (StreamIndex == data.StreamIndex) &&
+                        (SubtitleIndex == data.SubtitleIndex);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => StreamIndex.GetHashCode() ^ SubtitleIndex.GetHashCode();
     }
 }

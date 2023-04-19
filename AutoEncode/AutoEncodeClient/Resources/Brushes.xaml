@@ -1,0 +1,23 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Colors #FFD3D3D3 -->
+    <Color x:Key="BackgroundColor">GhostWhite</Color>
+    <Color x:Key="HighlightColor">LightBlue</Color>
+    <Color x:Key="MouseOverColor">LightSkyBlue</Color>
+    <Color x:Key="ProgressBarColor">DeepSkyBlue</Color>
+    <Color x:Key="ProgressBarBorderColor">Gray</Color>
+    <Color x:Key="ButtonBackgroundColor">LightSlateGray</Color>
+    <Color x:Key="ErrorBackgroundColor">IndianRed</Color>
+    <Color x:Key="ErrorMouseOverBackgroundColor">Tomato</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="HighlightBrush" Color="{StaticResource HighlightColor}"/>
+    <SolidColorBrush x:Key="MouseOverBrush" Color="{StaticResource MouseOverColor}"/>
+    <SolidColorBrush x:Key="ProgressBarBrush" Color="{StaticResource ProgressBarColor}"/>
+    <SolidColorBrush x:Key="ProgressBarBorderBrush" Color="{StaticResource ProgressBarBorderColor}"/>
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="{StaticResource ButtonBackgroundColor}"/>
+    <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{StaticResource ErrorBackgroundColor}" Opacity="0.5"/>
+    <SolidColorBrush x:Key="ErrorMouseOverBackgroundBrush" Color="{StaticResource ErrorMouseOverBackgroundColor}" Opacity="0.5"/>
+
+</ResourceDictionary>

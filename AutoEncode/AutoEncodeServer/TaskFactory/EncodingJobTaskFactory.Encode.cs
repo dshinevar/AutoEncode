@@ -17,9 +17,9 @@ namespace AutoEncodeServer.TaskFactory
         /// <summary> Calls ffmpeg to do encoding; Handles output from ffmpeg </summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be encoded.</param>
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
-        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void Encode(EncodingJob job, string ffmpegDir, Logger logger, CancellationToken cancellationToken)
+        public static void Encode(EncodingJob job, string ffmpegDir, ILogger logger, CancellationToken cancellationToken)
         {
             job.SetStatus(EncodingJobStatus.ENCODING);
 
@@ -54,7 +54,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (cancellationToken.IsCancellationRequested is true)
                     {
                         proc.CancelErrorRead();
-                        proc.Kill();
+                        proc.Kill(true);
                         return;
                     }
                     job.ElapsedEncodingTime = stopwatch.Elapsed;
@@ -63,7 +63,7 @@ namespace AutoEncodeServer.TaskFactory
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
                         {
-                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds) ?? job.EncodingProgress);
+                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds));
                         }
                         count = 0;
                     }
@@ -131,7 +131,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
                     {
                         // Delete all possible HDRMetadata files
-                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }
@@ -147,9 +147,9 @@ namespace AutoEncodeServer.TaskFactory
         /// <summary> Only for DolbyVision encodes. Calls ffmpeg/x265/mkvmerge to do encoding and merges; Handles output from ffmpeg </summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be encoded.</param>
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
-        /// <param name="logger"><see cref="Logger"/></param>
+        /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="taskCancellationToken"><see cref="CancellationToken"/></param>
-        public static void EncodeWithDolbyVision(EncodingJob job, string ffmpegDir, string mkvMergeFullPath, Logger logger, CancellationToken taskCancellationToken)
+        public static void EncodeWithDolbyVision(EncodingJob job, string ffmpegDir, string mkvMergeFullPath, ILogger logger, CancellationToken taskCancellationToken)
         {
             job.SetStatus(EncodingJobStatus.ENCODING);
 
@@ -201,7 +201,7 @@ namespace AutoEncodeServer.TaskFactory
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
-                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9) ?? job.EncodingProgress);
+                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9));
                             }
                             count = 0;
                         }
@@ -445,7 +445,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
                     {
                         // Delete all possible HDRMetadata files
-                        ((IDynamicHDRData)job.SourceStreamData.VideoStream.HDRData).MetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }
@@ -525,7 +525,7 @@ namespace AutoEncodeServer.TaskFactory
             return encodingProgress;
         }
 
-        private static void PreEncodeVerification(EncodingJob job, Logger logger)
+        private static void PreEncodeVerification(EncodingJob job, ILogger logger)
         {
             try
             {

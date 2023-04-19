@@ -23,7 +23,7 @@ namespace AutoEncodeServer
             AEServerMainThread mainThread = null;
             AEServerConfig serverConfig = null; // As loaded from file
             AEServerConfig serverState = null; // State after startup checks
-            Logger logger = null;
+            ILogger logger = null;
             ManualResetEvent Shutdown = new(false);
             List<string> startupLog = new();
 
@@ -94,7 +94,7 @@ namespace AutoEncodeServer
                 }
             }
 
-            logger = new(LogFileLocation,
+            logger = new Logger(LogFileLocation,
                 LOG_FILENAME,
                 serverConfig.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
                 serverConfig.ServerSettings.LoggerSettings.BackupFileCount);
@@ -224,7 +224,7 @@ namespace AutoEncodeServer
             mainThread = null;
         }
 
-        static void OnApplicationExit(object sender, EventArgs e, AEServerMainThread mainThread, ManualResetEvent shutdownMRE, Logger logger)
+        static void OnApplicationExit(object sender, EventArgs e, AEServerMainThread mainThread, ManualResetEvent shutdownMRE, ILogger logger)
         {
             logger?.LogInfo("AutoEncodeServer Shutting Down.", "SHUTDOWN");
 

@@ -7,7 +7,7 @@ namespace AutoEncodeServer
 {
     public partial class AEServerMainThread
     {
-        private static string MaintenanceThreadName => $"{ThreadName}-Maintenance";
+        private string MaintenanceThreadName => $"{ThreadName}-Maintenance";
 
         /// <summary>
         /// Runs maintenance tasks. Should be ran infrequently.
@@ -15,8 +15,11 @@ namespace AutoEncodeServer
         /// <param name="obj"></param>
         private void OnMaintenanceTimerElapsed(object obj)
         {
-            ClearCompletedJobs();
-            ClearErroredJobs();
+            if (_shutdown is false)
+            {
+                ClearCompletedJobs();
+                ClearErroredJobs();
+            }
         }
 
         /// <summary>Clears out completed encoding jobs.</summary>
