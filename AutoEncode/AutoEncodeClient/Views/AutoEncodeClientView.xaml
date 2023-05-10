@@ -14,6 +14,7 @@
         Icon="../Resources/AutoEncode.ico"
         Height="500" Width="800"
         Background="LightSlateGray"
+        Closed="Window_Closed"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
     <Window.Resources>
         <ResourceDictionary>

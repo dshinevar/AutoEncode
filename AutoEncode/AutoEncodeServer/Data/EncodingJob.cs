@@ -19,7 +19,7 @@ namespace AutoEncodeUtilities.Data
         /// <param name="sourceFullPath">Full path of the source file.</param>
         /// <param name="destinationFullPath">Full path of the expected destination file.</param>
         /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
-        public EncodingJob(int jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
+        public EncodingJob(ulong jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
         {
             Id = jobId;
             SourceFullPath = sourceFullPath;
@@ -29,7 +29,7 @@ namespace AutoEncodeUtilities.Data
         }
 
         /// <summary>Unique job identifier </summary>
-        public int Id { get; } = 0;
+        public ulong? Id { get; } = null;
         /// <summary>Name of job (FileName without extension) </summary>
         public string Name => Path.GetFileNameWithoutExtension(FileName);
         /// <summary>FileName of Job </summary>

@@ -9,18 +9,23 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Input;
+using AutoEncodeClient.Comm;
+using AutoEncodeUtilities.Logger;
+using System;
+using AutoEncodeClient.Config;
 
 namespace AutoEncodeClient.ViewModels
 {
     public class AutoEncodeClientViewModel :
         ViewModelBase<AutoEncodeClientModel>,
-        IAutoEncodeClientViewModel
+        IAutoEncodeClientViewModel,
+        IDisposable
     {
-        private Timer EncodingJobQueueStateTimer { get; set; }
+        private readonly ClientUpdateService ClientUpdateService;
 
         private Task RefreshSourceFilesTask { get; set; }
 
-        public AutoEncodeClientViewModel(AutoEncodeClientModel model)
+        public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, AEClientConfig config)
             : base(model)
         {
             AECommand refreshSourceFilesCommand = new(RefreshSourceFiles);
@@ -28,12 +33,9 @@ namespace AutoEncodeClient.ViewModels
 
             RefreshSourceFiles();
 
-            EncodingJobQueueStateTimer = new Timer(3000)
-            {
-                AutoReset = false
-            };
-            EncodingJobQueueStateTimer.Elapsed += EncodingJobQueueStateTimerElapsed;
-            EncodingJobQueueStateTimer.Start();
+            ClientUpdateService = new ClientUpdateService(logger, config.ConnectionSettings.IPAddress, config.ConnectionSettings.ClientUpdatePort);
+            ClientUpdateService.DataReceived += (s, data) => UpdateClient(data);
+            ClientUpdateService.Start();
         }
 
         #region Commands
@@ -53,13 +55,16 @@ namespace AutoEncodeClient.ViewModels
             set => SetAndNotify(_selectedEncodingJobViewModel, value, () => _selectedEncodingJobViewModel = value);
         }
 
-        #region Timer Elapsed
-        private void EncodingJobQueueStateTimerElapsed(object src, ElapsedEventArgs e)
+        private void UpdateClient(List<EncodingJobData> encodingJobQueue)
         {
-            List<EncodingJobData> encodingJobQueue = Model.GetCurrentEncodingJobQueue();
-
-            if (encodingJobQueue is not null && encodingJobQueue.Any())
+            if (encodingJobQueue is not null)
             {
+                if (encodingJobQueue.Any() is false)
+                {
+                    Application.Current.Dispatcher.BeginInvoke(() => EncodingJobs.Clear());
+                    return;
+                }
+
                 // Remove jobs no longer in queue first
                 IEnumerable<EncodingJobViewModel> viewModelsToRemove = EncodingJobs.Where(x => !encodingJobQueue.Any(y => y.Id == x.Id));
                 bool selectedViewModelWillBeRemoved = viewModelsToRemove.Any(x => x.Id == SelectedEncodingJobViewModel?.Id);
@@ -99,10 +104,7 @@ namespace AutoEncodeClient.ViewModels
                     }
                 }
             }
-
-            EncodingJobQueueStateTimer.Start();
         }
-        #endregion Timer Elapsed
 
         private void RefreshSourceFiles()
         {
@@ -111,7 +113,8 @@ namespace AutoEncodeClient.ViewModels
                 RefreshSourceFilesTask = Task.Factory.StartNew(() =>
                 {
                     Dictionary<string, List<VideoSourceData>> movieSourceData = Model.GetCurrentMovieSourceData();
-                    
+                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
+
                     if (movieSourceData is not null)
                     {
                         var converted = new Dictionary<string, BulkObservableCollection<VideoSourceData>>(movieSourceData
@@ -128,8 +131,6 @@ namespace AutoEncodeClient.ViewModels
                         });
                     }
 
-                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
-
                     if (showSourceData is not null)
                     {
                         var converted = new Dictionary<string, BulkObservableCollection<ShowSourceData>>(showSourceData
@@ -141,6 +142,12 @@ namespace AutoEncodeClient.ViewModels
                     }
                 });
             }
+        }
+
+        public void Dispose()
+        {
+            Model.Dispose();
+            ClientUpdateService.Dispose();
         }
     }
 }

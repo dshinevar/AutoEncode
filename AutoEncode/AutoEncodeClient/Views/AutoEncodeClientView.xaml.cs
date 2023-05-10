@@ -23,5 +23,10 @@ namespace AutoEncodeClient.Views
                 e.Handled = true;
             }
         }
+
+        private void Window_Closed(object sender, System.EventArgs e)
+        {
+            ((IAutoEncodeClientViewModel)DataContext).Dispose();
+        }
     }
 }

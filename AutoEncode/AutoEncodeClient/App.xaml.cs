@@ -97,7 +97,7 @@ namespace AutoEncodeClient
             try
             {
                 AutoEncodeClientModel model = new(logger, clientConfig);
-                AutoEncodeClientViewModel viewModel = new(model);
+                AutoEncodeClientViewModel viewModel = new(model, logger, clientConfig);
                 AutoEncodeClientView view = new(viewModel);
                 view.Show();
             }

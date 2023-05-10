@@ -168,7 +168,7 @@ namespace AutoEncodeServer
             // GET AND LOG STARTUP AND VERSION
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
             startupLog.Add($"AutoEncodeServer V{version} Starting Up. Config file loaded.");
-            startupLog.Add($"IP/PORT: {serverConfig.ServerSettings.IP}:{serverConfig.ServerSettings.Port}");
+            startupLog.Add($"IP|CLIENT UPDATE PORT|COMM PORT: {serverConfig.ConnectionSettings.IPAddress}|{serverConfig.ConnectionSettings.ClientUpdatePort}|{serverConfig.ConnectionSettings.CommunicationPort}");
             startupLog.Add($"SUPPORTED FILE EXTENSIONS: {string.Join(", ", serverConfig.JobFinderSettings.VideoFileExtensions)}");
             if (!string.IsNullOrWhiteSpace(serverConfig.JobFinderSettings.SecondarySkipExtension)) startupLog.Add($"SKIP SECONDARY EXTENSION: {serverConfig.JobFinderSettings.SecondarySkipExtension}");
             startupLog.Add($"DOLBY VISION: {(dolbyVisionEnabled ? "ENABLED" : "DISABLED")}");

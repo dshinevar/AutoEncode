@@ -15,7 +15,7 @@ namespace AutoEncodeClient.Models
     {
         #region Properties
         /// <summary>Unique job identifier </summary>
-        public int Id { get; set; } = 0;
+        public ulong? Id { get; set; } = null;
         /// <summary>Name of job (FileName without extension) </summary>
         public string Name { get; set; }
         /// <summary>FileName of Job </summary>

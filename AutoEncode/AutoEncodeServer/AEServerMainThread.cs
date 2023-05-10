@@ -1,16 +1,13 @@
-﻿using AutoEncodeServer.Pipe;
+﻿using AutoEncodeServer.Comm;
 using AutoEncodeServer.WorkerThreads;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
-using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Logger;
-using AutoEncodeUtilities.Messages;
-using H.Pipes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace AutoEncodeServer
 {
@@ -39,7 +36,9 @@ namespace AutoEncodeServer
         private Timer EncodingJobTaskTimer { get; set; }
         private ManualResetEvent EncodingJobTaskTimerDispose { get; set; } = new ManualResetEvent(false);
 
-        private IServerPipeManager ServerPipeManager { get; set; }
+        private ClientUpdateService ClientUpdateService { get; set; }
+
+        private CommunicationManager CommunicationManager { get; set; }
 
         /// <summary> Constructor; Creates Server Socket, Logger, JobFinderThread </summary>
         /// <param name="serverConfig">Server Config</param>
@@ -50,7 +49,8 @@ namespace AutoEncodeServer
             ShutdownMRE = shutdown;
             Logger = logger;
             EncodingJobFinderThread = new EncodingJobFinderThread(this, State, Logger, EncodingJobShutdown);
-            ServerPipeManager = new ServerPipeManager(this, Logger);
+            ClientUpdateService = new(Logger, Config.ConnectionSettings.ClientUpdatePort);
+            CommunicationManager = new(this, Logger, Config.ConnectionSettings.CommunicationPort);
 
             MaintenanceTimerWaitTime = TimeSpan.FromSeconds(45);        // Doesn't need to run as often
             EncodingJobTaskTimerWaitTime = TimeSpan.FromSeconds(5);     // Run a bit slower than process; Is mainly managing the tasks so doesn't need to spin often
@@ -62,20 +62,23 @@ namespace AutoEncodeServer
         {
             Debug.WriteLine("AEServerMainThread Starting");
             EncodingJobFinderThread.Start();
-            ServerPipeManager?.Start();
 
             MaintenanceTimer = new Timer(OnMaintenanceTimerElapsed, null, TimeSpan.FromMinutes(1), MaintenanceTimerWaitTime);
             EncodingJobTaskTimer = new Timer(OnEncodingJobTaskTimerElapsed, null, TimeSpan.FromSeconds(20), EncodingJobTaskTimerWaitTime);
+
+            ClientUpdateService?.Initialize();
+            CommunicationManager?.Start();
         }
 
-        /// <summary>Shuts down AEServerMainThread; Disconnects Pipe </summary>
+        /// <summary>Shuts down AEServerMainThread; Disconnects Comms </summary>
         public void Shutdown()
         {
             Debug.WriteLine("AEServerMainThread Shutting Down.");
             _shutdown = true;
 
-            // Stop Pipe
-            ServerPipeManager?.Stop();
+            // Stop Comms
+            ClientUpdateService?.Shutdown();
+            CommunicationManager?.Stop();
 
             MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
             MaintenanceTimerDispose.WaitOne();

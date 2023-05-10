@@ -209,6 +209,11 @@ namespace AutoEncodeClient.Views.DesignData
         public EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
         public ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; set; }
         public ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; set; }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
         #endregion Properties
     }
 }

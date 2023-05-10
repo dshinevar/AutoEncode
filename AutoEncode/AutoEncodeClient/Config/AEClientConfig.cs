@@ -1,7 +1,4 @@
 ﻿using AutoEncodeUtilities.Config;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AutoEncodeClient.Config
 {
