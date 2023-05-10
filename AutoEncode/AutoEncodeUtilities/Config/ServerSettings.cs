@@ -6,10 +6,6 @@ namespace AutoEncodeUtilities.Config
 {
     public class ServerSettings
     {
-        public string IP { get; set; }
-
-        public int Port { get; set; }
-
         public string FFmpegDirectory { get; set; } = string.Empty;
 
         public string X265FullPath { get; set; } = string.Empty;

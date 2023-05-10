@@ -16,7 +16,7 @@ namespace AutoEncodeClient.ViewModels
         public EncodingJobViewModel(EncodingJobClientModel model)
             : base(model) { }
 
-        public int Id => Model.Id;
+        public ulong? Id => Model.Id;
 
         public string Name => Model.Name;
 

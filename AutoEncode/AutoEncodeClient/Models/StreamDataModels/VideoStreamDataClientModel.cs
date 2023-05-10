@@ -15,11 +15,18 @@ namespace AutoEncodeClient.Models.StreamDataModels
         }
 
         #region Properties
-        private HDRData _hdrData = new();
+        private HDRData _hdrData = null;
         public HDRData HDRData
         {
             get => _hdrData;
-            set => SetAndNotify(_hdrData, value, () => _hdrData.Update(value));
+            set => SetAndNotify(_hdrData, value, () =>
+            {
+                if (value is not null)
+                {
+                    if (_hdrData is null) _hdrData = value;
+                    else _hdrData.Update(value);
+                }
+            });
         }
 
         private bool _hasHDR;

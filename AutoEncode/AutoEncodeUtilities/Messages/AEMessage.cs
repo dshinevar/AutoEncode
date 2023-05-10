@@ -7,34 +7,19 @@ namespace AutoEncodeUtilities.Messages
 {
     public class AEMessage
     {
-        public Guid Guid { get; }
-        public bool IsResponse { get; } = false;
-        public bool IsRequest { get; } = false;
-
         [JsonConverter(typeof(StringEnumConverter))]
         public AEMessageType MessageType { get; }
 
-        public AEMessage(AEMessageType messageType, Guid guid = default)
+        public AEMessage(AEMessageType messageType)
         {
             MessageType = messageType;
-
-            if (guid == Guid.Empty)
-            {
-                Guid = Guid.NewGuid();
-                IsRequest = true;
-            }
-            else
-            {
-                Guid = guid;
-                IsResponse = true;
-            }
         }
     }
 
     public class AEMessage<T> : AEMessage 
     {
-        public AEMessage(AEMessageType messageType, T data, Guid guid = default)
-            : base(messageType, guid)
+        public AEMessage(AEMessageType messageType, T data)
+            : base(messageType)
         {
             Data = data;
         }

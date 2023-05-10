@@ -216,8 +216,8 @@ namespace AutoEncodeServer.WorkerThreads
 
                         string destinationFullPath = sourceData.FullPath.Replace(sourceDirectoryPath, destinationDirectoryPath);
 
-                        int newJobId = EncodingJobQueue.CreateEncodingJob(sourceData.FileName, sourceData.FullPath, destinationFullPath, updatedPostProcessingSettings);
-                        if (newJobId is not -1)
+                        ulong? newJobId = EncodingJobQueue.CreateEncodingJob(sourceData.FileName, sourceData.FullPath, destinationFullPath, updatedPostProcessingSettings);
+                        if (newJobId is not null)
                         {
                             jobCreated = true;
                             Logger.LogInfo($"(JobID: {newJobId}) {sourceData.FileName} added to encoding job queue.", ThreadName);

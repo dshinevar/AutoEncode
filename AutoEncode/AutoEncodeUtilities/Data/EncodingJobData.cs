@@ -10,7 +10,7 @@ namespace AutoEncodeUtilities.Data
     public class EncodingJobData : IEncodingJobData
     {
         /// <summary>Unique job identifier </summary>
-        public int Id { get; set; } = 0;
+        public ulong? Id { get; set; } = null;
         /// <summary>Name of job (FileName without extension) </summary>
         public string Name => Path.GetFileNameWithoutExtension(FileName);
         /// <summary>FileName of Job </summary>

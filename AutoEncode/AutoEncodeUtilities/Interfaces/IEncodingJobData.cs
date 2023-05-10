@@ -10,7 +10,7 @@ namespace AutoEncodeUtilities.Interfaces
     public interface IEncodingJobData
     {
         /// <summary>Unique job identifier </summary>
-        int Id { get; }
+        ulong? Id { get; }
         /// <summary>Name of job (FileName without extension) </summary>
         string Name { get; }
         /// <summary>FileName of Job </summary>

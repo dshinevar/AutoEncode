@@ -14,8 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config Templates", "Config 
 		AEServerConfigTemplate.yaml = AEServerConfigTemplate.yaml
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoEncodeAPI", "AutoEncodeAPI\AutoEncodeAPI.csproj", "{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{268ED721-E1BE-44C5-8658-9CCAA7968F3A}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
@@ -39,10 +37,6 @@ Global
 		{E23536D4-246D-46C2-B45D-FA32BD97C551}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E23536D4-246D-46C2-B45D-FA32BD97C551}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E23536D4-246D-46C2-B45D-FA32BD97C551}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FF51CD9D-6B3A-428A-9AB1-4698F11AAA2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

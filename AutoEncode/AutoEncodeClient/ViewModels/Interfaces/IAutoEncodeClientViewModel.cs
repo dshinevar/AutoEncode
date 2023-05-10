@@ -1,10 +1,11 @@
 ﻿using AutoEncodeClient.Collections;
 using AutoEncodeUtilities.Data;
+using System;
 using System.Windows.Input;
 
 namespace AutoEncodeClient.ViewModels.Interfaces
 {
-    public interface IAutoEncodeClientViewModel
+    public interface IAutoEncodeClientViewModel : IDisposable
     {
         ICommand RefreshSourceFilesCommand { get; }
 

@@ -10,12 +10,12 @@ namespace AutoEncodeServer
     {
         private static readonly List<EncodingJob> jobQueue = new();
         private static readonly object jobLock = new();
-        private static int _idNumber = 1;
-        private static int IdNumber 
+        private static ulong _idNumber = 1;
+        private static ulong IdNumber 
         {
             get
             {
-                int tmp = _idNumber;
+                ulong tmp = _idNumber;
                 _idNumber++;
                 return tmp;
             }
@@ -48,18 +48,18 @@ namespace AutoEncodeServer
         /// <param name="sourceFullPath">Full Path of source file</param>
         /// <param name="destinationFullPath">Full Path of what will be destination</param>
         /// <param name="postProcessingSettings">Updated postprocessing settings for the source file</param>
-        /// <returns>The JobId of the newly created job; -1, otherwise.</returns>
-        public static int CreateEncodingJob(string sourceFileName, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
+        /// <returns>The JobId of the newly created job; Null, otherwise.</returns>
+        public static ulong? CreateEncodingJob(string sourceFileName, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
         {
-            int jobId = -1;
+            ulong? jobId = null;
             if (ExistsByFileName(sourceFileName) is false)
             {
-                EncodingJob newJob = new(IdNumber, sourceFullPath, destinationFullPath, postProcessingSettings);
+                jobId = IdNumber;
+                EncodingJob newJob = new((ulong)jobId, sourceFullPath, destinationFullPath, postProcessingSettings);
 
                 lock (jobLock)
                 {
                     jobQueue.Add(newJob);
-                    jobId = newJob.Id;
                 }
             }
 
@@ -79,13 +79,17 @@ namespace AutoEncodeServer
         /// <summary>Removes an encoding job from the queue by id lookup.</summary>
         /// <param name="id">Id of the EncodingJob</param>
         /// <returns>True if successfully removed; False, otherwise.</returns>
-        public static bool RemoveEncodingJobById(int id)
+        public static bool RemoveEncodingJobById(ulong? id)
         {
             bool success = false;
-            lock (jobLock)
+
+            if (id is not null)
             {
-                var job = jobQueue.SingleOrDefault(x => x.Id == id);
-                if (job is not null) success = jobQueue.Remove(job);
+                lock (jobLock)
+                {
+                    var job = jobQueue.SingleOrDefault(x => x.Id == id);
+                    if (job is not null) success = jobQueue.Remove(job);
+                }
             }
 
             return success;
@@ -105,7 +109,7 @@ namespace AutoEncodeServer
         /// <summary> Checks to see if a job exists by the given id. </summary>
         /// <param name="id"></param>
         /// <returns>True if a job exists by that job id; False, otherwise.</returns>
-        public static bool ExistsById(int id)
+        public static bool ExistsById(ulong id)
         {
             lock (jobLock)
             {
@@ -147,7 +151,7 @@ namespace AutoEncodeServer
 
         /// <summary>Moves encoding job with given id up one in the list.</summary>
         /// <param name="jobId">Id of job to move</param>
-        public static void MoveEncodingJobForward(int jobId)
+        public static void MoveEncodingJobForward(ulong jobId)
         {
             int jobIndex = jobQueue.FindIndex(x => x.Id == jobId);
             // Already at the front of the list or not found
@@ -160,7 +164,7 @@ namespace AutoEncodeServer
         }
         /// <summary>Moves encoding job with given id back one in the list.</summary>
         /// <param name="jobId">Id of job to move</param>
-        public static void MoveEncodingJobBack(int jobId)
+        public static void MoveEncodingJobBack(ulong jobId)
         {
             int jobIndex = jobQueue.FindIndex(x => x.Id == jobId);
 
