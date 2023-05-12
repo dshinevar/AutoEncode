@@ -10,7 +10,7 @@ namespace AutoEncodeUtilities.Data
         /// <summary>This is an approx. number; Used for dolby vision jobs</summary>
         public int NumberOfFrames { get; set; }
         public VideoStreamData VideoStream { get; set; }
-        public List<AudioStreamData> AudioStreams { get; set; } = new List<AudioStreamData>();
+        public List<AudioStreamData> AudioStreams { get; set; }
         public List<SubtitleStreamData> SubtitleStreams { get; set; }
     }
 

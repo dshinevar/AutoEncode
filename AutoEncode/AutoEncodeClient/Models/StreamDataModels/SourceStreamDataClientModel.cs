@@ -14,7 +14,7 @@ namespace AutoEncodeClient.Models.StreamDataModels
             NumberOfFrames = sourceStreamData.NumberOfFrames;
             VideoStream = new(sourceStreamData.VideoStream);
             AudioStreams = new BulkObservableCollection<AudioStreamData>(sourceStreamData.AudioStreams);
-            SubtitleStreams = new BulkObservableCollection<SubtitleStreamData>(sourceStreamData.SubtitleStreams);
+            if (sourceStreamData.SubtitleStreams is not null) SubtitleStreams = new BulkObservableCollection<SubtitleStreamData>(sourceStreamData.SubtitleStreams);
         }
 
         private int _durationInSeconds;
@@ -40,7 +40,7 @@ namespace AutoEncodeClient.Models.StreamDataModels
             NumberOfFrames = sourceStreamData.NumberOfFrames;
             VideoStream.Update(sourceStreamData.VideoStream);
             AudioStreams.Update(sourceStreamData.AudioStreams);
-            SubtitleStreams.Update(sourceStreamData.SubtitleStreams);
+            SubtitleStreams?.Update(sourceStreamData.SubtitleStreams);
 
             OnPropertyChanged(nameof(VideoStream));
             OnPropertyChanged(nameof(AudioStreams));

@@ -81,165 +81,163 @@
     </ControlTemplate>
     
     <!-- Audio Source Data -->
-    <HierarchicalDataTemplate x:Key="AudioSourceData"
-                              ItemsSource="{Binding ItemsSource,RelativeSource={RelativeSource AncestorType=TreeView}}">
-        <TextBlock TextWrapping="Wrap" 
-                   Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=TreeView,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=38}">
-            <TextBlock.Inlines>
-                <Run Text="{Binding AudioIndex, StringFormat=Audio Stream {0}}" FontWeight="DemiBold"/>
-                <Run Text="{Binding ., Converter={StaticResource AudioSubSourceDataHeaderConverter}}"/>
-            </TextBlock.Inlines>
-        </TextBlock>
-        <HierarchicalDataTemplate.ItemTemplate>
-            <DataTemplate DataType="{x:Type utilData:AudioStreamData}">
-                <StackPanel Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=TreeView,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=58}">
-                    <StackPanel.Resources>
-                        <Style TargetType="Ellipse">
-                            <Setter Property="Stroke"
+    <DataTemplate x:Key="AudioSourceData"
+                  DataType="{x:Type utilData:AudioStreamData}">
+        <Expander ExpandDirection="Down">
+            <Expander.Header>
+                <TextBlock TextWrapping="Wrap">
+                    <TextBlock.Inlines>
+                        <Run Text="{Binding AudioIndex, StringFormat=Audio Stream {0}}" FontWeight="DemiBold"/>
+                        <Run Text="{Binding ., Converter={StaticResource AudioSubSourceDataHeaderConverter}}"/>
+                    </TextBlock.Inlines>
+                </TextBlock>
+            </Expander.Header>
+            <StackPanel Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=38}">
+                <StackPanel.Resources>
+                    <Style TargetType="Ellipse">
+                        <Setter Property="Stroke"
                                     Value="Black"/>
-                            <Setter Property="Fill"
+                        <Setter Property="Fill"
                                     Value="Black"/>
-                            <Setter Property="Height"
+                        <Setter Property="Height"
                                      Value="4"/>
-                            <Setter Property="Width"
+                        <Setter Property="Width"
                                     Value="4"/>
-                        </Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment"
+                    </Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="HorizontalAlignment"
                                     Value="Left"/>
-                            <Setter Property="Margin"
+                        <Setter Property="Margin"
                                     Value="5,0,0,0"/>
-                        </Style>
-                    </StackPanel.Resources>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding StreamIndex, StringFormat=Stream Index: {0}}"
+                    </Style>
+                </StackPanel.Resources>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding StreamIndex, StringFormat=Stream Index: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding CodecName, StringFormat=Codec Name: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding CodecName, StringFormat=Codec Name: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Channels, StringFormat=Channels: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Channels, StringFormat=Channels: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding ChannelLayout, StringFormat=Channel Layout: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding ChannelLayout, StringFormat=Channel Layout: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Language, StringFormat=Language: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Language, StringFormat=Language: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Title, StringFormat=Title: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Title, StringFormat=Title: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Descriptor, StringFormat=Descriptor: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Descriptor, StringFormat=Descriptor: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Commentary, StringFormat=Commentary: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Commentary, StringFormat=Commentary: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                </StackPanel>
-            </DataTemplate>
-        </HierarchicalDataTemplate.ItemTemplate>
-    </HierarchicalDataTemplate>
+                </BulletDecorator>
+            </StackPanel>
+        </Expander>
+    </DataTemplate>
 
     <!-- Subtitle Source Data -->
-    <HierarchicalDataTemplate x:Key="SubtitleSourceData"
-                              ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=TreeView}}">
-        <TextBlock TextWrapping="Wrap"
-                   Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=TreeView,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=38}">
-            <TextBlock.Inlines>
-                <Run Text="{Binding SubtitleIndex, StringFormat=Subtitle Stream {0}}" FontWeight="DemiBold"/>
-                <Run Text="{Binding ., Converter={StaticResource AudioSubSourceDataHeaderConverter}}"/>
-            </TextBlock.Inlines>
-        </TextBlock>
-        <HierarchicalDataTemplate.ItemTemplate>
-            <DataTemplate DataType="{x:Type utilData:SubtitleStreamData}">
-                <StackPanel Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=TreeView,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=58}">
-                    <StackPanel.Resources>
-                        <Style TargetType="Ellipse">
-                            <Setter Property="Stroke"
+    <DataTemplate x:Key="SubtitleSourceData"
+                  DataType="{x:Type utilData:SubtitleStreamData}">
+        <Expander ExpandDirection="Down">
+            <Expander.Header>
+                <TextBlock TextWrapping="Wrap">
+                    <TextBlock.Inlines>
+                        <Run Text="{Binding SubtitleIndex, StringFormat=Subtitle Stream {0}}" FontWeight="DemiBold"/>
+                        <Run Text="{Binding ., Converter={StaticResource AudioSubSourceDataHeaderConverter}}"/>
+                    </TextBlock.Inlines>
+                </TextBlock>
+            </Expander.Header>
+            <StackPanel Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl,Mode=FindAncestor}, Converter={StaticResource SubtractDoubleValueConverter}, ConverterParameter=38}">
+                <StackPanel.Resources>
+                    <Style TargetType="Ellipse">
+                        <Setter Property="Stroke"
                                     Value="Black"/>
-                            <Setter Property="Fill"
+                        <Setter Property="Fill"
                                     Value="Black"/>
-                            <Setter Property="Height"
+                        <Setter Property="Height"
                                      Value="4"/>
-                            <Setter Property="Width"
+                        <Setter Property="Width"
                                     Value="4"/>
-                        </Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment"
+                    </Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="HorizontalAlignment"
                                     Value="Left"/>
-                            <Setter Property="Margin"
+                        <Setter Property="Margin"
                                     Value="5,0,0,0"/>
-                        </Style>
-                    </StackPanel.Resources>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding StreamIndex, StringFormat=Stream Index: {0}}"
+                    </Style>
+                </StackPanel.Resources>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding StreamIndex, StringFormat=Stream Index: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Descriptor, StringFormat=Descriptor: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Descriptor, StringFormat=Descriptor: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Language, StringFormat=Language: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Language, StringFormat=Language: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Forced, StringFormat=Forced: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Forced, StringFormat=Forced: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                    <BulletDecorator>
-                        <BulletDecorator.Bullet>
-                            <Ellipse/>
-                        </BulletDecorator.Bullet>
-                        <TextBlock Text="{Binding Title, StringFormat=Title: {0}}"
+                </BulletDecorator>
+                <BulletDecorator>
+                    <BulletDecorator.Bullet>
+                        <Ellipse/>
+                    </BulletDecorator.Bullet>
+                    <TextBlock Text="{Binding Title, StringFormat=Title: {0}}"
                                    TextWrapping="Wrap"/>
-                    </BulletDecorator>
-                </StackPanel>
-            </DataTemplate>
-        </HierarchicalDataTemplate.ItemTemplate>
-    </HierarchicalDataTemplate>
+                </BulletDecorator>
+            </StackPanel>
+        </Expander>
+    </DataTemplate>
 </ResourceDictionary>
