@@ -40,6 +40,7 @@ namespace AutoEncodeServer.WorkerThreads
 
         public override void Stop()
         {
+            Shutdown = true;
             Wake();
             base.Stop();
         }
