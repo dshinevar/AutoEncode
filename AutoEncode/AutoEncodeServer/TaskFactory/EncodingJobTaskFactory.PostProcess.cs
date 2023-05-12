@@ -66,8 +66,8 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (OperationCanceledException)
             {
+                logger.LogWarning($"Post-Process was cancelled for {job}");
                 job.ResetStatus();
-                logger.LogInfo($"Post-Process was cancelled for {job}");
                 return;
             }
             catch (Exception ex)

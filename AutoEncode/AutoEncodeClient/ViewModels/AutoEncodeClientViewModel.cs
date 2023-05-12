@@ -1,18 +1,17 @@
-﻿using AutoEncodeClient.Command;
+﻿using AutoEncodeClient.Collections;
+using AutoEncodeClient.Comm;
+using AutoEncodeClient.Command;
+using AutoEncodeClient.Config;
 using AutoEncodeClient.Models;
 using AutoEncodeClient.ViewModels.Interfaces;
-using AutoEncodeClient.Collections;
 using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Logger;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Timers;
 using System.Windows;
 using System.Windows.Input;
-using AutoEncodeClient.Comm;
-using AutoEncodeUtilities.Logger;
-using System;
-using AutoEncodeClient.Config;
 
 namespace AutoEncodeClient.ViewModels
 {
@@ -22,12 +21,15 @@ namespace AutoEncodeClient.ViewModels
         IDisposable
     {
         private readonly ClientUpdateService ClientUpdateService;
+        private readonly CommunicationManager CommunicationManager;
 
         private Task RefreshSourceFilesTask { get; set; }
 
-        public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, AEClientConfig config)
+        public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, CommunicationManager communicationManager, AEClientConfig config)
             : base(model)
         {
+            CommunicationManager = communicationManager;
+
             AECommand refreshSourceFilesCommand = new(RefreshSourceFiles);
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
 
@@ -42,6 +44,7 @@ namespace AutoEncodeClient.ViewModels
         public ICommand RefreshSourceFilesCommand { get; }
         #endregion Commands
 
+        #region Properties
         public BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; } = new BulkObservableCollection<EncodingJobViewModel>();
         public ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; }
             = new ObservableDictionary<string, BulkObservableCollection<VideoSourceData>>();
@@ -54,6 +57,8 @@ namespace AutoEncodeClient.ViewModels
             get => _selectedEncodingJobViewModel;
             set => SetAndNotify(_selectedEncodingJobViewModel, value, () => _selectedEncodingJobViewModel = value);
         }
+        public bool ConnectedToServer => Model.ConnectedToServer;
+        #endregion Properties
 
         private void UpdateClient(List<EncodingJobData> encodingJobQueue)
         {
@@ -98,7 +103,7 @@ namespace AutoEncodeClient.ViewModels
                     }
                     else
                     {
-                        EncodingJobClientModel model = new(data);
+                        EncodingJobClientModel model = new(data, CommunicationManager);
                         EncodingJobViewModel viewModel = new(model);
                         Application.Current.Dispatcher.BeginInvoke(() => EncodingJobs.Insert(encodingJobQueue.IndexOf(data), viewModel));
                     }
@@ -146,7 +151,6 @@ namespace AutoEncodeClient.ViewModels
 
         public void Dispose()
         {
-            Model.Dispose();
             ClientUpdateService.Dispose();
         }
     }

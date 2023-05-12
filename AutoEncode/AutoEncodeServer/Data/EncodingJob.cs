@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace AutoEncodeUtilities.Data
 {
@@ -46,14 +47,19 @@ namespace AutoEncodeUtilities.Data
         public EncodingJobStatus Status { get; private set; } = EncodingJobStatus.NEW;
         /// <summary>Current substatus of the job building</summary>
         public EncodingJobBuildingStatus BuildingStatus { get; private set; } = EncodingJobBuildingStatus.BUILDING;
+        public bool IsProcessing => Status.Equals(EncodingJobStatus.BUILDING) | Status.Equals(EncodingJobStatus.ENCODING) | Status.Equals(EncodingJobStatus.POST_PROCESSING);
         /// <summary>Flag showing if a job is in error </summary>
         public bool Error { get; private set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
         public string LastErrorMessage { get; private set; } = string.Empty;
+        /// <summary> Flag showing a job is to be paused.</summary>
+        public bool ToBePaused { get; private set; } = false;
         /// <summary> Flag showing if a job is paused </summary>
-        public bool Paused { get; set; } = false;
+        public bool Paused { get; private set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
-        public bool Cancelled { get; set; } = false;
+        public bool Cancelled { get; private set; } = false;
+        /// <summary>Shows if the job is in a state that can be cancelled.</summary>
+        public bool CanCancel => IsProcessing;
         /// <summary>Encoding Progress Percentage </summary>
         public int EncodingProgress { get; private set; }
         /// <summary>Amount of time spent encoding. </summary>
@@ -89,6 +95,46 @@ namespace AutoEncodeUtilities.Data
 
         #region Public Functions
         public override string ToString() => $"(JobID: {Id}) {Name}";
+
+        public void Pause()
+        {
+            if (IsProcessing is false)
+            {
+                ToBePaused = false;
+                Paused = true;
+            }
+            else
+            {
+                ToBePaused = true;
+                Paused = false;
+            } 
+        }
+
+        public void Resume()
+        {
+            Paused = false;
+            ToBePaused = false;
+        }
+
+        /// <summary>If able, sets Cancelled to true and calls Cancel on the job's cancellation token</summary>
+        public void Cancel()
+        {
+            if (CanCancel is true)
+            {
+                if (Cancelled is false)
+                {
+                    Cancelled = true;
+                    TaskCancellationTokenSource?.Cancel();
+                }
+            }
+        }
+
+        /// <summary>Resets job after cancel is complete.</summary>
+        public void ResetCancel()
+        {
+            Cancelled = false;
+            TaskCancellationTokenSource = null;
+        }
 
         /// <summary>Sets the current status of the job.</summary>
         /// <param name="status"><see cref="EncodingJobStatus"/></param>
@@ -228,5 +274,9 @@ namespace AutoEncodeUtilities.Data
         public bool Equals(IEncodingJobData data) => Id == data.Id;
 
         public override int GetHashCode() => Id.GetHashCode();
+
+        // IN PROGRESS TESTING
+        public CancellationTokenSource TaskCancellationTokenSource { get; set; }
+        // IN PROGRESS TESTING
     }
 }

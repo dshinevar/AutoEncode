@@ -1,4 +1,5 @@
-﻿using AutoEncodeClient.Config;
+﻿using AutoEncodeClient.Comm;
+using AutoEncodeClient.Config;
 using AutoEncodeClient.Models;
 using AutoEncodeClient.ViewModels;
 using AutoEncodeClient.Views;
@@ -7,6 +8,7 @@ using AutoEncodeUtilities.Logger;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using YamlDotNet.Serialization;
@@ -21,6 +23,7 @@ namespace AutoEncodeClient
     {
         private const string LOG_FILENAME = "aeclient.log";
         private ILogger logger = null;
+        private CommunicationManager communicationManager = null;
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {
             AEClientConfig clientConfig = null;
@@ -96,15 +99,22 @@ namespace AutoEncodeClient
             // Build and show view
             try
             {
-                AutoEncodeClientModel model = new(logger, clientConfig);
-                AutoEncodeClientViewModel viewModel = new(model, logger, clientConfig);
-                AutoEncodeClientView view = new(viewModel);
-                view.Show();
+                communicationManager = new(logger, clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
+
+                AutoEncodeClientModel model = new(logger, communicationManager, clientConfig);
+                AutoEncodeClientViewModel viewModel = new(model, logger, communicationManager, clientConfig);
+                AutoEncodeClientView view = new(viewModel)
+                {
+                    Title = $"AutoEncodeClient - {Assembly.GetExecutingAssembly().GetName().Version}"
+                };
+                view.ShowDialog();
             }
             catch (Exception ex) 
             {
                 logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
             }
+
+            communicationManager?.Dispose();
         }
 
         private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

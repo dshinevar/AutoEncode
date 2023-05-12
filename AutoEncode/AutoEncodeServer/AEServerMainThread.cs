@@ -80,10 +80,6 @@ namespace AutoEncodeServer
             ClientUpdateService?.Shutdown();
             CommunicationManager?.Stop();
 
-            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
-            MaintenanceTimerDispose.WaitOne();
-            MaintenanceTimerDispose.Dispose();
-
             // Stop threads
             EncodingJobFinderThread?.Stop();
             EncodingJobBuilderCancellationToken?.Cancel();
@@ -95,6 +91,10 @@ namespace AutoEncodeServer
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();
 
+            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimerDispose.WaitOne();
+            MaintenanceTimerDispose.Dispose();
+
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
             EncodingJobBuilderTask?.Wait();
@@ -104,7 +104,9 @@ namespace AutoEncodeServer
         }
         #endregion START/SHUTDOWN FUNCTIONS
 
+        #region PROCESSING
         public Dictionary<string, List<VideoSourceData>> GetMovieSourceData() => EncodingJobFinderThread.GetMovieSourceFiles();
         public Dictionary<string, List<ShowSourceData>> GetShowSourceData() => EncodingJobFinderThread.GetShowSourceFiles();
+        #endregion PROCESSING
     }
 }

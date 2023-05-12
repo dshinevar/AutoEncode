@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace AutoEncodeClient.Command
@@ -14,7 +11,7 @@ namespace AutoEncodeClient.Command
 
         public event EventHandler CanExecuteChanged;
 
-        public AECommand(Func<bool> canExecute, Action execute ) 
+        public AECommand(Func<bool> canExecute, Action execute)
         {
             _canExecute = canExecute;
             _execute = execute;
@@ -23,7 +20,7 @@ namespace AutoEncodeClient.Command
         public AECommand(Action execute)
             : this(() => true, execute) { }
 
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, new EventArgs());
+        public void RaiseCanExecuteChanged() => Application.Current.Dispatcher.InvokeAsync(() => CanExecuteChanged?.Invoke(this, new EventArgs()));
 
         public bool CanExecute(object parameter) => _canExecute();
 

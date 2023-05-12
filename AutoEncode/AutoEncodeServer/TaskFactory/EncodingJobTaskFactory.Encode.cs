@@ -1,7 +1,6 @@
 ﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Logger;
 using System;
 using System.Diagnostics;
@@ -29,7 +28,14 @@ namespace AutoEncodeServer.TaskFactory
             if (job.Error is true) return;
 
             Stopwatch stopwatch = new();
-            Process ffmpegProcess = null;
+            Process encodingProcess = null;
+            int? exitCode = null;
+
+            CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
+            {
+                encodingProcess?.Kill(true);
+            });
+
             try
             {
                 ProcessStartInfo startInfo = new()
@@ -44,40 +50,41 @@ namespace AutoEncodeServer.TaskFactory
 
                 int count = 0;
 
-                ffmpegProcess = new()
+                using (encodingProcess = new())
                 {
-                    StartInfo = startInfo
-                };
-                ffmpegProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    if (cancellationToken.IsCancellationRequested is true)
+                    encodingProcess.StartInfo = startInfo;
+                    encodingProcess.EnableRaisingEvents = true;
+                    encodingProcess.ErrorDataReceived += (sender, e) =>
                     {
-                        proc.CancelErrorRead();
-                        proc.Kill(true);
-                        return;
-                    }
-                    job.ElapsedEncodingTime = stopwatch.Elapsed;
+                        job.ElapsedEncodingTime = stopwatch.Elapsed;
 
-                    if (count >= 50)
-                    {
-                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                        if (count >= 50)
                         {
-                            job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds));
+                            if (string.IsNullOrWhiteSpace(e.Data) is false)
+                            {
+                                job.UpdateEncodingProgress(HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds));
+                            }
+                            count = 0;
                         }
-                        count = 0;
-                    }
-                    else
+                        else
+                        {
+                            count++;
+                        }
+                    };
+                    encodingProcess.Exited += (sender, e) =>
                     {
-                        count++;
-                    }
-                };
+                        if (sender is Process proc)
+                        {
+                            exitCode = proc.ExitCode;
+                        }
+                    };
 
-                File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
-                stopwatch.Start();
-                ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
-                ffmpegProcess.WaitForExit();
+                    File.WriteAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
+                    stopwatch.Start();
+                    encodingProcess.Start();
+                    encodingProcess.BeginErrorReadLine();
+                    encodingProcess.WaitForExit();
+                }
             }
             catch (Exception ex)
             {
@@ -85,6 +92,7 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             stopwatch.Stop();
+            tokenRegistration.Unregister();
 
             try
             {
@@ -95,13 +103,13 @@ namespace AutoEncodeServer.TaskFactory
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
-                    logger.LogError($"{job} was cancelled.");
+                    logger.LogWarning($"Encoding of {job} was cancelled.");
                 }
-                // NON-ZERO EXIT CODE / NULL PROCESS
-                else if ((ffmpegProcess?.ExitCode ?? -1) != 0)
+                // NON-ZERO EXIT CODE
+                else if (exitCode is not null && exitCode != 0)
                 {
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(logger.LogError($"{job} encoding job failed. Exit Code: {(ffmpegProcess is null ? "NULL PROCESS" : ffmpegProcess.ExitCode)}"));
+                    job.SetError(logger.LogError($"{job} encoding job failed. Exit Code: {exitCode}"));
                 }
                 // FILE NOT CREATED / EMPTY FILE
                 else if (nonEmptyFileExists is false)
@@ -110,7 +118,7 @@ namespace AutoEncodeServer.TaskFactory
                     job.SetError(logger.LogError($"{job} either did not create an output or created an empty file"));
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (job.Error is false && job.EncodingProgress < 75)
+                else if (job.Error is false && job.EncodingProgress < 95)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
@@ -158,12 +166,28 @@ namespace AutoEncodeServer.TaskFactory
 
             if (job.Error is true) return;
 
-            CancellationTokenSource encodingTokenSource = new();
-            CancellationToken encodingToken = encodingTokenSource.Token;
             Process videoEncodeProcess = null;
             Process audioSubEncodeProcess = null;
             Process mergeProcess = null;
+            int? videoEncodeExitCode = null;
+            int? audioSubEncodeExitCode = null;
             DolbyVisionEncodingCommandArguments arguments = job.EncodingCommandArguments as DolbyVisionEncodingCommandArguments;
+
+            CancellationTokenSource encodingTokenSource = new();
+            CancellationToken encodingToken = encodingTokenSource.Token;
+
+            CancellationTokenRegistration tokenRegistration = taskCancellationToken.Register(() =>
+            {
+                videoEncodeProcess?.Kill(true);
+                audioSubEncodeProcess?.Kill(true);
+            });
+
+            CancellationTokenRegistration innerTokenRegistration = encodingToken.Register(() =>
+            {
+                videoEncodeProcess?.Kill(true);
+                audioSubEncodeProcess?.Kill(true);
+            });
+
 
             Stopwatch stopwatch = new();
 
@@ -172,7 +196,6 @@ namespace AutoEncodeServer.TaskFactory
             {
                 int count = 0;
 
-                // Video
                 ProcessStartInfo videoEncodeStartInfo = new()
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -182,139 +205,115 @@ namespace AutoEncodeServer.TaskFactory
                     RedirectStandardError = true,
                     UseShellExecute = false
                 };
-                videoEncodeProcess = new()
-                {
-                    StartInfo = videoEncodeStartInfo,
-                    EnableRaisingEvents = true
-                };
-                videoEncodeProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    try
-                    {
-                        taskCancellationToken.ThrowIfCancellationRequested();
-                        encodingToken.ThrowIfCancellationRequested();
-
-                        job.ElapsedEncodingTime = stopwatch.Elapsed;
-
-                        if (count >= 50)
-                        {
-                            if (string.IsNullOrWhiteSpace(e.Data) is false)
-                            {
-                                job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9));
-                            }
-                            count = 0;
-                        }
-                        else
-                        {
-                            count++;
-                        }
-
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        proc.CancelErrorRead();
-                        proc.Kill(true);
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        // Just log for now
-                        logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {job}.", details: new {job.Id, job.Name, VideoEncodeProcess = proc?.ProcessName});
-                        return;
-                    }
-                };
-                videoEncodeProcess.Exited += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    if (proc.ExitCode != 0 || 
-                        File.Exists(job.EncodingInstructions.EncodedVideoFullPath) is false ||
-                        new FileInfo(job.EncodingInstructions.EncodedVideoFullPath).Length <= 0)
-                    {
-                        encodingTokenSource.Cancel();
-                    }
-                };
-
-                if (videoEncodeProcess.Start() is false)
-                {
-                    // If failed to start, error and end
-                    job.SetError(logger.LogError($"Video encoding failed to start for {job}"));
-                    return;
-                }
-
-                stopwatch.Start();
-                videoEncodeProcess.BeginErrorReadLine();
-
-                // Audio
                 ProcessStartInfo audioSubEncodeStartInfo = new()
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
                     FileName = Path.Combine(ffmpegDir, "ffmpeg"),
                     Arguments = arguments.AudioSubsEncodingCommandArguments,
-                    RedirectStandardError = true,
+                    //RedirectStandardError = true,
                     UseShellExecute = false
                 };
 
-                audioSubEncodeProcess = new()
+                using (videoEncodeProcess = new Process())
+                using (audioSubEncodeProcess = new Process())
                 {
-                    StartInfo = audioSubEncodeStartInfo,
-                    EnableRaisingEvents = true
-                };
-                audioSubEncodeProcess.ErrorDataReceived += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    try
+                    // VIDEO
+                    videoEncodeProcess.StartInfo = videoEncodeStartInfo;
+                    videoEncodeProcess.EnableRaisingEvents = true;
+                    videoEncodeProcess.ErrorDataReceived += (sender, e) =>
                     {
-                        taskCancellationToken.ThrowIfCancellationRequested();
-                        encodingToken.ThrowIfCancellationRequested();
-                    }
-                    catch (OperationCanceledException)
+                        try
+                        {
+                            job.ElapsedEncodingTime = stopwatch.Elapsed;
+
+                            if (count >= 50)
+                            {
+                                if (string.IsNullOrWhiteSpace(e.Data) is false)
+                                {
+                                    job.UpdateEncodingProgress(HandleDolbyVisionEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames, 0.9));
+                                }
+                                count = 0;
+                            }
+                            else
+                            {
+                                count++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Just log for now
+                            logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {job}.", details: new { job.Id, job.Name });
+                            return;
+                        }
+                    };
+                    videoEncodeProcess.Exited += (sender, e) =>
                     {
-                        proc.CancelErrorRead();
-                        proc.Kill();
+                        if (sender is Process proc)
+                        {
+                            videoEncodeExitCode = proc.ExitCode;
+                            if (videoEncodeExitCode != 0 ||
+                                File.Exists(job.EncodingInstructions.EncodedVideoFullPath) is false ||
+                                new FileInfo(job.EncodingInstructions.EncodedVideoFullPath).Length <= 0)
+                            {
+                                encodingTokenSource.Cancel();
+                            }
+                        }
+                    };
+                    // Start Video encode
+                    if (videoEncodeProcess.Start() is false)
+                    {
+                        // If failed to start, error and end
+                        job.SetError(logger.LogError($"Video encoding failed to start for {job}"));
                         return;
                     }
-                    catch (Exception ex)
+
+                    stopwatch.Start();
+                    videoEncodeProcess.BeginErrorReadLine();
+
+                    // AUDIO
+                    audioSubEncodeProcess.StartInfo = audioSubEncodeStartInfo;
+                    audioSubEncodeProcess.EnableRaisingEvents = true;
+                    audioSubEncodeProcess.Exited += (sender, e) =>
                     {
-                        logger.LogException(ex, $"Exception occurred during data receive of audio/sub encoding process for {job}.", details: new {job.Id, job.Name, AudioSubEncodeProcess = proc?.ProcessName});
-                        return;
-                    }
-                };
-                audioSubEncodeProcess.Exited += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    if (proc.ExitCode != 0 ||
-                        File.Exists(job.EncodingInstructions.EncodedAudioSubsFullPath) is false ||
-                        new FileInfo(job.EncodingInstructions.EncodedAudioSubsFullPath).Length <= 0)
+                        if (sender is Process proc)
+                        {
+                            audioSubEncodeExitCode = proc?.ExitCode;
+                            if (audioSubEncodeExitCode != 0 ||
+                                File.Exists(job.EncodingInstructions.EncodedAudioSubsFullPath) is false ||
+                                new FileInfo(job.EncodingInstructions.EncodedAudioSubsFullPath).Length <= 0)
+                            {
+                                encodingTokenSource.Cancel();
+                            }
+                        }
+
+                    };
+
+                    // Start audio/sub
+                    if (audioSubEncodeProcess.Start() is false)
                     {
+                        // If failed to start, error and end
+                        job.SetError(logger.LogError($"Audio/Sub encoding failed to start for {job}"));
                         encodingTokenSource.Cancel();
                     }
-                };
 
-                if (audioSubEncodeProcess.Start() is false)
-                {
-                    // If failed to start, error and end
-                    job.SetError(logger.LogError($"Audio/Sub encoding failed to start for {job}"));
-                    encodingTokenSource.Cancel();
+                    File.WriteAllLines(Lookups.PreviouslyEncodingTempFile, new string[] { job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath });
+
+                    audioSubEncodeProcess.WaitForExit();
+                    videoEncodeProcess.WaitForExit();
                 }
-                audioSubEncodeProcess.BeginErrorReadLine();
-
-                File.WriteAllLines(Lookups.PreviouslyEncodingTempFile, new string[] { job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath });
-
-                audioSubEncodeProcess.WaitForExit();
-                audioSubEncodeProcess.Close();
-
-                videoEncodeProcess.WaitForExit();
-                videoEncodeProcess.Close();
             }
             catch (Exception ex)
             {
                 job.SetError(logger.LogException(ex, $"Error encoding {job}.", 
                     details: new {job.Id, job.Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName}));
-                videoEncodeProcess.Kill(true);
-                audioSubEncodeProcess.Kill();
+                videoEncodeProcess?.Kill(true);
+                audioSubEncodeProcess?.Kill(true);
             }
+
+            tokenRegistration.Unregister();
+            innerTokenRegistration.Unregister();
+            innerTokenRegistration.Dispose();
 
             // CHECKING AND CLEANUP OF ENCODING
             try
@@ -325,7 +324,7 @@ namespace AutoEncodeServer.TaskFactory
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     job.ResetEncoding();
-                    logger.LogError($"{job} encoding was cancelled.");
+                    logger.LogWarning($"{job} encoding was cancelled.");
                     return;
                 }
                 // Most likely, one of the processes failed
@@ -334,12 +333,12 @@ namespace AutoEncodeServer.TaskFactory
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     string[] messages = { $"One of the encoding (video/audio-sub) processes errored for {job}.",
-                                     $"Video Encode Exit Code: {(videoEncodeProcess is null ? "NULL VIDEO PROCESS" : videoEncodeProcess.ExitCode)} | Audio/Sub Encode Exit Code: {(audioSubEncodeProcess is null ? "NULL AUDIO/SUB PROCESS" : audioSubEncodeProcess.ExitCode)}"};
+                                     $"Video Encode Exit Code: {videoEncodeExitCode} | Audio/Sub Encode Exit Code: {audioSubEncodeExitCode}"};
                     job.SetError(logger.LogError(messages));
                     return;
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (job.Error is false && job.EncodingProgress < 75)
+                else if (job.Error is false && job.EncodingProgress < 85)
                 {
                     // Ensure these files are deleted
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
@@ -368,6 +367,12 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             // MERGE
+            int? mergeExitCode = null;
+            tokenRegistration = taskCancellationToken.Register(() =>
+            {
+                mergeProcess?.Kill(true);
+            });
+
             try
             {
                 ProcessStartInfo mergeStartInfo = new()
@@ -380,65 +385,70 @@ namespace AutoEncodeServer.TaskFactory
                     UseShellExecute = false
                 };
 
-                mergeProcess = new()
+                using (mergeProcess = new Process())
                 {
-                    StartInfo = mergeStartInfo
-                };
-                mergeProcess.OutputDataReceived += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    try
+                    mergeProcess.StartInfo = mergeStartInfo;
+                    mergeProcess.EnableRaisingEvents = true;
+                    mergeProcess.OutputDataReceived += (sender, e) =>
                     {
-                        job.ElapsedEncodingTime = stopwatch.Elapsed;
-                        taskCancellationToken.ThrowIfCancellationRequested();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        proc.CancelErrorRead();
-                        proc.Kill();
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {job}.", details: new {job.Id, job.Name, MkvMergeProcess = proc?.ProcessName});
-                        return;
-                    }
-                };
-                mergeProcess.Exited += (sender, e) =>
-                {
-                    Process proc = sender as Process;
-                    if (proc.ExitCode != 0)
-                    {
-                        job.SetError(logger.LogError($"Merge process for {job} ended unsuccessfully. ExitCode: {proc.ExitCode}"));
-                    }
-                };
+                        try
+                        {
+                            job.ElapsedEncodingTime = stopwatch.Elapsed;
+                        }
 
-                if (mergeProcess.Start() is false)
-                {
-                    // If failed to start, error and end
-                    job.SetError(logger.LogError($"Mkvmerge failed to start for {job}"));
-                    // Delete previous encoding files
-                    DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    return;
+                        catch (Exception ex)
+                        {
+                            logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {job}.", details: new { job.Id, job.Name });
+                            return;
+                        }
+                    };
+                    mergeProcess.Exited += (sender, e) =>
+                    {
+                        if (sender is Process proc)
+                        {
+                            mergeExitCode = proc?.ExitCode;
+                            if (mergeExitCode != 0)
+                            {
+                                job.SetError(logger.LogError($"Merge process for {job} ended unsuccessfully. ExitCode: {mergeExitCode}"));
+                            }
+                        }
+                    };
+
+                    if (mergeProcess.Start() is false)
+                    {
+                        // If failed to start, error and end
+                        job.SetError(logger.LogError($"Mkvmerge failed to start for {job}"));
+                        // Delete previous encoding files
+                        DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
+                        return;
+                    }
+
+                    File.AppendAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
+                    mergeProcess.BeginOutputReadLine();
+                    mergeProcess.WaitForExit();
                 }
-
-                File.AppendAllText(Lookups.PreviouslyEncodingTempFile, job.DestinationFullPath);
-                mergeProcess.BeginOutputReadLine();
-                mergeProcess.WaitForExit();
-                mergeProcess.Close();
             }
             catch (Exception ex)
             {
                 job.SetError(logger.LogException(ex, $"Error merging {job}.", details: new {job.Id, job.Name, mkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName}));
-                mergeProcess.Kill();
+                mergeProcess?.Kill(true);
             }
 
             try
             {
                 bool nonEmptyFileExists = File.Exists(job.DestinationFullPath) && new FileInfo(job.DestinationFullPath).Length > 0;
                 stopwatch.Stop();
+
+                // CANCELLED
+                if (taskCancellationToken.IsCancellationRequested is true)
+                {
+                    // Ensure these files are deleted
+                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
+                    job.ResetEncoding();
+                    logger.LogWarning($"{job} encoding was cancelled.");
+                }
                 // SUCCESS
-                if (job.EncodingProgress >= 90 && job.Error is false && nonEmptyFileExists)
+                else if (job.EncodingProgress >= 90 && job.Error is false && nonEmptyFileExists)
                 {
                     job.CompleteEncoding(stopwatch.Elapsed);
                     DeleteFiles(Lookups.PreviouslyEncodingTempFile, job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath);
@@ -448,14 +458,6 @@ namespace AutoEncodeServer.TaskFactory
                         job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
-                }
-                // CANCELLED
-                else if (taskCancellationToken.IsCancellationRequested is true)
-                {
-                    // Ensure these files are deleted
-                    DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.ResetEncoding();
-                    logger.LogError($"{job} was cancelled.");
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.Error is false && job.EncodingProgress < 90)
@@ -484,6 +486,8 @@ namespace AutoEncodeServer.TaskFactory
                 return;
                 // Don't error the job for now
             }
+
+            tokenRegistration.Unregister();
         }
 
         /// <summary>Handles the output from ffmpeg encoding process </summary>

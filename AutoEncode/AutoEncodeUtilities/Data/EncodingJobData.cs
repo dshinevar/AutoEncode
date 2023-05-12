@@ -31,10 +31,14 @@ namespace AutoEncodeUtilities.Data
         public bool Error { get; set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
         public string LastErrorMessage { get; set; } = string.Empty;
+        /// <summary> Flag showing a job is to be paused.</summary>
+        public bool ToBePaused { get; set; } = false;
         /// <summary> Flag showing if a job is paused </summary>
         public bool Paused { get; set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
         public bool Cancelled { get; set; } = false;
+        /// <summary>Shows if the job is in a state that can be cancelled.</summary>
+        public bool CanCancel { get; set; } = false;
         /// <summary>Encoding Progress Percentage </summary>
         public int EncodingProgress { get; set; }
         /// <summary>Amount of time spent encoding. </summary>

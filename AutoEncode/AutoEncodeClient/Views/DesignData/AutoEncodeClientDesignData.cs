@@ -120,10 +120,10 @@ namespace AutoEncodeClient.Views.DesignData
                 EncodingProgress = 0
             };
 
-            var encodingJobClientModel1 = new EncodingJobClientModel(encodingJobData1);
-            var encodingJobClientModel2 = new EncodingJobClientModel(encodingJobData2);
-            var encodingJobClientModel4 = new EncodingJobClientModel(encodingJobData4);
-            var encodingJobClientModel3 = new EncodingJobClientModel(encodingJobData3);
+            var encodingJobClientModel1 = new EncodingJobClientModel(encodingJobData1, null);
+            var encodingJobClientModel2 = new EncodingJobClientModel(encodingJobData2, null);
+            var encodingJobClientModel4 = new EncodingJobClientModel(encodingJobData4, null);
+            var encodingJobClientModel3 = new EncodingJobClientModel(encodingJobData3, null);
 
             var encodingJobViewModel1 = new EncodingJobViewModel(encodingJobClientModel1);
             var encodingJobViewModel2 = new EncodingJobViewModel(encodingJobClientModel2);
@@ -209,6 +209,8 @@ namespace AutoEncodeClient.Views.DesignData
         public EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
         public ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; set; }
         public ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; set; }
+
+        public bool ConnectedToServer { get; set; } = true;
 
         public void Dispose()
         {

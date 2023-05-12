@@ -1,4 +1,5 @@
-﻿using AutoEncodeClient.Models.StreamDataModels;
+﻿using AutoEncodeClient.Comm;
+using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
@@ -13,6 +14,8 @@ namespace AutoEncodeClient.Models
         ModelBase,
         IUpdateable<IEncodingJobData>
     {
+        private readonly CommunicationManager CommunicationManager;
+
         #region Properties
         /// <summary>Unique job identifier </summary>
         public ulong? Id { get; set; } = null;
@@ -36,10 +39,14 @@ namespace AutoEncodeClient.Models
         public bool Error { get; set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
         public string LastErrorMessage { get; set; } = string.Empty;
+        /// <summary> Flag showing a job is to be paused.</summary>
+        public bool ToBePaused { get; set; } = false;
         /// <summary> Flag showing if a job is paused </summary>
         public bool Paused { get; set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
         public bool Cancelled { get; set; } = false;
+        /// <summary>Shows if the job is in a state that can be cancelled.</summary>
+        public bool CanCancel { get; set; } = false;
         /// <summary>Encoding Progress Percentage </summary>
         public int EncodingProgress { get; set; }
         /// <summary>Amount of time spent encoding. </summary>
@@ -73,13 +80,15 @@ namespace AutoEncodeClient.Models
 
         /// <summary>Constructor</summary>
         /// <param name="encodingJobData"><see cref="IEncodingJobData"/></param>
-        public EncodingJobClientModel(IEncodingJobData encodingJobData)
+        public EncodingJobClientModel(IEncodingJobData encodingJobData, CommunicationManager communicationManager)
         {
             encodingJobData.CopyProperties(this);
             if (encodingJobData.SourceStreamData is not null)
             {
                 SourceStreamData = new(encodingJobData.SourceStreamData);
             }
+
+            CommunicationManager = communicationManager;
         }
 
         public void Update(IEncodingJobData encodingJobData)
@@ -93,6 +102,26 @@ namespace AutoEncodeClient.Models
 
                 OnPropertyChanged(nameof(SourceStreamData));
             }  
+        }
+
+        public void Cancel()
+        {
+            CommunicationManager.CancelJob((ulong)Id);
+        }
+
+        public void Pause()
+        {
+            CommunicationManager.PauseJob((ulong)Id);
+        }
+
+        public void Resume()
+        {
+            CommunicationManager.ResumeJob((ulong)Id);
+        }
+
+        public void CancelThenPause()
+        {
+            CommunicationManager.CancelThenPauseJob((ulong)Id);
         }
 
         public override bool Equals(object obj)

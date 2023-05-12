@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace AutoEncodeClient.Models
 {
-    public class AutoEncodeClientModel : IDisposable
+    public class AutoEncodeClientModel
     {
         #region Private Properties
         private CommunicationManager CommunicationManager { get; set; }
@@ -17,21 +17,16 @@ namespace AutoEncodeClient.Models
         #endregion Private Properties
 
         #region Properties
+        public bool ConnectedToServer => CommunicationManager?.Connected ?? false;
         #endregion Properties
 
-        public AutoEncodeClientModel(ILogger logger, AEClientConfig config)
+        public AutoEncodeClientModel(ILogger logger, CommunicationManager communicationManager, AEClientConfig config)
         {
             Logger = logger;
             Config = config;
-            CommunicationManager = new(logger, Config.ConnectionSettings.IPAddress, Config.ConnectionSettings.CommunicationPort);
+            CommunicationManager = communicationManager;
             Logger.CheckAndDoRollover();
         }
-
-        public void Dispose()
-        {
-            CommunicationManager?.Dispose();
-        }
-
 
         public Dictionary<string, List<VideoSourceData>> GetCurrentMovieSourceData() => CommunicationManager.GetMovieSourceData();
 

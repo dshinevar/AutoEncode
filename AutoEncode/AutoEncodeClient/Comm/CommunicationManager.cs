@@ -1,68 +1,61 @@
 ﻿using AutoEncodeUtilities;
-using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Messages;
 using NetMQ;
+using NetMQ.Monitoring;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 
 namespace AutoEncodeClient.Comm
 {
-    public class CommunicationManager : IDisposable
+    public partial class CommunicationManager : IDisposable
     {
         private readonly ILogger Logger = null;
         private readonly RequestSocket RequestSocket = null;
         private readonly string ConnectionString = string.Empty;
+        private readonly NetMQMonitor Monitor = null;
+
+        public bool Connected { get; private set; }
 
         public CommunicationManager(ILogger logger, string ipAddress, int port)
         {
             Logger = logger;
             ConnectionString = $"tcp://{ipAddress}:{port}";
+
             RequestSocket = new RequestSocket();
+
+            Monitor = new NetMQMonitor(RequestSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
+            Monitor.Connected += Socket_Connected;
+            Monitor.Disconnected += Socket_Disconnected;
+            Monitor.StartAsync();
+
             RequestSocket.Connect(ConnectionString);
         }
 
         public void Dispose()
         {
+            RequestSocket?.Disconnect(ConnectionString);
             RequestSocket?.Close();
+            Monitor.Stop();
+            Monitor.Dispose();
         }
 
-        public Dictionary<string, List<VideoSourceData>> GetMovieSourceData()
+        #region Socket Events
+        private void Socket_Connected(object sender, NetMQMonitorSocketEventArgs e)
         {
-            Dictionary<string, List<VideoSourceData>> returnData = null;
-
-            try
-            {
-                AEMessage<Dictionary<string, List<VideoSourceData>>> returnMessage = SendReceive<Dictionary<string, List<VideoSourceData>>>(AEMessageFactory.CreateMovieSourceFilesRequest());
-                returnData = returnMessage.Data;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, "Failed to get movie source data.", nameof(CommunicationManager), new { ConnectionString });
-            }
-
-            return returnData;
+            Connected = true;
+            Logger.LogInfo($"Connected to {e.Address}", nameof(CommunicationManager));
         }
 
-        public Dictionary<string, List<ShowSourceData>> GetShowSourceData()
+        private void Socket_Disconnected(object sender, NetMQMonitorSocketEventArgs e)
         {
-            Dictionary<string, List<ShowSourceData>> returnData = null;
-
-            try
-            {
-                AEMessage<Dictionary<string, List<ShowSourceData>>> returnMessage = SendReceive<Dictionary<string, List<ShowSourceData>>>(AEMessageFactory.CreateShowSourceFilesRequest());
-                returnData = returnMessage.Data;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, "Failed to get show source data.", nameof(CommunicationManager), new { ConnectionString });
-            }
-
-            return returnData;
+            Connected = false;
+            Logger.LogInfo($"Disconnected from {e.Address}", nameof(CommunicationManager));
         }
+        #endregion Socket Events
 
+        #region Private Functions
         private AEMessage<T> SendReceive<T>(AEMessage request)
         {
             AEMessage<T> messageResponse = null;
@@ -83,5 +76,6 @@ namespace AutoEncodeClient.Comm
 
             return messageResponse;
         }
+        #endregion Private Functions
     }
 }
