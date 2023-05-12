@@ -90,10 +90,10 @@ namespace AutoEncodeServer
             CommunicationManager?.Stop();
 
             // Stop threads
-            EncodingJobFinderThread?.Stop();
             EncodingJobBuilderCancellationToken?.Cancel();
             EncodingCancellationToken?.Cancel();
             EncodingJobPostProcessingCancellationToken?.Cancel();
+            EncodingJobFinderThread?.Stop();
 
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
