@@ -170,6 +170,7 @@ namespace AutoEncodeServer.Data
                         audioStream.Commentary = true;
                     }
 
+                    sourceFileData.AudioStreams ??= new();
                     sourceFileData.AudioStreams.Add(audioStream);
                     audioIndex++;
                 }
@@ -197,7 +198,7 @@ namespace AutoEncodeServer.Data
                 throw new Exception("No video stream found.");
             }
 
-            if (sourceFileData.AudioStreams.Any() is false)
+            if ((sourceFileData.AudioStreams?.Any() ?? false) is false)
             {
                 throw new Exception("No audio streams found.");
             }

@@ -869,18 +869,15 @@
                                                        TextWrapping="Wrap"
                                                        FontWeight="DemiBold"
                                                        Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
-                                            <TreeView Grid.Row="1" ItemsSource="{Binding}"
-                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                          Style="{StaticResource TreeViewStyle}"
-                                                          ItemTemplate="{StaticResource AudioSourceData}">
-                                                <TreeView.ItemContainerStyle>
-                                                    <Style TargetType="TreeViewItem">
-                                                        <Setter Property="Focusable"
-                                                                Value="False"/>
-                                                    </Style>
-                                                </TreeView.ItemContainerStyle>
-                                            </TreeView>
+                                            <ScrollViewer Grid.Row="1"
+                                                          VerticalScrollBarVisibility="Auto">
+                                                <ItemsControl ItemsSource="{Binding .}"
+                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                              ItemTemplate="{StaticResource AudioSourceData}"
+                                                              Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}"/>
+                                            </ScrollViewer>
+
                                         </Grid>
                                     </Border>
                                     <!-- Subtitle -->
@@ -912,18 +909,14 @@
                                                        TextWrapping="Wrap"
                                                        FontWeight="DemiBold"
                                                        Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
-                                            <TreeView Grid.Row="1" ItemsSource="{Binding}"
-                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                          Style="{StaticResource TreeViewStyle}"
-                                                          ItemTemplate="{StaticResource SubtitleSourceData}">
-                                                <TreeView.ItemContainerStyle>
-                                                    <Style TargetType="TreeViewItem">
-                                                        <Setter Property="Focusable"
-                                                                Value="False"/>
-                                                    </Style>
-                                                </TreeView.ItemContainerStyle>
-                                            </TreeView>
+                                            <ScrollViewer Grid.Row="1"
+                                                          VerticalScrollBarVisibility="Auto">
+                                                <ItemsControl ItemsSource="{Binding .}"
+                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                              ItemTemplate="{StaticResource SubtitleSourceData}"
+                                                              Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}"/>
+                                            </ScrollViewer>
                                         </Grid>
                                     </Border>
                                 </Grid>
