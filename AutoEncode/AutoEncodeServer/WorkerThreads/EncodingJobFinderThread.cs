@@ -38,7 +38,11 @@ namespace AutoEncodeServer.WorkerThreads
         #region Start/Stop Functions
         public override void Start(Action preThreadStart = null) => base.Start(BuildSourceFiles);
 
-        public override void Stop() => base.Stop();
+        public override void Stop()
+        {
+            Wake();
+            base.Stop();
+        }
         #endregion Start/Stop Functions
 
         #region Thread Functions
@@ -48,8 +52,11 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary> Sleeps thread for certain amount of time. </summary>
         private void Sleep()
         {
-            ThreadStatus = AEWorkerThreadStatus.Sleeping;
-            SleepARE.WaitOne(ThreadSleep);
+            if (Shutdown is false)
+            {
+                ThreadStatus = AEWorkerThreadStatus.Sleeping;
+                SleepARE.WaitOne(ThreadSleep);
+            }
         }
         #endregion Thread Functions
 
