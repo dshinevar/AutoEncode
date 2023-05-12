@@ -16,5 +16,7 @@ namespace AutoEncodeClient.ViewModels.Interfaces
         ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; }
 
         ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; }
+
+        bool ConnectedToServer { get; }
     }
 }

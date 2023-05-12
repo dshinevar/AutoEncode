@@ -125,6 +125,14 @@ namespace AutoEncodeServer
             }
         }
 
+        public static EncodingJob GetEncodingJobById(ulong id)
+        {
+            lock (jobLock) 
+            {
+                return jobQueue.Find(x => x.Id == id);
+            }
+        }
+
         /// <summary> Gets first EncodingJob (not paused or in error) from list with the given status. </summary>
         /// <param name="status">EncodingJobStatus</param>
         /// <returns><see cref="EncodingJob"/></returns>
@@ -132,7 +140,7 @@ namespace AutoEncodeServer
         {
             lock (jobLock)
             {
-                return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false) && (x.Error is false));
+                return jobQueue.Find(x => x.Status.Equals(status) && (x.Paused is false) && (x.Error is false) && (x.Cancelled is false));
             }
         }
 
@@ -202,5 +210,75 @@ namespace AutoEncodeServer
             }
             return output;
         }
+
+        #region Actions On Encoding Jobs
+        public static bool CancelJob(ulong jobId)
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                EncodingJob job = jobQueue.Find(x => x.Id == jobId);
+
+                if (job is not null)
+                {
+                    job.Cancel();
+                    success = true;
+                }  
+            }
+
+            return success;
+        }
+
+        public static bool PauseJob(ulong jobId)
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                EncodingJob job = jobQueue.Find(x => x.Id == jobId);
+
+                if (job is not null)
+                {
+                    job.Pause();
+                    success = true;
+                }
+            }
+
+            return success;
+        }
+
+        public static bool ResumeJob(ulong jobId) 
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                EncodingJob job = jobQueue.Find(x => x.Id == jobId);
+
+                if (job is not null)
+                {
+                    job.Resume();
+                    success = true;
+                }
+            }
+
+            return success;
+        }
+
+        public static bool CancelThenPauseJob(ulong jobId) 
+        {
+            bool success = false;
+            lock (jobLock)
+            {
+                EncodingJob job = jobQueue.Find(x => x.Id == jobId);
+                if (job is not null)
+                {
+                    job.Cancel();
+                    job.Pause();
+                    success = true;
+                }
+            }
+
+            return success;
+        }
+        #endregion Actions On Encoding Jobs
     }
 }

@@ -12,7 +12,11 @@
 
   <ItemGroup>
     <None Remove="Resources\AutoEncode.png" />
+    <None Remove="Resources\cancel.png" />
+    <None Remove="Resources\down_arrow.png" />
     <None Remove="Resources\error.png" />
+    <None Remove="Resources\pause.png" />
+    <None Remove="Resources\play.png" />
     <None Remove="Resources\refresh.png" />
     <None Remove="Resources\success.png" />
   </ItemGroup>
@@ -36,7 +40,11 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </Resource>
+    <Resource Include="Resources\cancel.png" />
+    <Resource Include="Resources\down_arrow.png" />
     <Resource Include="Resources\error.png" />
+    <Resource Include="Resources\pause.png" />
+    <Resource Include="Resources\play.png" />
     <Resource Include="Resources\refresh.png" />
     <Resource Include="Resources\success.png" />
   </ItemGroup>

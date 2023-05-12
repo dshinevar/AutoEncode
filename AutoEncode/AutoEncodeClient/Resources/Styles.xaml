@@ -184,6 +184,19 @@
                                                     <Setter Property="ToolTip"
                                                             Value="Encoding Job has successfully completed."/>
                                                 </MultiDataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Error}" Value="False"/>
+                                                        <Condition Binding="{Binding Complete}" Value="False"/>
+                                                        <Condition Binding="{Binding Paused}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility"
+                                                            Value="Visible"/>
+                                                    <Setter Property="Source"
+                                                            Value="pause.png"/>
+                                                    <Setter Property="ToolTip"
+                                                            Value="Encoding Job is paused."/>
+                                                </MultiDataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Image.Style>

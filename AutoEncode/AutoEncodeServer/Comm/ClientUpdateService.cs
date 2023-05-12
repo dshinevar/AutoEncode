@@ -31,7 +31,7 @@ namespace AutoEncodeServer.Comm
             {
                 Logger.LogInfo($"Binding to *:{Port}", nameof(ClientUpdateService));
                 PublisherSocket.Bind($"tcp://*:{Port}");
-                PublishTimer = new Timer(SendUpdateToClients, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(2));
+                PublishTimer = new Timer(SendUpdateToClients, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {

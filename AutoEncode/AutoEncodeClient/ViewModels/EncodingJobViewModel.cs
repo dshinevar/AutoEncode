@@ -1,10 +1,12 @@
-﻿using AutoEncodeClient.Models;
+﻿using AutoEncodeClient.Command;
+using AutoEncodeClient.Models;
 using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using System;
+using System.Windows.Input;
 
 namespace AutoEncodeClient.ViewModels
 {
@@ -14,7 +16,23 @@ namespace AutoEncodeClient.ViewModels
         IEquatable<IEncodingJobData>
     {
         public EncodingJobViewModel(EncodingJobClientModel model)
-            : base(model) { }
+            : base(model) 
+        {
+            AECommand cancelCommand = new(() => CanCancel, Cancel);
+            CancelCommand = cancelCommand;
+            AddCommand(cancelCommand, nameof(CanCancel));
+
+            AECommand pauseCommand = new(() => !ToBePaused, Pause);
+            PauseCommand = pauseCommand;
+            AddCommand(pauseCommand, nameof(ToBePaused));
+
+            AECommand cancelThenPauseCommand = new(() => CanCancel, CancelThenPause);
+            CancelThenPauseCommand = cancelThenPauseCommand;
+            AddCommand(cancelThenPauseCommand, nameof(CanCancel));
+
+            AECommand resumeCommand = new(Resume);
+            ResumeCommand = resumeCommand;
+        }
 
         public ulong? Id => Model.Id;
 
@@ -68,6 +86,30 @@ namespace AutoEncodeClient.ViewModels
             set => SetAndNotify(Model.Error, value, () => Model.Error = value);
         }
 
+        public bool ToBePaused
+        {
+            get => Model.ToBePaused;
+            set => SetAndNotify(Model.ToBePaused, value, () => Model.ToBePaused = value);
+        }
+
+        public bool Paused
+        {
+            get => Model.Paused;
+            set => SetAndNotify(Model.Paused, value, () => Model.Paused = value);
+        }
+
+        public bool Cancelled
+        {
+            get => Model.Cancelled;
+            set => SetAndNotify(Model.Cancelled, value, () => Model.Cancelled = value);
+        }
+
+        public bool CanCancel
+        {
+            get => Model.CanCancel;
+            set => SetAndNotify(Model.CanCancel, value, () => Model.CanCancel = value);
+        }
+
         public string LastErrorMessage
         {
             get => Model.LastErrorMessage;
@@ -105,6 +147,13 @@ namespace AutoEncodeClient.ViewModels
         }
         #endregion Status
 
+        #region Commands
+        public ICommand CancelCommand { get; }
+        public ICommand PauseCommand { get; }
+        public ICommand ResumeCommand { get; }
+        public ICommand CancelThenPauseCommand { get; }
+        #endregion Commands
+
         public void Update(IEncodingJobData updatedData)
         {
             updatedData.CopyProperties(this);
@@ -117,6 +166,14 @@ namespace AutoEncodeClient.ViewModels
                 OnPropertyChanged(nameof(SourceStreamData));
             }   
         }
+
+        private void Cancel() => Model.Cancel();
+
+        private void Pause() => Model.Pause();
+
+        private void Resume() => Model.Resume();
+
+        private void CancelThenPause() => Model.CancelThenPause();
 
         public bool Equals(IEncodingJobData data) => Id == data.Id;
     }

@@ -30,10 +30,14 @@ namespace AutoEncodeUtilities.Interfaces
         bool Error { get; }
         /// <summary>Error message from when a job was last marked in error. </summary>
         string LastErrorMessage { get; }
+        /// <summary> Flag showing a job is to be paused.</summary>
+        bool ToBePaused { get; }
         /// <summary> Flag showing if a job is paused </summary>
         bool Paused { get; }
         /// <summary> Flag showing if a job is cancelled </summary>
         bool Cancelled { get; }
+        /// <summary>Shows if the job is in a state that can be cancelled.</summary>
+        bool CanCancel { get; }
         /// <summary>Encoding Progress Percentage </summary>
         int EncodingProgress { get; }
         /// <summary>Amount of time spent encoding. </summary>

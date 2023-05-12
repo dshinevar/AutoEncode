@@ -1,6 +1,5 @@
 ﻿using AutoEncodeServer.Comm;
 using AutoEncodeServer.WorkerThreads;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
@@ -15,7 +14,6 @@ namespace AutoEncodeServer
     {
         public readonly string ThreadName = "MainThread";
 
-        private bool _shutdown = false;
         /// <summary>Config as in file </summary>
         private AEServerConfig Config { get; set; }
         /// <summary>Config to be used; Does not have to match what is saved to file</summary>
@@ -74,26 +72,25 @@ namespace AutoEncodeServer
         public void Shutdown()
         {
             Debug.WriteLine("AEServerMainThread Shutting Down.");
-            _shutdown = true;
-
-            // Stop Comms
-            ClientUpdateService?.Shutdown();
-            CommunicationManager?.Stop();
-
-            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
-            MaintenanceTimerDispose.WaitOne();
-            MaintenanceTimerDispose.Dispose();
-
-            // Stop threads
-            EncodingJobFinderThread?.Stop();
-            EncodingJobBuilderCancellationToken?.Cancel();
-            EncodingCancellationToken?.Cancel();
-            EncodingJobPostProcessingCancellationToken?.Cancel();
 
             // Stop Timers timers
             EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
             EncodingJobTaskTimerDispose.WaitOne();
             EncodingJobTaskTimerDispose.Dispose();
+
+            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimerDispose.WaitOne();
+            MaintenanceTimerDispose.Dispose();
+
+            // Stop Comms
+            ClientUpdateService?.Shutdown();
+            CommunicationManager?.Stop();
+
+            // Stop threads
+            EncodingJobBuilderCancellationToken?.Cancel();
+            EncodingCancellationToken?.Cancel();
+            EncodingJobPostProcessingCancellationToken?.Cancel();
+            EncodingJobFinderThread?.Stop();
 
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
@@ -104,7 +101,9 @@ namespace AutoEncodeServer
         }
         #endregion START/SHUTDOWN FUNCTIONS
 
+        #region PROCESSING
         public Dictionary<string, List<VideoSourceData>> GetMovieSourceData() => EncodingJobFinderThread.GetMovieSourceFiles();
         public Dictionary<string, List<ShowSourceData>> GetShowSourceData() => EncodingJobFinderThread.GetShowSourceFiles();
+        #endregion PROCESSING
     }
 }

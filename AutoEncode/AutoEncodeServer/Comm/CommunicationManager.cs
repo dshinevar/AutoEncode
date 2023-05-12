@@ -25,7 +25,6 @@ namespace AutoEncodeServer.Comm
             ResponseSocket = new ResponseSocket();
             Poller = new NetMQPoller { ResponseSocket };
 
-
             ResponseSocket.ReceiveReady += (s, a) =>
             {
                 try
@@ -91,6 +90,34 @@ namespace AutoEncodeServer.Comm
                     case AEMessageType.Status_ShowSourceFiles_Request:
                     {
                         var response = AEMessageFactory.CreateShowSourceFilesResponse(MainThread.GetShowSourceData());
+                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        break;
+                    }
+                    case AEMessageType.Cancel_Request:
+                    {
+                        bool success = EncodingJobQueue.CancelJob(((AEMessage<ulong>)aeMessage).Data);
+                        var response = AEMessageFactory.CreateCancelResponse(success);
+                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        break;
+                    }
+                    case AEMessageType.Pause_Request:
+                    {
+                        bool success = EncodingJobQueue.PauseJob(((AEMessage<ulong>)aeMessage).Data);
+                        var response = AEMessageFactory.CreatePauseResponse(success);
+                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        break;
+                    }
+                    case AEMessageType.Resume_Request:
+                    {
+                        bool success = EncodingJobQueue.ResumeJob(((AEMessage<ulong>)aeMessage).Data);
+                        var response = AEMessageFactory.CreateResumeResponse(success);
+                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        break;
+                    }
+                    case AEMessageType.Cancel_Pause_Request:
+                    {
+                        bool success = EncodingJobQueue.CancelThenPauseJob(((AEMessage<ulong>)aeMessage).Data);
+                        var response = AEMessageFactory.CreateCancelPauseResponse(success);
                         ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
                         break;
                     }

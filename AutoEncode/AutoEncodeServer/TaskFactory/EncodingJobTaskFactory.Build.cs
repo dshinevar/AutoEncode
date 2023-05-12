@@ -73,17 +73,21 @@ namespace AutoEncodeServer.TaskFactory
                 try
                 {
                     job.SetBuildingStatus(EncodingJobBuildingStatus.SCAN_TYPE);
-                    VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir);
+                    VideoScanType scanType = GetVideoScan(job.SourceFullPath, ffmpegDir, cancellationToken);
 
                     if (scanType.Equals(VideoScanType.UNDETERMINED))
                     {
-                        job.SetError(logger.LogError($"Failed to determine VideoScanType for {job}."));
+                        job.SetError(logger.LogError($"Failed to determine VideoScanType for {job}.")); 
                         return;
                     }
                     else
                     {
                         job.SourceStreamData.VideoStream.ScanType = scanType;
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -97,17 +101,20 @@ namespace AutoEncodeServer.TaskFactory
                 try
                 {
                     job.SetBuildingStatus(EncodingJobBuildingStatus.CROP);
-                    string crop = GetCrop(job.SourceFullPath, ffmpegDir);
+                    string crop = GetCrop(job.SourceFullPath, ffmpegDir, cancellationToken);
 
                     if (string.IsNullOrWhiteSpace(crop))
                     {
                         job.SetError(logger.LogError($"Failed to determine crop for {job}"));
-                        return;
                     }
                     else
                     {
                         job.SourceStreamData.VideoStream.Crop = crop;
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -129,7 +136,7 @@ namespace AutoEncodeServer.TaskFactory
                             // If we aren't given a path, skip this step;  It will be treated as HDR10
                             if (!string.IsNullOrWhiteSpace(hdr10plusExtractorPath))
                             {
-                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath));
+                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.HDR10PLUS, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.HDR10PLUS, ffmpegDir, hdr10plusExtractorPath, cancellationToken));
                             }
                             else
                             {
@@ -142,7 +149,7 @@ namespace AutoEncodeServer.TaskFactory
                             // If we aren't given a path, skip this step;  It will be treated as HDR10
                             if (!string.IsNullOrWhiteSpace(dolbyVisionExtractorPath))
                             {
-                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath));
+                                hdrData.DynamicMetadataFullPaths.Add(HDRFlags.DOLBY_VISION, CreateHDRMetadataFile(job.SourceFullPath, HDRFlags.DOLBY_VISION, ffmpegDir, dolbyVisionExtractorPath, cancellationToken));
                             }
                             else
                             {
@@ -150,6 +157,10 @@ namespace AutoEncodeServer.TaskFactory
                             }
                         }
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -225,8 +236,8 @@ namespace AutoEncodeServer.TaskFactory
             catch (OperationCanceledException)
             {
                 // Reset Status
+                logger.LogWarning($"Build was cancelled for {job} - Build Step: {job.BuildingStatus.GetDescription()}");
                 job.ResetStatus();
-                logger.LogInfo($"Build was cancelled for {job}");
                 return;
             }
             catch (Exception ex)
@@ -280,9 +291,14 @@ namespace AutoEncodeServer.TaskFactory
         /// <param name="sourceFullPath">Full path of source file.</param>
         /// <param name="ffmpegDir">Directory FFmpeg is located in</param>
         /// <returns>String of crop in this format: "XXXX:YYYY:AA:BB"</returns>
-        private static string GetCrop(string sourceFullPath, string ffmpegDir)
+        private static string GetCrop(string sourceFullPath, string ffmpegDir, CancellationToken cancellationToken)
         {
             string ffmpegArgs = $"-i \"{sourceFullPath}\" -vf cropdetect -f null -";
+            Process cropProcess = null;
+            CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
+            {
+                cropProcess?.Kill(true);
+            });
 
             ProcessStartInfo startInfo = new()
             {
@@ -296,17 +312,21 @@ namespace AutoEncodeServer.TaskFactory
 
             string latestCropLine = string.Empty;
 
-            using (Process ffmpegProcess = new())
+            using (cropProcess = new())
             {
-                ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.ErrorDataReceived += (sender, e) =>
-                {
+                cropProcess.StartInfo = startInfo;
+                cropProcess.ErrorDataReceived += (sender, e) =>
+                {   
                     if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("crop=")) latestCropLine = e.Data;
                 };
-                ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
-                ffmpegProcess.WaitForExit();
+                cropProcess.Start();
+                cropProcess.BeginErrorReadLine();
+                cropProcess.WaitForExit();
             }
+
+            tokenRegistration.Unregister();
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             return latestCropLine.TrimEnd(Environment.NewLine.ToCharArray())[latestCropLine.IndexOf("crop=")..].Remove(0,5);
         }
@@ -315,9 +335,14 @@ namespace AutoEncodeServer.TaskFactory
         /// <param name="sourceFullPath">Full path of source file.</param>
         /// <param name="ffmpegDir">Directory FFmpeg is located in</param>
         /// <returns>The <see cref="VideoScanType"/> of the file.</returns>
-        private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir)
+        private static VideoScanType GetVideoScan(string sourceFullPath, string ffmpegDir, CancellationToken cancellationToken)
         {
             string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {Lookups.NullLocation} -i \"{sourceFullPath}\"";
+            Process scanTypeProcess = null;
+            CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
+            {
+                scanTypeProcess?.Kill(true);
+            });
 
             ProcessStartInfo startInfo = new()
             {
@@ -331,18 +356,22 @@ namespace AutoEncodeServer.TaskFactory
 
             StringBuilder sbScan = new();
 
-            using (Process ffmpegProcess = new())
+            using (scanTypeProcess = new())
             {
-                ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.ErrorDataReceived += (sender, e) =>
+                scanTypeProcess.StartInfo = startInfo;
+                scanTypeProcess.ErrorDataReceived += (sender, e) =>
                 {
                     if (string.IsNullOrWhiteSpace(e.Data) is false && e.Data.Contains("frame detection")) sbScan.AppendLine(e.Data);
                 };
 
-                ffmpegProcess.Start();
-                ffmpegProcess.BeginErrorReadLine();
-                ffmpegProcess.WaitForExit();
+                scanTypeProcess.Start();
+                scanTypeProcess.BeginErrorReadLine();
+                scanTypeProcess.WaitForExit();
             }
+
+            tokenRegistration.Unregister();
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
 
@@ -374,12 +403,16 @@ namespace AutoEncodeServer.TaskFactory
         /// <param name="extractorFullPath">Full path of dynamic hdr data extractor to use.</param>
         /// <returns>Full path of created metadata file.</returns>
         /// <exception cref="Exception">Thrown if metadata file not created.</exception>
-        private static string CreateHDRMetadataFile(string sourceFullPath, HDRFlags hdrFlag, string ffmpegDir, string extractorFullPath)
+        private static string CreateHDRMetadataFile(string sourceFullPath, HDRFlags hdrFlag, string ffmpegDir, string extractorFullPath, CancellationToken cancellationToken)
         {
             string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFullPath).Replace('\'', ' ')}{(hdrFlag.Equals(HDRFlags.HDR10PLUS) ? ".json" : ".RPU.bin")}";
+            Process hdrMetadataProcess = null;
+            CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
+            {
+                hdrMetadataProcess?.Kill(true);
+            });
 
-            string ffmpegArgs = string.Empty;
-
+            string ffmpegArgs;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 string extractorArgs = hdrFlag.Equals(HDRFlags.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
@@ -404,12 +437,16 @@ namespace AutoEncodeServer.TaskFactory
                 UseShellExecute = false
             };
 
-            using (Process ffmpegProcess = new())
+            using (hdrMetadataProcess = new())
             {
-                ffmpegProcess.StartInfo = startInfo;
-                ffmpegProcess.Start();
-                ffmpegProcess.WaitForExit();
+                hdrMetadataProcess.StartInfo = startInfo;
+                hdrMetadataProcess.Start();
+                hdrMetadataProcess.WaitForExit();
             }
+
+            tokenRegistration.Unregister();
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (File.Exists(metadataOutputFile))
             {

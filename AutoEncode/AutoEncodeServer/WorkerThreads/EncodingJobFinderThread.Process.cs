@@ -1,5 +1,4 @@
-﻿using AutoEncodeServer.Base;
-using AutoEncodeUtilities;
+﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
@@ -11,11 +10,19 @@ using System.Threading.Tasks;
 
 namespace AutoEncodeServer.WorkerThreads
 {
-    public partial class EncodingJobFinderThread : AEWorkerThread
+    public partial class EncodingJobFinderThread
     {
-        protected override void ThreadLoop()
+        private readonly object movieSourceFileLock = new();
+        private readonly object showSourceFileLock = new();
+        private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
+        private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new();
+        private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new();
+
+        protected void ThreadLoop(object data)
         {
-            while (Shutdown is false)
+            CancellationToken shutdownToken = data is CancellationToken token ? token : throw new Exception("ThreadLoop not given CancellationToken.");
+
+            while (shutdownToken.IsCancellationRequested is false)
             {
                 try
                 {
@@ -27,13 +34,15 @@ namespace AutoEncodeServer.WorkerThreads
                     {
                         BuildSourceFiles();
 
+                        shutdownToken.ThrowIfCancellationRequested();
+
                         // Add encoding jobs for automated search directories and files not encoded
                         foreach (KeyValuePair<string, List<VideoSourceData>> entry in MovieSourceFiles)
                         {
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<VideoSourceData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                                moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination, shutdownToken));
                             }
                         }
                         foreach (KeyValuePair<string, List<ShowSourceData>> entry in ShowSourceFiles)
@@ -42,12 +51,16 @@ namespace AutoEncodeServer.WorkerThreads
                             {
                                 List<VideoSourceData> episodesToEncode = entry.Value.SelectMany(show => show.Seasons).SelectMany(season => season.Episodes)
                                     .Where(episode => episode.Encoded is false).ToList();
-                                episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination));
+                                episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, SearchDirectories[entry.Key].Destination, shutdownToken));
                             }
                         }
                     }
 
                     Sleep();
+                }
+                catch (OperationCanceledException)
+                {
+                    return; // If cancelled, just end loop
                 }
                 catch (Exception ex)
                 {
@@ -185,9 +198,10 @@ namespace AutoEncodeServer.WorkerThreads
             });
         }
 
-        private bool CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath)
+        private bool CreateEncodingJob(VideoSourceData sourceData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, string destinationDirectoryPath, CancellationToken shutdownToken)
         {
             bool jobCreated = false;
+            shutdownToken.ThrowIfCancellationRequested();
             try
             {
                 // Don't create encoding job if we are at max count
