@@ -2,7 +2,6 @@
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -14,16 +13,6 @@ namespace AutoEncodeServer.WorkerThreads
         private bool DirectoryUpdate = false;
         private AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
 
-        private readonly object movieSourceFileLock = new();
-        private readonly object showSourceFileLock = new();
-        private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
-        private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new Dictionary<string, List<VideoSourceData>>();
-        private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new Dictionary<string, List<ShowSourceData>>();
-
-        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
-
-
-
         #region References
         /// <summary> Reference to the <see cref="AEServerMainThread"/></summary>
         protected AEServerMainThread MainThread { get; set; }
@@ -32,7 +21,6 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary>Logger Reference</summary>
         protected ILogger Logger { get; set; }
         #endregion References
-
 
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Main Thread handle <see cref="AEServerMainThread"/></param>

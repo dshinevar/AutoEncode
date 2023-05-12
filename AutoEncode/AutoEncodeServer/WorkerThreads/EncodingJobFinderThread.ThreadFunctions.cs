@@ -1,4 +1,5 @@
 ﻿using AutoEncodeUtilities.Enums;
+using System;
 using System.Threading;
 
 namespace AutoEncodeServer.WorkerThreads
@@ -9,7 +10,7 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary>Shutdown MRE from MainThread; Signals to MainThread that Shutdown is complete.</summary>
         private ManualResetEvent ShutdownMRE { get; set; }
         /// <summary>Cancellation Token used for shutting down the thread.</summary>
-        private CancellationTokenSource ShutdownCancellationTokenSource { get; set; } = new CancellationTokenSource();
+        private readonly CancellationTokenSource ShutdownCancellationTokenSource = new();
         #endregion Shutdown Properties
 
         #region Thread Properties
@@ -19,6 +20,7 @@ namespace AutoEncodeServer.WorkerThreads
         protected string ThreadName => WorkerThread?.Name ?? nameof(EncodingJobFinderThread);
         /// <summary>The status of the Worker Thread</summary>
         protected AEWorkerThreadStatus ThreadStatus { get; set; } = AEWorkerThreadStatus.Processing;
+        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
         #endregion Thread Properties
 
         public void Start()

@@ -1,6 +1,5 @@
 ﻿using AutoEncodeServer.Comm;
 using AutoEncodeServer.WorkerThreads;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
@@ -15,7 +14,6 @@ namespace AutoEncodeServer
     {
         public readonly string ThreadName = "MainThread";
 
-        private bool _shutdown = false;
         /// <summary>Config as in file </summary>
         private AEServerConfig Config { get; set; }
         /// <summary>Config to be used; Does not have to match what is saved to file</summary>
@@ -74,7 +72,6 @@ namespace AutoEncodeServer
         public void Shutdown()
         {
             Debug.WriteLine("AEServerMainThread Shutting Down.");
-            _shutdown = true;
 
             // Stop Timers timers
             EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);

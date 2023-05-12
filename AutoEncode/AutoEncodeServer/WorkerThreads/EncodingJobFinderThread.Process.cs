@@ -12,17 +12,15 @@ namespace AutoEncodeServer.WorkerThreads
 {
     public partial class EncodingJobFinderThread
     {
+        private readonly object movieSourceFileLock = new();
+        private readonly object showSourceFileLock = new();
+        private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
+        private Dictionary<string, List<VideoSourceData>> MovieSourceFiles { get; set; } = new();
+        private Dictionary<string, List<ShowSourceData>> ShowSourceFiles { get; set; } = new();
+
         protected void ThreadLoop(object data)
         {
-            CancellationToken shutdownToken;
-            if (data is CancellationToken token)
-            {
-                shutdownToken = token;
-            }
-            else
-            {
-                return;
-            }
+            CancellationToken shutdownToken = data is CancellationToken token ? token : throw new Exception("ThreadLoop not given CancellationToken.");
 
             while (shutdownToken.IsCancellationRequested is false)
             {
