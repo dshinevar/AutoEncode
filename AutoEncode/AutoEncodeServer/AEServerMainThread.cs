@@ -76,6 +76,15 @@ namespace AutoEncodeServer
             Debug.WriteLine("AEServerMainThread Shutting Down.");
             _shutdown = true;
 
+            // Stop Timers timers
+            EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
+            EncodingJobTaskTimerDispose.WaitOne();
+            EncodingJobTaskTimerDispose.Dispose();
+
+            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
+            MaintenanceTimerDispose.WaitOne();
+            MaintenanceTimerDispose.Dispose();
+
             // Stop Comms
             ClientUpdateService?.Shutdown();
             CommunicationManager?.Stop();
@@ -85,15 +94,6 @@ namespace AutoEncodeServer
             EncodingJobBuilderCancellationToken?.Cancel();
             EncodingCancellationToken?.Cancel();
             EncodingJobPostProcessingCancellationToken?.Cancel();
-
-            // Stop Timers timers
-            EncodingJobTaskTimer?.Dispose(EncodingJobTaskTimerDispose);
-            EncodingJobTaskTimerDispose.WaitOne();
-            EncodingJobTaskTimerDispose.Dispose();
-
-            MaintenanceTimer?.Dispose(MaintenanceTimerDispose);
-            MaintenanceTimerDispose.WaitOne();
-            MaintenanceTimerDispose.Dispose();
 
             // Wait for threads to stop
             EncodingJobShutdown.WaitOne();
