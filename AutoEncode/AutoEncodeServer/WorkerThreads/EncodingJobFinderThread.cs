@@ -1,8 +1,6 @@
-﻿using AutoEncodeServer.Base;
-using AutoEncodeUtilities;
+﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
-using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
@@ -11,7 +9,7 @@ using System.Threading;
 
 namespace AutoEncodeServer.WorkerThreads
 {
-    public partial class EncodingJobFinderThread : AEWorkerThread
+    public partial class EncodingJobFinderThread
     {
         private bool DirectoryUpdate = false;
         private AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
@@ -25,41 +23,29 @@ namespace AutoEncodeServer.WorkerThreads
         private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
 
 
+
+        #region References
+        /// <summary> Reference to the <see cref="AEServerMainThread"/></summary>
+        protected AEServerMainThread MainThread { get; set; }
+        /// <summary> Reference to the Server State</summary>
+        protected AEServerConfig State { get; set; }
+        /// <summary>Logger Reference</summary>
+        protected ILogger Logger { get; set; }
+        #endregion References
+
+
         /// <summary>Constructor</summary>
         /// <param name="mainThread">Main Thread handle <see cref="AEServerMainThread"/></param>
         /// <param name="serverState">Current Server State<see cref="AEServerConfig"/></param>
         public EncodingJobFinderThread(AEServerMainThread mainThread, AEServerConfig serverState, ILogger logger, ManualResetEvent shutdownMRE)
-            : base(nameof(EncodingJobFinderThread), mainThread, serverState, logger, shutdownMRE)
         {
+            MainThread = mainThread;
+            State = serverState;
+            Logger = logger;
+            ShutdownMRE = shutdownMRE;
             ThreadSleep = State.JobFinderSettings.ThreadSleep;
             SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
         }
-
-        #region Start/Stop Functions
-        public override void Start(Action preThreadStart = null) => base.Start(BuildSourceFiles);
-
-        public override void Stop()
-        {
-            Shutdown = true;
-            Wake();
-            base.Stop();
-        }
-        #endregion Start/Stop Functions
-
-        #region Thread Functions
-        /// <summary> Wakes up thread by setting the Sleep AutoResetEvent.</summary>
-        public void Wake() => SleepARE.Set();
-
-        /// <summary> Sleeps thread for certain amount of time. </summary>
-        private void Sleep()
-        {
-            if (Shutdown is false)
-            {
-                ThreadStatus = AEWorkerThreadStatus.Sleeping;
-                SleepARE.WaitOne(ThreadSleep);
-            }
-        }
-        #endregion Thread Functions
 
         #region Public Functions
         /// <summary>Signal to thread to update directories to search for jobs.</summary>
