@@ -1,22 +1,23 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeUtilities.Interfaces;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace AutoEncodeServer.Data
 {
+#pragma warning disable CS0649
     /// <summary>
     /// Class to contain data pulled from ffprobe;  Lower-case is intentional for json serialization
     /// </summary>
-    public class ProbeData
+    internal class ProbeData
     {
         public List<Frame> frames;
         public List<Stream> streams;
         public Format format;
 
-        public class Frame
+        internal class Frame
         {
             public string media_type;
             public int stream_index;
@@ -28,7 +29,7 @@ namespace AutoEncodeServer.Data
             public List<SideData> side_data_list;
         }
 
-        public class SideData
+        internal class SideData
         {
             public string side_data_type;
             public string red_x;
@@ -45,7 +46,7 @@ namespace AutoEncodeServer.Data
             public int max_average;
         }
 
-        public class Stream
+        internal class Stream
         {
             public int index;
             public string codec_type;
@@ -53,6 +54,7 @@ namespace AutoEncodeServer.Data
             public string profile;
             public int width;
             public int height;
+            public string pix_fmt;
             public string color_space;
             public string color_transfer;
             public string color_primaries;
@@ -65,42 +67,94 @@ namespace AutoEncodeServer.Data
             public Disposition disposition;
         }
 
-        public class Tags
+        internal class Tags
         {
             public string language;
             public string title;
+            [JsonProperty(PropertyName = "NUMBER_OF_FRAMES-eng")]
+            public int number_of_frames;
         }
 
-        public class Disposition
+        internal class Disposition
         {
             public int @default;
             public int comment;
             public int forced;
         }
 
-        public class Format
+        internal class Format
         {
             public int nb_streams;
             public double duration; // seconds
         }
 
+        private static ChromaLocation? ConvertStringToChromaLocation(string chromaLocationString)
+        {
+            switch (chromaLocationString)
+            {
+                case "topleft":
+                {
+                    return ChromaLocation.TOP_LEFT;
+                }
+                case "center":
+                {
+                    return ChromaLocation.CENTER;
+                }
+                case "top":
+                {
+                    return ChromaLocation.TOP;
+                }
+                case "bottomleft":
+                {
+                    return ChromaLocation.BOTTOM_LEFT;
+                }
+                case "bottom":
+                {
+                    return ChromaLocation.BOTTOM;
+                }
+                case "left":
+                {
+                    return ChromaLocation.LEFT_DEFAULT;
+                }
+                default:
+                {
+                    return null;
+                }
+            }
+        }
+
         /// <summary> Converts to a <see cref="SourceStreamData"/> object</summary>
         /// <returns><see cref="SourceStreamData"/></returns>
         /// <exception cref="Exception">Throws if hdr data is supposedly found but is null or empty</exception>
-        public SourceStreamData ToSourceStreamData()
+        internal SourceStreamData ToSourceStreamData()
         {
-            SourceStreamData sourceFileData = new()
-            {
-                DurationInSeconds = Convert.ToInt32(format.duration)
-            };
+            int numberOfFrames = 0;
+            VideoStreamData videoStreamData = null;
+            List<AudioStreamData> audioStreams = null;
+            List<SubtitleStreamData> subtitleStreams = null;
 
             int audioIndex = 0;
             int subIndex = 0;
             foreach (Stream stream in streams)
             {
-                if (stream.codec_type.Equals("video") && sourceFileData.VideoStream is null)
+                if (stream.codec_type.Equals("video", StringComparison.OrdinalIgnoreCase) && videoStreamData is null)
                 {
+                    videoStreamData = new VideoStreamData()
+                    {
+                        StreamIndex = stream.index,
+                        Resolution = $"{stream.width}x{stream.height}",
+                        ResoultionInt = stream.width * stream.height,
+                        CodecName = stream.codec_name,
+                        Title = string.IsNullOrWhiteSpace(stream.tags.title) ? "Video" : stream.tags.title,
+                        ChromaLocation = ConvertStringToChromaLocation(stream.chroma_location),
+                        PixelFormat = stream.pix_fmt,
+                        ColorPrimaries = stream.color_primaries,
+                        ColorSpace = stream.color_space,
+                        ColorTransfer = stream.color_transfer
+                    };
+
                     string frameRateString = string.IsNullOrWhiteSpace(stream.r_frame_rate) ? (stream.avg_frame_rate ?? string.Empty) : stream.r_frame_rate;
+                    videoStreamData.FrameRate = frameRateString;
 
                     if (string.IsNullOrWhiteSpace(frameRateString) is false)
                     {
@@ -109,21 +163,11 @@ namespace AutoEncodeServer.Data
                         {
                             double frameRate = frameRateNumerator / frameRateDenominator;
                             int frames = (int)(frameRate * format.duration);
-                            sourceFileData.NumberOfFrames = frames;
+                            numberOfFrames = frames;
                         }
                     }
-
-                    sourceFileData.VideoStream = new VideoStreamData()
-                    {
-                        StreamIndex = stream.index,
-                        Resolution = $"{stream.width}x{stream.height}",
-                        ResoultionInt = stream.width * stream.height,
-                        CodecName = stream.codec_name,
-                        FrameRate = frameRateString,
-                        Title = string.IsNullOrWhiteSpace(stream.tags.title) ? "Video" : stream.tags.title
-                    };
                 }
-                else if (stream.codec_type.Equals("audio"))
+                else if (stream.codec_type.Equals("audio", StringComparison.OrdinalIgnoreCase))
                 {
                     AudioStreamData audioStream = new()
                     {
@@ -150,7 +194,7 @@ namespace AutoEncodeServer.Data
 
                     if (string.IsNullOrWhiteSpace(stream.codec_name) is false)
                     {
-                        if (stream.codec_name.Equals("dts"))
+                        if (stream.codec_name.Equals("dts", StringComparison.OrdinalIgnoreCase))
                         {
                             // Make sure profile is set, is not always -- fallback to codec_name
                             audioStream.CodecName = string.IsNullOrWhiteSpace(stream.profile) ? stream.codec_name : stream.profile;
@@ -170,11 +214,11 @@ namespace AutoEncodeServer.Data
                         audioStream.Commentary = true;
                     }
 
-                    sourceFileData.AudioStreams ??= new();
-                    sourceFileData.AudioStreams.Add(audioStream);
+                    audioStreams ??= new();
+                    audioStreams.Add(audioStream);
                     audioIndex++;
                 }
-                else if (stream.codec_type.Equals("subtitle"))
+                else if (stream.codec_type.Equals("subtitle", StringComparison.OrdinalIgnoreCase))
                 {
                     SubtitleStreamData subtitleStream = new()
                     {
@@ -186,80 +230,66 @@ namespace AutoEncodeServer.Data
                         Title = stream.tags.title ?? string.Empty
                     };
 
-                    sourceFileData.SubtitleStreams ??= new();
-                    sourceFileData.SubtitleStreams.Add(subtitleStream);
+                    subtitleStreams ??= new();
+                    subtitleStreams.Add(subtitleStream);
                     subIndex++;
                 }
             }
 
+            // Early Validation
             // Throw error if no video or audio data is found (no subs is fine)
-            if (sourceFileData.VideoStream is null)
+            if (videoStreamData is null)
             {
                 throw new Exception("No video stream found.");
             }
 
-            if ((sourceFileData.AudioStreams?.Any() ?? false) is false)
+            if ((audioStreams?.Any() ?? false) is false)
             {
                 throw new Exception("No audio streams found.");
             }
 
+            // Handle additional Frame data (usually HDR data)
             foreach (Frame frame in frames)
             {
                 // Currently don't do anything with audio (doesn't give much useful data)
                 if (frame.media_type.Equals("video"))
                 {
-                    sourceFileData.VideoStream.PixelFormat = string.IsNullOrWhiteSpace(frame.pix_fmt) ? throw new Exception("No Pixel Format Found") : frame.pix_fmt;
-                    sourceFileData.VideoStream.ColorPrimaries = string.IsNullOrWhiteSpace(frame.color_primaries) ? "bt709" : frame.color_primaries;
-                    sourceFileData.VideoStream.ColorSpace = string.IsNullOrWhiteSpace(frame.color_space) ? "bt709" : frame.color_space;
-                    sourceFileData.VideoStream.ColorTransfer = string.IsNullOrWhiteSpace(frame.color_transfer) ? "bt709" : frame.color_transfer;
-
-                    ChromaLocation? chroma = null;
-                    switch (frame.chroma_location)
+                    // Fallback data checks -- if somehow we still don't have data for these, grab from frame data -- will throw exceptions later if broken
+                    if (string.IsNullOrWhiteSpace(videoStreamData.PixelFormat)) 
                     {
-                        case "topleft":
-                        {
-                            chroma = ChromaLocation.TOP_LEFT;
-                            break;
-                        }
-                        case "center":
-                        {
-                            chroma = ChromaLocation.CENTER;
-                            break;
-                        }
-                        case "top":
-                        {
-                            chroma = ChromaLocation.TOP;
-                            break;
-                        }
-                        case "bottomleft":
-                        {
-                            chroma = ChromaLocation.BOTTOM_LEFT;
-                            break;
-                        }
-                        case "bottom":
-                        {
-                            chroma = ChromaLocation.BOTTOM;
-                            break;
-                        }
-                        case "left":
-                        default:
-                        {
-                            chroma = ChromaLocation.LEFT_DEFAULT;
-                            break;
-                        }
+                        videoStreamData.PixelFormat = frame.pix_fmt;
                     }
-                    sourceFileData.VideoStream.ChromaLocation = chroma;
+
+                    if (string.IsNullOrWhiteSpace(videoStreamData.ColorPrimaries))
+                    {
+                        videoStreamData.ColorPrimaries = frame.color_primaries;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(videoStreamData.ColorSpace))
+                    {
+                        videoStreamData.ColorSpace = frame.color_space;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(videoStreamData.ColorTransfer))
+                    {
+                        videoStreamData.ColorTransfer = frame.color_transfer;
+                    }
+
+                    if (videoStreamData.ChromaLocation is null)
+                    {
+                        videoStreamData.ChromaLocation = ConvertStringToChromaLocation(frame.chroma_location);
+                    }
 
                     // Usually should have something in here
                     if (frame?.side_data_list?.Any() ?? false)
                     {
                         // Should only be one
-                        SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata"));
+                        SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata", StringComparison.OrdinalIgnoreCase));
 
                         // Has HDR; Otherwise, we can't do HDR so don't do anything more
                         if (masteringDisplayMetadata is not null)
                         {
-                            SideData contentLightLevelMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Content light level metadata"));
+                            SideData contentLightLevelMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Content light level metadata", StringComparison.OrdinalIgnoreCase));
 
                             HDRData hdrData = new()
                             {
@@ -275,7 +305,7 @@ namespace AutoEncodeServer.Data
                                 MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.max_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.max_luminance.Split("/")[0],
                                 MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.min_luminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.min_luminance.Split("/")[0],
                                 MaxCLL = $"{contentLightLevelMetadata?.max_content ?? 0},{contentLightLevelMetadata?.max_average ?? 0}"
-                            };                            
+                            };
                             // Check if HDR10+ or DolbyVision
                             if (frame.side_data_list.Any(x => x.side_data_type.Contains("Dolby Vision")))
                             {
@@ -289,13 +319,32 @@ namespace AutoEncodeServer.Data
 
                             if (hdrData.IsDynamic) hdrData.DynamicMetadataFullPaths = new();
 
-                            sourceFileData.VideoStream.HDRData = hdrData;
+                            videoStreamData.HDRData = hdrData;
                         }
                     }
                 }
             }
 
-            return sourceFileData;
+            // Final Validation
+            if (string.IsNullOrWhiteSpace(videoStreamData.PixelFormat)) throw new Exception("No Pixel Format Found");
+
+            if (string.IsNullOrWhiteSpace(videoStreamData.ColorPrimaries)) throw new Exception("No Color Primary Found");
+
+            if (string.IsNullOrWhiteSpace(videoStreamData.ColorSpace)) throw new Exception("No Color Space Found");
+
+            if (string.IsNullOrWhiteSpace(videoStreamData.ColorTransfer)) throw new Exception("No Color Transfer Found");
+
+            if (videoStreamData.ChromaLocation is null) throw new Exception("No Chroma Location Found");
+
+            return new SourceStreamData()
+            {
+                DurationInSeconds = Convert.ToInt32(format.duration),
+                NumberOfFrames = numberOfFrames,
+                VideoStream = videoStreamData,
+                AudioStreams = audioStreams,
+                SubtitleStreams = subtitleStreams
+            };
         }
     }
+#pragma warning restore CS0649
 }
