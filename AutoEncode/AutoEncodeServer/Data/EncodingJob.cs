@@ -1,4 +1,5 @@
-﻿using AutoEncodeUtilities;
+﻿using AutoEncodeServer.Interfaces;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Json;
@@ -10,7 +11,9 @@ using System.Threading;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJob : IEncodingJobData
+    public class EncodingJob : 
+        IEncodingJobData,
+        IEncodingJobBuildData
     {
         /// <summary> Default Constructor </summary>
         public EncodingJob() { }

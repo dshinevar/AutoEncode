@@ -254,7 +254,7 @@ namespace AutoEncodeServer.Data
                 // Currently don't do anything with audio (doesn't give much useful data)
                 if (frame.media_type.Equals("video"))
                 {
-                    // Fallback data checks -- if somehow we still don't have data for these, grab from frame data -- will throw exceptions later if broken
+                    // Fallback data checks -- if somehow we still don't have data for these, grab from frame data
                     if (string.IsNullOrWhiteSpace(videoStreamData.PixelFormat)) 
                     {
                         videoStreamData.PixelFormat = frame.pix_fmt;
@@ -275,10 +275,7 @@ namespace AutoEncodeServer.Data
                         videoStreamData.ColorTransfer = frame.color_transfer;
                     }
 
-                    if (videoStreamData.ChromaLocation is null)
-                    {
-                        videoStreamData.ChromaLocation = ConvertStringToChromaLocation(frame.chroma_location);
-                    }
+                    videoStreamData.ChromaLocation ??= ConvertStringToChromaLocation(frame.chroma_location);
 
                     // Usually should have something in here
                     if (frame?.side_data_list?.Any() ?? false)
@@ -324,17 +321,6 @@ namespace AutoEncodeServer.Data
                     }
                 }
             }
-
-            // Final Validation
-            if (string.IsNullOrWhiteSpace(videoStreamData.PixelFormat)) throw new Exception("No Pixel Format Found");
-
-            if (string.IsNullOrWhiteSpace(videoStreamData.ColorPrimaries)) throw new Exception("No Color Primary Found");
-
-            if (string.IsNullOrWhiteSpace(videoStreamData.ColorSpace)) throw new Exception("No Color Space Found");
-
-            if (string.IsNullOrWhiteSpace(videoStreamData.ColorTransfer)) throw new Exception("No Color Transfer Found");
-
-            if (videoStreamData.ChromaLocation is null) throw new Exception("No Chroma Location Found");
 
             return new SourceStreamData()
             {

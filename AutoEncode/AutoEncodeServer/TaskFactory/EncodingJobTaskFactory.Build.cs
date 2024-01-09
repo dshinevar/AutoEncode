@@ -1,4 +1,5 @@
 using AutoEncodeServer.Data;
+using AutoEncodeServer.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
@@ -20,14 +21,14 @@ namespace AutoEncodeServer.TaskFactory
     public static partial class EncodingJobTaskFactory
     {
         /// <summary>Builds out an <see cref="EncodingJob"/> by analyzing the file's streams, building encoding instructions, and building FFmpeg arguments.</summary>
-        /// <param name="job">The <see cref="EncodingJob"/> to be filled out.</param>
+        /// <param name="job">The <see cref="IEncodingJobBuildData"/> to be filled out.</param>
         /// <param name="dolbyVisionEnabled">Is DolbyVision enabled</param>
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
         /// <param name="hdr10plusExtractorPath">The full path of the hdr10plus extractor program (hdr10plus_tool)</param>
         /// <param name="dolbyVisionExtractorPath">The full path of the dolby vision extractor program (dovi_tool)</param>
         /// <param name="logger"><see cref="ILogger"/></param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
-        public static void BuildEncodingJob(EncodingJob job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
+        public static void BuildEncodingJob(IEncodingJobBuildData job, bool dolbyVisionEnabled, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
                                             string x265Path, ILogger logger, CancellationToken cancellationToken)
         {
             job.SetStatus(EncodingJobStatus.BUILDING);
@@ -175,7 +176,9 @@ namespace AutoEncodeServer.TaskFactory
                 try
                 {
                     job.SetBuildingStatus(EncodingJobBuildingStatus.INSTRUCTIONS);
-                    job.EncodingInstructions = DetermineEncodingInstructions(job.SourceStreamData, job.DestinationFullPath);
+                    DetermineEncodingInstructions(job);
+
+                    if (job.EncodingInstructions is null) throw new Exception("EncodingInstructions null.");
                 }
                 catch (Exception ex)
                 {
@@ -191,38 +194,36 @@ namespace AutoEncodeServer.TaskFactory
                     job.SetBuildingStatus(EncodingJobBuildingStatus.COMMAND);
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
                     {
-                        (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments)
-                            = BuildDolbyVisionEncodingCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath, ffmpegDir, x265Path);
+                        BuildDolbyVisionEncodingCommandArguments(job, ffmpegDir, x265Path);
 
-                        if (string.IsNullOrWhiteSpace(videoEncodingCommandArguments) ||
-                            string.IsNullOrWhiteSpace(audioSubEncodingCommandArguments) ||
-                            string.IsNullOrWhiteSpace(mergeCommandArguments))
+                        if (job.EncodingCommandArguments is DolbyVisionEncodingCommandArguments args)
                         {
-                            throw new Exception("Empty dolby vision encoding command argument string returned.");
+                            if (string.IsNullOrWhiteSpace(args.VideoEncodingCommandArguments) || 
+                                string.IsNullOrWhiteSpace(args.AudioSubsEncodingCommandArguments) ||
+                                string.IsNullOrWhiteSpace(args.MergeCommandArguments))
+                            {
+                                throw new Exception("Empty dolby vision encoding command argument string returned.");
+                            }
                         }
                         else
                         {
-                            job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
-                            {
-                                VideoEncodingCommandArguments = videoEncodingCommandArguments,
-                                AudioSubsEncodingCommandArguments = audioSubEncodingCommandArguments,
-                                MergeCommandArguments = mergeCommandArguments
-                            };
+                            throw new Exception("Null or invalid dolby vision encoding command arguments");
                         }
                     }
                     else
                     {
-                        string ffmpegEncodingCommandArguments = BuildFFmpegCommandArguments(job.EncodingInstructions, job.SourceStreamData, job.Name, job.SourceFullPath, job.DestinationFullPath);
-                        if (string.IsNullOrWhiteSpace(ffmpegEncodingCommandArguments))
+                        BuildFFmpegCommandArguments(job);
+
+                        if (job.EncodingCommandArguments is EncodingCommandArguments args)
                         {
-                            throw new Exception("Empty encoding command argument string returned.");
+                            if (string.IsNullOrWhiteSpace(args.FFmpegEncodingCommandArguments))
+                            {
+                                throw new Exception("Empty encoding command argument string returned.");
+                            }
                         }
                         else
                         {
-                            job.EncodingCommandArguments = new EncodingCommandArguments()
-                            {
-                                FFmpegEncodingCommandArguments = ffmpegEncodingCommandArguments
-                            };
+                            throw new Exception("Null or invalid encoding command arguments");
                         }
                     }
                 }
@@ -242,7 +243,7 @@ namespace AutoEncodeServer.TaskFactory
             }
             catch (Exception ex)
             {
-                job.SetError(logger.LogException(ex, $"Error building encoding job for {job}", details: new {job.Id, job.Name, job.Status}));
+                job.SetError(logger.LogException(ex, $"Error building encoding job for {job}", details: new {job.Id, job.Name, job.BuildingStatus}));
                 return;
             }
 
@@ -470,8 +471,9 @@ namespace AutoEncodeServer.TaskFactory
         /// <summary> Determines/Builds <see cref="EncodingInstructions"/> for the given stream data. </summary>
         /// <param name="streamData"><see cref="SourceStreamData"/></param>
         /// <returns><see cref="EncodingInstructions"/></returns>
-        private static EncodingInstructions DetermineEncodingInstructions(ISourceStreamData streamData, string destinationFullPath)
+        private static void DetermineEncodingInstructions(IEncodingJobBuildData job)
         {
+            ISourceStreamData streamData = job.SourceStreamData;
             EncodingInstructions instructions = new();
 
             VideoStreamEncodingInstructions videoStreamEncodingInstructions = new()
@@ -499,8 +501,8 @@ namespace AutoEncodeServer.TaskFactory
 
                         if (path.Key.Equals(HDRFlags.DOLBY_VISION))
                         {
-                            instructions.EncodedVideoFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".hevc").Replace('\'', ' ');
-                            instructions.EncodedAudioSubsFullPath = destinationFullPath.Replace(Path.GetExtension(destinationFullPath), ".as.mkv").Replace('\'', ' ');
+                            instructions.EncodedVideoFullPath = job.DestinationFullPath.Replace(Path.GetExtension(job.DestinationFullPath), ".hevc").Replace('\'', ' ');
+                            instructions.EncodedAudioSubsFullPath = job.DestinationFullPath.Replace(Path.GetExtension(job.DestinationFullPath), ".as.mkv").Replace('\'', ' ');
                         }
 
                     }
@@ -593,26 +595,24 @@ namespace AutoEncodeServer.TaskFactory
 
             instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
 
-            return instructions;
+            job.EncodingInstructions = instructions;
         }
 
-        /// <summary> Builds the FFmpeg command arguments string </summary>
-        /// <param name="instructions"><see cref="EncodingInstructions"/> data</param>
-        /// <param name="streamData"><see cref="StreamData"/></param>
-        /// <param name="title">The final title to set in the file metadata</param>
-        /// <param name="sourceFullPath">Full path of the source file</param>
-        /// <param name="destinationFullPath">Full path for the expected destination file</param>
-        /// <returns>A string of the FFmpeg arguments</returns>
+        /// <summary>Builds and sets command arguments for the given encoding job</summary>
+        /// <param name="job">The encoding job (<see cref="IEncodingJobBuildData"/>)</param>
         /// <exception cref="Exception">Something went wrong/invalid instructions.</exception>
         /// <exception cref="NotImplementedException">Potentially unimplemented instructions.</exception>
-        private static string BuildFFmpegCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData, string title, string sourceFullPath, string destinationFullPath)
+        private static void BuildFFmpegCommandArguments(IEncodingJobBuildData job)
         {
+            ISourceStreamData streamData = job.SourceStreamData;
+            EncodingInstructions instructions = job.EncodingInstructions;
+
             VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
 
             // Format should hopefully always add space to end of append
             const string format = "{0} ";
             StringBuilder sbArguments = new();
-            sbArguments.AppendFormat(format, $"-y -nostdin -i \"{sourceFullPath}\"");
+            sbArguments.AppendFormat(format, $"-y -nostdin -i \"{job.SourceFullPath}\"");
 
             // Map Section
             sbArguments.AppendFormat(format, "-map 0:v:0");
@@ -642,8 +642,10 @@ namespace AutoEncodeServer.TaskFactory
                 sbArguments.AppendFormat(format, "-c:v libx265").AppendFormat(format, "-preset slow").AppendFormat(format, $"-crf {videoInstructions.CRF}");
                 if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
                 sbArguments.Append($"-x265-params \"bframes={videoInstructions.BFrames}:keyint=120:repeat-headers=1:")
-                    .Append($"colorprim={streamData.VideoStream.ColorPrimaries}:transfer={streamData.VideoStream.ColorTransfer}:colormatrix={streamData.VideoStream.ColorSpace}")
-                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $":chromaloc={(int)streamData.VideoStream.ChromaLocation}")}");
+                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorPrimaries) ? string.Empty : $"colorprim={streamData.VideoStream.ColorPrimaries}:")}")
+                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorTransfer) ? string.Empty : $"transfer={streamData.VideoStream.ColorTransfer}:")}")
+                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorSpace) ? string.Empty : $"colormatrix={streamData.VideoStream.ColorSpace}:")}")
+                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $"chromaloc={(int)streamData.VideoStream.ChromaLocation}")}");
 
                 if (videoInstructions.HasHDR)
                 {
@@ -718,17 +720,18 @@ namespace AutoEncodeServer.TaskFactory
                 }
             }
 
-            sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{title}\" \"{destinationFullPath}\"");
-
-            return sbArguments.ToString();
+            sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{job.Name}\" \"{job.DestinationFullPath}\"");
         }
 
-        private static (string, string, string) BuildDolbyVisionEncodingCommandArguments(EncodingInstructions instructions, ISourceStreamData streamData,
-            string title, string sourceFullPath, string destinationFullPath, string ffmpegDirectory, string x265FullPath)
+        private static void BuildDolbyVisionEncodingCommandArguments(IEncodingJobBuildData job, string ffmpegDirectory, string x265FullPath)
         {
             const string format = "{0} ";
+            string encodedVideoFullPath = job.EncodingInstructions.EncodedVideoFullPath;
+            ISourceStreamData streamData = job.SourceStreamData;
 
-            (string videoEncodingCommandArguments, string audioSubEncodingCommandArguments, string mergeCommandArguments) arguments = new();
+            string videoEncodingCommandArguments;
+            string audioSubEncodingCommandArguments;
+            string mergeCommandArguments;
 
             // Video extraction/encoding
             StringBuilder sbVideo = new();
@@ -740,16 +743,16 @@ namespace AutoEncodeServer.TaskFactory
             string masterDisplayFormatted;
             string maxCLLFormatted;
 
-            VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
+            VideoStreamEncodingInstructions videoInstructions = job.EncodingInstructions.VideoStreamEncodingInstructions;
             HDRData hdr = streamData.VideoStream.HDRData;
             videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 ffmpegFormatted = $"'{Path.Combine(ffmpegDirectory, "ffmpeg")}'";
-                sourceFormatted = $"'{sourceFullPath.Replace("'", "'\\''")}'";
+                sourceFormatted = $"'{job.SourceFullPath.Replace("'", "'\\''")}'";
                 x265Formatted = $"'{x265FullPath}'";
-                outputFormatted = $"'{instructions.EncodedVideoFullPath}'";
+                outputFormatted = $"'{encodedVideoFullPath}'";
                 masterDisplayFormatted = $"'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'";
                 maxCLLFormatted = $"'{streamData.VideoStream.HDRData.MaxCLL}'";
                 dolbyVisionPathFormatted = $"'{dolbyVisionMetadataPath}'";
@@ -757,9 +760,9 @@ namespace AutoEncodeServer.TaskFactory
             else
             {
                 ffmpegFormatted = $"\"{Path.Combine(ffmpegDirectory, "ffmpeg")}\"";
-                sourceFormatted = $"\"{sourceFullPath}\"";
+                sourceFormatted = $"\"{job.SourceFullPath}\"";
                 x265Formatted = $"\"{x265FullPath}\"";
-                outputFormatted = $"\"{instructions.EncodedVideoFullPath}\"";
+                outputFormatted = $"\"{encodedVideoFullPath}\"";
                 masterDisplayFormatted = $"\"G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})\"";
                 maxCLLFormatted = $"\"{streamData.VideoStream.HDRData.MaxCLL}\"";
                 dolbyVisionPathFormatted = $"\"{dolbyVisionMetadataPath}\"";
@@ -787,23 +790,23 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             sbVideo.Append($"{outputFormatted}\"");
-            arguments.videoEncodingCommandArguments = sbVideo.ToString();
+            videoEncodingCommandArguments = sbVideo.ToString();
 
             // Audio/Sub extraction/encoding
             StringBuilder sbAudioSubs = new();
-            sbAudioSubs.AppendFormat(format, $"-y -nostdin -i \"{sourceFullPath}\" -vn");
-            foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
+            sbAudioSubs.AppendFormat(format, $"-y -nostdin -i \"{job.SourceFullPath}\" -vn");
+            foreach (AudioStreamEncodingInstructions audioInstructions in job.EncodingInstructions.AudioStreamEncodingInstructions)
             {
                 sbAudioSubs.AppendFormat(format, $"-map 0:a:{audioInstructions.SourceIndex}");
             }
-            foreach (SubtitleStreamEncodingInstructions subtitleInstructions in instructions.SubtitleStreamEncodingInstructions)
+            foreach (SubtitleStreamEncodingInstructions subtitleInstructions in job.EncodingInstructions.SubtitleStreamEncodingInstructions)
             {
                 sbAudioSubs.AppendFormat(format, $"-map 0:s:{subtitleInstructions.SourceIndex}");
             }
 
-            for (int i = 0; i < instructions.AudioStreamEncodingInstructions.Count; i++)
+            for (int i = 0; i < job.EncodingInstructions.AudioStreamEncodingInstructions.Count; i++)
             {
-                AudioStreamEncodingInstructions audioInstruction = instructions.AudioStreamEncodingInstructions[i];
+                AudioStreamEncodingInstructions audioInstruction = job.EncodingInstructions.AudioStreamEncodingInstructions[i];
                 if (audioInstruction.AudioCodec.Equals(AudioCodec.UNKNOWN))
                 {
                     throw new Exception("AudioCodec not set (Unknown). Unable to build ffmpeg arguments");
@@ -828,9 +831,9 @@ namespace AutoEncodeServer.TaskFactory
                 }
             }
 
-            for (int i = 0; i < instructions.SubtitleStreamEncodingInstructions.Count; i++)
+            for (int i = 0; i < job.EncodingInstructions.SubtitleStreamEncodingInstructions.Count; i++)
             {
-                SubtitleStreamEncodingInstructions subtitleInstruction = instructions.SubtitleStreamEncodingInstructions[i];
+                SubtitleStreamEncodingInstructions subtitleInstruction = job.EncodingInstructions.SubtitleStreamEncodingInstructions[i];
                 if (subtitleInstruction.Forced is true)
                 {
                     sbAudioSubs.AppendFormat(format, $"-c:s:{i} copy -disposition:s:{i} forced");
@@ -841,16 +844,21 @@ namespace AutoEncodeServer.TaskFactory
                 }
             }
 
-            sbAudioSubs.AppendFormat(format, $"-max_muxing_queue_size 9999 \"{instructions.EncodedAudioSubsFullPath}\"");
-            arguments.audioSubEncodingCommandArguments = sbAudioSubs.ToString();
+            sbAudioSubs.AppendFormat(format, $"-max_muxing_queue_size 9999 \"{job.EncodingInstructions.EncodedAudioSubsFullPath}\"");
+            audioSubEncodingCommandArguments = sbAudioSubs.ToString();
 
             // Merging
             StringBuilder sbMerge = new();
-            sbMerge.AppendFormat(format, $"-o \"{destinationFullPath}\" --compression -1:none \"{instructions.EncodedVideoFullPath}\" --compression -1:none \"{instructions.EncodedAudioSubsFullPath}\"")
-                .Append($"--title \"{title}\"");
-            arguments.mergeCommandArguments = sbMerge.ToString();
+            sbMerge.AppendFormat(format, $"-o \"{job.DestinationFullPath}\" --compression -1:none \"{encodedVideoFullPath}\" --compression -1:none \"{job.EncodingInstructions.EncodedAudioSubsFullPath}\"")
+                .Append($"--title \"{job.Name}\"");
+            mergeCommandArguments = sbMerge.ToString();
 
-            return arguments;
+            job.EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
+            {
+                VideoEncodingCommandArguments = videoEncodingCommandArguments,
+                AudioSubsEncodingCommandArguments = audioSubEncodingCommandArguments,
+                MergeCommandArguments = mergeCommandArguments
+            };
         }
         #endregion BuildEncodingJob Private Functions
     }
