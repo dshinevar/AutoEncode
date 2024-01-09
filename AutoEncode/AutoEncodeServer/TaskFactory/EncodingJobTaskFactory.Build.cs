@@ -721,6 +721,11 @@ namespace AutoEncodeServer.TaskFactory
             }
 
             sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{job.Name}\" \"{job.DestinationFullPath}\"");
+
+            job.EncodingCommandArguments = new EncodingCommandArguments()
+            {
+                FFmpegEncodingCommandArguments = sbArguments.ToString()
+            };
         }
 
         private static void BuildDolbyVisionEncodingCommandArguments(IEncodingJobBuildData job, string ffmpegDirectory, string x265FullPath)
