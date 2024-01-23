@@ -5,13 +5,6 @@
         Connected = 0,
         Disconnected = 1,
 
-        #region Status
-        Status_MovieSourceFiles_Request,
-        Status_MovieSourceFiles_Response,
-        Status_ShowSourceFiles_Request,
-        Status_ShowSourceFiles_Response,
-        #endregion Status
-
         #region Commands
         Cancel_Request,
         Cancel_Response,
@@ -21,6 +14,10 @@
         Resume_Response,
         Cancel_Pause_Request,
         Cancel_Pause_Response,
+        Encode_Request,
+        Encode_Response,
+        Source_Files_Request,
+        Source_Files_Response,
         #endregion Commands
     }
 }

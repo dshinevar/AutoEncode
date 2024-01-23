@@ -13,12 +13,17 @@
   <ItemGroup>
     <None Remove="Resources\AutoEncode.png" />
     <None Remove="Resources\cancel.png" />
-    <None Remove="Resources\down_arrow.png" />
+    <None Remove="Resources\debug.png" />
     <None Remove="Resources\error.png" />
+    <None Remove="Resources\gear.png" />
+    <None Remove="Resources\info.png" />
     <None Remove="Resources\pause.png" />
     <None Remove="Resources\play.png" />
+    <None Remove="Resources\plus_sign.png" />
     <None Remove="Resources\refresh.png" />
+    <None Remove="Resources\skull.png" />
     <None Remove="Resources\success.png" />
+    <None Remove="Resources\warning.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,9 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NetMQ" Version="4.0.1.12" />
+    <PackageReference Include="NetMQ" Version="4.0.1.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="YamlDotNet" Version="13.1.0" />
+    <PackageReference Include="YamlDotNet" Version="15.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,12 +46,21 @@
       <PackagePath>\</PackagePath>
     </Resource>
     <Resource Include="Resources\cancel.png" />
-    <Resource Include="Resources\down_arrow.png" />
+    <Resource Include="Resources\debug.png" />
     <Resource Include="Resources\error.png" />
+    <Resource Include="Resources\gear.png" />
+    <Resource Include="Resources\info.png" />
     <Resource Include="Resources\pause.png" />
     <Resource Include="Resources\play.png" />
+    <Resource Include="Resources\plus_sign.png" />
     <Resource Include="Resources\refresh.png" />
+    <Resource Include="Resources\skull.png" />
     <Resource Include="Resources\success.png" />
+    <Resource Include="Resources\warning.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controls\" />
   </ItemGroup>
 
 </Project>

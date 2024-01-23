@@ -33,7 +33,7 @@ namespace AutoEncodeClient.Views.DesignData
                 Id = 2,
                 SourceFullPath = "M:\\Movies\\Big Big Big Little Big Explosion (2050).mkv",
                 DestinationFullPath = "M:\\Movies (Encoded)\\Big Big Big Little Big Explosion (2050).mkv",
-                Status = EncodingJobStatus.BUILT,
+                Status = EncodingJobStatus.ENCODED,
                 EncodingProgress = 0,
                 ElapsedEncodingTime = new TimeSpan(1, 2, 23, 56),
                 CompletedEncodingDateTime = DateTime.Now,
@@ -137,69 +137,96 @@ namespace AutoEncodeClient.Views.DesignData
 
             SelectedEncodingJobViewModel = encodingJobViewModel2;
 
-            MovieSourceFiles = new ObservableDictionary<string, BulkObservableCollection<VideoSourceData>>()
+            MovieSourceFiles = new ObservableDictionary<string, BulkObservableCollection<SourceFileData>>()
             {
                 {   "Movies",
-                    new BulkObservableCollection<VideoSourceData>()
+                    new BulkObservableCollection<SourceFileData>()
                     {
-                        new VideoSourceData() { FullPath = "C:\\Movies\\Knifin Around (1984).mkv", Encoded = true },
-                        new VideoSourceData() { FullPath = "C:\\Movies\\Halloween - Michael's Birthday Party (2030).mkv", Encoded = false }
+                        new SourceFileData() { FullPath = "C:\\Movies\\Knifin Around (1984).mkv", Encoded = true },
+                        new SourceFileData() { FullPath = "C:\\Movies\\Halloween - Michael's Birthday Party (2030).mkv", Encoded = false }
                     }
                 },
                 {
                     "Kids Movies",
-                    new BulkObservableCollection<VideoSourceData>()
+                    new BulkObservableCollection<SourceFileData>()
                     {
-                        new VideoSourceData() { FullPath = "C:\\Kids Movies\\Paddington 2077 (2077).mkv", Encoded = true}
+                        new SourceFileData() { FullPath = "C:\\Kids Movies\\Paddington 2077 (2077).mkv", Encoded = true}
                     }
                 }
             };
 
-            ShowSourceFiles = new ObservableDictionary<string, BulkObservableCollection<ShowSourceData>>()
+            ShowSourceFiles = new ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>>()
             {
+                /*
                 {   "Shows",
-                    new BulkObservableCollection<ShowSourceData>()
+                    new BulkObservableCollection<ShowSourceFileData>()
                     {
-                        new ShowSourceData() { ShowName = "Seinfeld",
-                            Seasons = new List<SeasonSourceData>()
-                            {
-                                new SeasonSourceData() { Season = "1",
-                                    Episodes = new List<VideoSourceData>
-                                    {
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Seinfeld\\Season 1\\Seinfeld - s01e01 - Pilot.mkv", Encoded = true },
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Seinfeld\\Season 1\\Seinfeld - s01e02 - The Second Pilot.mkv", Encoded = false}
-                                    }
-                                },
-                                new SeasonSourceData() { Season = "2",
-                                    Episodes = new List<VideoSourceData>
-                                    {
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Seinfeld\\Season 2\\Seinfeld - s02e01 - Kramer's Revenge.mkv", Encoded = false},
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Seinfeld\\Season 2\\Seinfeld - s02e03 - Summer of George.mkv", Encoded = true}
-                                    }
-                                }
-                            }
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Seinfeld",
+                            SeasonInt = 1,
+                            FullPath = "C:\\Shows\\Seinfeld\\Season 1\\Seinfeld - s01e01 - Pilot.mkv",
+                            Encoded = true,
+                            EpisodeInts = new List<int>() { 1 }
                         },
-                        new ShowSourceData() { ShowName = "Metalocalypse",
-                            Seasons = new List<SeasonSourceData>()
-                            {
-                                new SeasonSourceData() { Season = "3",
-                                    Episodes = new List<VideoSourceData>
-                                    {
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Metalocalypse\\Season 3\\Metalocalypse - s03e01 - Metal.mkv", Encoded = true },
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Metalocalypse\\Season 3\\Metalocalypse - s03e02 - Death Metal.mkv", Encoded = false}
-                                    }
-                                },
-                                new SeasonSourceData() { Season = "4",
-                                    Episodes = new List<VideoSourceData>
-                                    {
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Metalocalypse\\Season 4\\Metalocalypse - s04e01 - Black Metal.mkv", Encoded = false},
-                                        new VideoSourceData() { FullPath = "C:\\Shows\\Metalocalypse\\Season 4\\Metalocalypse - s04e03 - Metalcore.mkv", Encoded = true}
-                                    }
-                                }
-                            }
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Seinfeld",
+                            SeasonInt = 1,
+                            FullPath = "C:\\Shows\\Seinfeld\\Season 1\\Seinfeld - s01e02 - The Second Pilot.mkv",
+                            Encoded = false,
+                            EpisodeInts = new List<int>() { 2 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Seinfeld",
+                            SeasonInt = 2,
+                            FullPath = "C:\\Shows\\Seinfeld\\Season 2\\Seinfeld - s02e01 - Kramer's Revenge.mkv",
+                            Encoded = false,
+                            EpisodeInts = new List<int>() { 1 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Seinfeld",
+                            SeasonInt = 2,
+                            FullPath = "C:\\Shows\\Seinfeld\\Season 2\\Seinfeld - s02e03 - Summer of George.mkv",
+                            Encoded = true,
+                            EpisodeInts = new List<int>() { 2 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Metalocalypse",
+                            SeasonInt = 3,
+                            FullPath = "C:\\Shows\\Metalocalypse\\Season 3\\Metalocalypse - s03e01 - Metal.mkv",
+                            Encoded = true,
+                            EpisodeInts = new List<int>() { 1 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Metalocalypse",
+                            SeasonInt = 3,
+                            FullPath = "C:\\Shows\\Metalocalypse\\Season 3\\Metalocalypse - s03e02 - Death Metal.mkv",
+                            Encoded = false,
+                            EpisodeInts = new List<int>() { 2 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Metalocalypse",
+                            SeasonInt = 4,
+                            FullPath = "C:\\Shows\\Metalocalypse\\Season 4\\Metalocalypse - s04e01 - Black Metal.mkv",
+                            Encoded = true,
+                            EpisodeInts = new List<int>() { 1 }
+                        },
+                        new ShowSourceFileData()
+                        {
+                            ShowName = "Metalocalypse",
+                            SeasonInt = 4,
+                            FullPath = "C:\\Shows\\Metalocalypse\\Season 4\\Metalocalypse - s04e03 - Metalcore.mkv",
+                            Encoded = false,
+                            EpisodeInts = new List<int>() { 2 }
                         }
                     }
-                }
+                }*/
             };
         }
 
@@ -207,8 +234,8 @@ namespace AutoEncodeClient.Views.DesignData
         public ICommand RefreshSourceFilesCommand { get; }
         public BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; }
         public EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
-        public ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; set; }
-        public ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; set; }
+        public ObservableDictionary<string, BulkObservableCollection<SourceFileData>> MovieSourceFiles { get; set; }
+        public ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> ShowSourceFiles { get; set; }
 
         public bool ConnectedToServer { get; set; } = true;
 

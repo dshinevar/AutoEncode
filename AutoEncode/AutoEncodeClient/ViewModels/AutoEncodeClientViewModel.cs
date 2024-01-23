@@ -2,6 +2,7 @@
 using AutoEncodeClient.Comm;
 using AutoEncodeClient.Command;
 using AutoEncodeClient.Config;
+using AutoEncodeClient.Dialogs;
 using AutoEncodeClient.Models;
 using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeUtilities.Data;
@@ -9,7 +10,6 @@ using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -23,15 +23,18 @@ namespace AutoEncodeClient.ViewModels
         private readonly ClientUpdateService ClientUpdateService;
         private readonly CommunicationManager CommunicationManager;
 
-        private Task RefreshSourceFilesTask { get; set; }
-
         public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, CommunicationManager communicationManager, AEClientConfig config)
             : base(model)
         {
             CommunicationManager = communicationManager;
 
-            AECommand refreshSourceFilesCommand = new(RefreshSourceFiles);
+            AECommand refreshSourceFilesCommand = new(() => CanRefreshSourceFiles, RefreshSourceFiles);
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
+            AddCommand(refreshSourceFilesCommand, nameof(CanRefreshSourceFiles));
+
+            AECommandWithParameter requestEncodeCommand = new(() => CanRequestEncode, RequestEncode);
+            RequestEncodeCommand = requestEncodeCommand;
+            AddCommand(requestEncodeCommand, nameof(CanRequestEncode));
 
             RefreshSourceFiles();
 
@@ -42,14 +45,26 @@ namespace AutoEncodeClient.ViewModels
 
         #region Commands
         public ICommand RefreshSourceFilesCommand { get; }
+        private bool _canRefreshSouceFiles = true;
+        private bool CanRefreshSourceFiles
+        {
+            get => _canRefreshSouceFiles;
+            set => SetAndNotify(_canRefreshSouceFiles, value, () => _canRefreshSouceFiles = value);
+        }
+
+        public ICommand RequestEncodeCommand { get; }
+        private bool _canRequestEncode = true;
+        private bool CanRequestEncode
+        {
+            get => _canRequestEncode;
+            set => SetAndNotify(_canRequestEncode, value, () => _canRequestEncode = value);
+        }
         #endregion Commands
 
         #region Properties
         public BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; } = new BulkObservableCollection<EncodingJobViewModel>();
-        public ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; }
-            = new ObservableDictionary<string, BulkObservableCollection<VideoSourceData>>();
-        public ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; }
-            = new ObservableDictionary<string, BulkObservableCollection<ShowSourceData>>();
+        public ObservableDictionary<string, BulkObservableCollection<SourceFileData>> MovieSourceFiles { get; } = new();
+        public ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> ShowSourceFiles { get; } = new();
 
         private EncodingJobViewModel _selectedEncodingJobViewModel = null;
         public EncodingJobViewModel SelectedEncodingJobViewModel
@@ -57,7 +72,7 @@ namespace AutoEncodeClient.ViewModels
             get => _selectedEncodingJobViewModel;
             set => SetAndNotify(_selectedEncodingJobViewModel, value, () => _selectedEncodingJobViewModel = value);
         }
-        public bool ConnectedToServer => Model.ConnectedToServer;
+        public bool ConnectedToServer => ClientUpdateService.Connected;
         #endregion Properties
 
         private void UpdateClient(List<EncodingJobData> encodingJobQueue)
@@ -86,7 +101,8 @@ namespace AutoEncodeClient.ViewModels
                     EncodingJobViewModel job = EncodingJobs.SingleOrDefault(x => x.Equals(data));
                     if (job is not null)
                     {
-                        job.Update(data);
+                        Application.Current.Dispatcher.BeginInvoke(() => job.Update(data));
+
                         int currentIndex = EncodingJobs.IndexOf(job);
                         int newIndex = encodingJobQueue.IndexOf(data);
 
@@ -111,42 +127,94 @@ namespace AutoEncodeClient.ViewModels
             }
         }
 
-        private void RefreshSourceFiles()
+        private async void RefreshSourceFiles()
         {
-            if (RefreshSourceFilesTask?.IsCompleted ?? true)
+            CanRefreshSourceFiles = false;
+
+            var (Movies, Shows) = await Model.RequestSourceFiles();
+
+            if (Movies is null && Shows is null)
             {
-                RefreshSourceFilesTask = Task.Factory.StartNew(() =>
+                AEDialogHandler.ShowError("Failed to get source files.", "Source File Request Failure");
+                return;
+            }
+
+            if (Movies is not null)
+            {
+                var converted = new Dictionary<string, BulkObservableCollection<SourceFileData>>(Movies
+                                        .ToDictionary(x => x.Key, x => new BulkObservableCollection<SourceFileData>(x.Value)));
+                await Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    Dictionary<string, List<VideoSourceData>> movieSourceData = Model.GetCurrentMovieSourceData();
-                    Dictionary<string, List<ShowSourceData>> showSourceData = Model.GetCurrentShowSourceData();
+                    MovieSourceFiles.Refresh(converted);
 
-                    if (movieSourceData is not null)
+                    foreach (KeyValuePair<string, BulkObservableCollection<SourceFileData>> keyValuePair in MovieSourceFiles)
                     {
-                        var converted = new Dictionary<string, BulkObservableCollection<VideoSourceData>>(movieSourceData
-                                                .ToDictionary(x => x.Key, x => new BulkObservableCollection<VideoSourceData>(x.Value)));
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            MovieSourceFiles.Refresh(converted);
-
-                            foreach (KeyValuePair<string, BulkObservableCollection<VideoSourceData>> keyValuePair in MovieSourceFiles)
-                            {
-                                keyValuePair.Value.Sort(VideoSourceData.CompareByFileName);
-                            }
-
-                        });
+                        keyValuePair.Value.Sort(SourceFileData.CompareByFileName);
                     }
 
-                    if (showSourceData is not null)
-                    {
-                        var converted = new Dictionary<string, BulkObservableCollection<ShowSourceData>>(showSourceData
-                                                .ToDictionary(x => x.Key, x => new BulkObservableCollection<ShowSourceData>(x.Value)));
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            ShowSourceFiles.Refresh(converted);
-                        });
-                    }
                 });
             }
+
+            if (Shows is not null)
+            {
+                BuildShowSourceFiles(Shows);
+            }
+
+            CanRefreshSourceFiles = true;
+        }
+
+        private async void BuildShowSourceFiles(IDictionary<string, IEnumerable<ShowSourceFileData>> showSourceData)
+        {
+            ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> updateFiles = new();
+
+            foreach (var directory in showSourceData)
+            {
+                var showSeasonsCompiled = new ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>();
+                Dictionary<string, IEnumerable<ShowSourceFileData>> filesByShow = directory.Value.GroupBy(s => s.ShowName).ToDictionary(x => x.Key, x => x.AsEnumerable());
+
+                foreach (var show in filesByShow)
+                {
+                    var filesBySeason =
+                        new ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>(show.Value.GroupBy(x => x.Season)
+                            .ToDictionary(y => y.Key, y => new BulkObservableCollection<ShowSourceFileData>(y.Select(f => f).OrderBy(o => o.EpisodeInts.First()).ToList())));
+
+                    showSeasonsCompiled.Add(show.Key, filesBySeason);
+                }
+
+                updateFiles.Add(directory.Key, showSeasonsCompiled);
+            }
+
+            await Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                ShowSourceFiles.Refresh(updateFiles);
+            });
+        }
+
+        private async void RequestEncode(object obj)
+        {
+            CanRequestEncode = false;
+            bool success;
+            bool isShow = false;
+            try
+            {
+                if (obj is SourceFileData sourceFileData)
+                {
+                    if (sourceFileData is ShowSourceFileData) isShow = true;
+
+                    success = await Model.RequestEncodingJob(sourceFileData.Guid, isShow);
+
+                    if (success is false)
+                    {
+                        AEDialogHandler.ShowError($"Failed to add {sourceFileData.FileName} to encoding job queue.", "Failed To Add Encoding Job");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AEDialogHandler.ShowError(ex.Message, "Exception Thrown While Requesting Encode");
+            }
+
+            CanRequestEncode = true;
         }
 
         public void Dispose()

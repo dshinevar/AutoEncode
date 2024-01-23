@@ -104,25 +104,13 @@ namespace AutoEncodeClient.Models
             }  
         }
 
-        public void Cancel()
-        {
-            CommunicationManager.CancelJob((ulong)Id);
-        }
+        public async void Cancel() => await CommunicationManager.CancelJob((ulong)Id);
 
-        public void Pause()
-        {
-            CommunicationManager.PauseJob((ulong)Id);
-        }
+        public async void Pause() => await CommunicationManager.PauseJob((ulong)Id);
 
-        public void Resume()
-        {
-            CommunicationManager.ResumeJob((ulong)Id);
-        }
+        public async void Resume() => await CommunicationManager.ResumeJob((ulong)Id);
 
-        public void CancelThenPause()
-        {
-            CommunicationManager.CancelThenPauseJob((ulong)Id);
-        }
+        public async void CancelThenPause() => await CommunicationManager.CancelThenPauseJob((ulong)Id);
 
         public override bool Equals(object obj)
         {

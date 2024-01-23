@@ -6,6 +6,7 @@ using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Comm
 {
@@ -13,7 +14,7 @@ namespace AutoEncodeServer.Comm
     {
         private readonly ILogger Logger;
         private readonly AEServerMainThread MainThread;
-        private readonly ResponseSocket ResponseSocket = null;
+        private readonly RouterSocket RouterSocket = null;
         private readonly NetMQPoller Poller = null;
         private readonly int Port;
 
@@ -22,26 +23,9 @@ namespace AutoEncodeServer.Comm
             MainThread = mainThread;
             Logger = logger;
             Port = port;
-            ResponseSocket = new ResponseSocket();
-            Poller = new NetMQPoller { ResponseSocket };
-
-            ResponseSocket.ReceiveReady += (s, a) =>
-            {
-                try
-                {
-                    while (a.Socket.TryReceiveFrameString(out string message))
-                    {
-                        if (string.IsNullOrWhiteSpace(message) is false && message.IsValidJson())
-                        {
-                            ProcessMessage(message);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ex, "Error handling received message.", nameof(CommunicationManager), new { Port });
-                }
-            };
+            RouterSocket = new RouterSocket();
+            Poller = new NetMQPoller { RouterSocket };
+            RouterSocket.ReceiveReady += RouterSocket_ReceiveReady;
         }
 
         public void Start()
@@ -49,7 +33,7 @@ namespace AutoEncodeServer.Comm
             try
             {
                 Logger.LogInfo($"Binding to *:{Port}", nameof(CommunicationManager));
-                ResponseSocket.Bind($"tcp://*:{Port}");
+                RouterSocket.Bind($"tcp://*:{Port}");
                 Poller.RunAsync();
             }
             catch (Exception ex)
@@ -65,7 +49,7 @@ namespace AutoEncodeServer.Comm
                 Logger.LogInfo("Stopping Comm Manager", nameof(CommunicationManager));
                 Poller.Stop();
                 Poller.Dispose();
-                ResponseSocket.Close();
+                RouterSocket.Close();
             }
             catch (Exception ex)
             {
@@ -73,7 +57,45 @@ namespace AutoEncodeServer.Comm
             }
         }
 
-        private void ProcessMessage(string message)
+        private void RouterSocket_ReceiveReady(object sender, NetMQSocketEventArgs e)
+        {
+            try
+            {
+                NetMQMessage message = null;
+
+                while (e.Socket.TryReceiveMultipartMessage(ref message))
+                {
+                    if (message.FrameCount == 3)
+                    {
+                        string messageString = message[2].ConvertToString();
+
+                        if (string.IsNullOrWhiteSpace(messageString) is false && messageString.IsValidJson())
+                        {
+                            Task.Factory.StartNew(() => ProcessMessage(message[0], messageString));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Error handling received message.", nameof(CommunicationManager), new { Port });
+            }
+        }
+
+        private void SendMessage<T>(NetMQFrame clientAddress, T obj)
+        {
+            NetMQMessage message = new();
+            message.Append(clientAddress);
+            message.AppendEmptyFrame();
+
+            var response = JsonConvert.SerializeObject(obj, CommunicationConstants.SerializerSettings);
+
+            message.Append(response);
+
+            RouterSocket.SendMultipartMessage(message);
+        }
+
+        private void ProcessMessage(NetMQFrame clientAddress, string message)
         {
             AEMessage aeMessage = JsonConvert.DeserializeObject<AEMessage>(message, CommunicationConstants.SerializerSettings);
 
@@ -81,44 +103,46 @@ namespace AutoEncodeServer.Comm
             {
                 switch (aeMessage.MessageType)
                 {
-                    case AEMessageType.Status_MovieSourceFiles_Request:
+                    case AEMessageType.Source_Files_Request:
                     {
-                        var response = AEMessageFactory.CreateMovieSourceFilesResponse(MainThread.GetMovieSourceData());
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
-                        break;
-                    }
-                    case AEMessageType.Status_ShowSourceFiles_Request:
-                    {
-                        var response = AEMessageFactory.CreateShowSourceFilesResponse(MainThread.GetShowSourceData());
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        var (Movies, Shows) = MainThread.RequestSourceFiles();
+                        var response = AEMessageFactory.CreateSourceFilesResponse(Movies, Shows);
+                        SendMessage(clientAddress, response);
                         break;
                     }
                     case AEMessageType.Cancel_Request:
                     {
                         bool success = EncodingJobQueue.CancelJob(((AEMessage<ulong>)aeMessage).Data);
                         var response = AEMessageFactory.CreateCancelResponse(success);
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        SendMessage(clientAddress, response);
                         break;
                     }
                     case AEMessageType.Pause_Request:
                     {
                         bool success = EncodingJobQueue.PauseJob(((AEMessage<ulong>)aeMessage).Data);
                         var response = AEMessageFactory.CreatePauseResponse(success);
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        SendMessage(clientAddress, response);
                         break;
                     }
                     case AEMessageType.Resume_Request:
                     {
                         bool success = EncodingJobQueue.ResumeJob(((AEMessage<ulong>)aeMessage).Data);
                         var response = AEMessageFactory.CreateResumeResponse(success);
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        SendMessage(clientAddress, response);
                         break;
                     }
                     case AEMessageType.Cancel_Pause_Request:
                     {
                         bool success = EncodingJobQueue.CancelThenPauseJob(((AEMessage<ulong>)aeMessage).Data);
                         var response = AEMessageFactory.CreateCancelPauseResponse(success);
-                        ResponseSocket.SendFrame(JsonConvert.SerializeObject(response, CommunicationConstants.SerializerSettings));
+                        SendMessage(clientAddress, response);
+                        break;
+                    }
+                    case AEMessageType.Encode_Request:
+                    {
+                        EncodeRequest request = ((AEMessage<EncodeRequest>)aeMessage).Data;
+                        bool success = MainThread.RequestEncodingJob(request.Guid, request.IsShow);
+                        SendMessage(clientAddress, AEMessageFactory.CreateEncodeResponse(success));
                         break;
                     }
                 }

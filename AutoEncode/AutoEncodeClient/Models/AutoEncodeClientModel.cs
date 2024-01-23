@@ -4,6 +4,7 @@ using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models
 {
@@ -17,7 +18,6 @@ namespace AutoEncodeClient.Models
         #endregion Private Properties
 
         #region Properties
-        public bool ConnectedToServer => CommunicationManager?.Connected ?? false;
         #endregion Properties
 
         public AutoEncodeClientModel(ILogger logger, CommunicationManager communicationManager, AEClientConfig config)
@@ -28,8 +28,8 @@ namespace AutoEncodeClient.Models
             Logger.CheckAndDoRollover();
         }
 
-        public Dictionary<string, List<VideoSourceData>> GetCurrentMovieSourceData() => CommunicationManager.GetMovieSourceData();
+        public async Task<(IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows)> RequestSourceFiles() => await CommunicationManager.RequestSourceFiles();
 
-        public Dictionary<string, List<ShowSourceData>> GetCurrentShowSourceData() => CommunicationManager.GetShowSourceData();
+        public async Task<bool> RequestEncodingJob(Guid guid, bool isShow) => await CommunicationManager.RequestEncode(guid, isShow);
     }
 }

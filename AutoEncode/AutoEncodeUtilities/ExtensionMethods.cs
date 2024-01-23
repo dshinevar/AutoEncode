@@ -82,5 +82,18 @@ namespace AutoEncodeUtilities
         public static string GetDisplayName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetName();
         public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
         public static string GetShortName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetShortName();
+
+        #region IEnumerable Extensions
+        public static void RemoveRange<T>(this List<T> list, IEnumerable<T> remove)
+        {
+            foreach (T item in remove)
+            {
+                list.Remove(item);
+            }
+        }
+
+        public static IEnumerable<T> Except<T, V>(this IEnumerable<T> first, IEnumerable<V> second, Func<T, V, bool> comparer)
+            => first.Where(f => second.Any(s => comparer(f, s)) is false);
+        #endregion IEnumerable Extension
     }
 }
