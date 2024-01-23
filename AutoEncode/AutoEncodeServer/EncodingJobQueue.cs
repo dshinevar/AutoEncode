@@ -1,6 +1,5 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeServer.Data;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,7 +10,7 @@ namespace AutoEncodeServer
         private static readonly List<EncodingJob> jobQueue = new();
         private static readonly object jobLock = new();
         private static ulong _idNumber = 1;
-        private static ulong IdNumber 
+        private static ulong IdNumber
         {
             get
             {
@@ -25,16 +24,6 @@ namespace AutoEncodeServer
 
         public static int Count => jobQueue.Count;
 
-        /// <summary>Gets current list of encoding jobs. </summary>
-        /// <returns>EncodingJob list</returns>
-        public static List<EncodingJob> GetEncodingJobs()
-        {
-            lock (jobLock)
-            {
-                return jobQueue;
-            }
-        }
-
         public static List<EncodingJobData> GetEncodingJobsData()
         {
             lock (jobLock)
@@ -44,18 +33,16 @@ namespace AutoEncodeServer
         }
 
         /// <summary>Creates an EncodingJob and adds to queue based off the given info. </summary>
-        /// <param name="sourceFileName">Source FileName</param>
-        /// <param name="sourceFullPath">Full Path of source file</param>
-        /// <param name="destinationFullPath">Full Path of what will be destination</param>
+        /// <param name="sourceFileData"><see cref="SourceFileData"/> with basic data to create a job.</param>
         /// <param name="postProcessingSettings">Updated postprocessing settings for the source file</param>
         /// <returns>The JobId of the newly created job; Null, otherwise.</returns>
-        public static ulong? CreateEncodingJob(string sourceFileName, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
+        public static ulong? CreateEncodingJob(SourceFileData sourceFileData, PostProcessingSettings postProcessingSettings)
         {
             ulong? jobId = null;
-            if (ExistsByFileName(sourceFileName) is false)
+            if (ExistsByFileName(sourceFileData.FileName) is false)
             {
                 jobId = IdNumber;
-                EncodingJob newJob = new((ulong)jobId, sourceFullPath, destinationFullPath, postProcessingSettings);
+                EncodingJob newJob = new((ulong)jobId, sourceFileData, postProcessingSettings);
 
                 lock (jobLock)
                 {
@@ -64,16 +51,6 @@ namespace AutoEncodeServer
             }
 
             return jobId;
-        }
-        /// <summary>Removes an encoding job from the list.</summary>
-        /// <param name="job"><see cref="EncodingJob"/></param>
-        /// <returns>True if successfully removed; False, otherwise.</returns>
-        public static bool RemoveEncodingJob(EncodingJob job)
-        {
-            lock (jobLock)
-            {
-                return jobQueue.Remove(job);
-            }
         }
 
         /// <summary>Removes an encoding job from the queue by id lookup.</summary>
@@ -119,7 +96,7 @@ namespace AutoEncodeServer
 
         public static bool IsEncodingByFileName(string filename)
         {
-            lock (jobLock) 
+            lock (jobLock)
             {
                 return jobQueue.Find(x => x.FileName.Equals(filename))?.Status.Equals(EncodingJobStatus.ENCODING) ?? false;
             }
@@ -127,7 +104,7 @@ namespace AutoEncodeServer
 
         public static EncodingJob GetEncodingJobById(ulong id)
         {
-            lock (jobLock) 
+            lock (jobLock)
             {
                 return jobQueue.Find(x => x.Id == id);
             }
@@ -202,7 +179,7 @@ namespace AutoEncodeServer
         public static IReadOnlyList<EncodingJob> GetErroredJobs() => jobQueue.Where(x => x.Error is true).ToList();
 
         public static string Output()
-        { 
+        {
             string output = string.Empty;
             foreach (EncodingJob job in jobQueue)
             {
@@ -223,7 +200,7 @@ namespace AutoEncodeServer
                 {
                     job.Cancel();
                     success = true;
-                }  
+                }
             }
 
             return success;
@@ -246,7 +223,7 @@ namespace AutoEncodeServer
             return success;
         }
 
-        public static bool ResumeJob(ulong jobId) 
+        public static bool ResumeJob(ulong jobId)
         {
             bool success = false;
             lock (jobLock)
@@ -263,7 +240,7 @@ namespace AutoEncodeServer
             return success;
         }
 
-        public static bool CancelThenPauseJob(ulong jobId) 
+        public static bool CancelThenPauseJob(ulong jobId)
         {
             bool success = false;
             lock (jobLock)

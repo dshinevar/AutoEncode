@@ -113,8 +113,6 @@ namespace AutoEncodeClient
             {
                 logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
             }
-
-            communicationManager?.Dispose();
         }
 
         private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

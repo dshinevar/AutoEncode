@@ -4,20 +4,32 @@
     <Color x:Key="BackgroundColor">GhostWhite</Color>
     <Color x:Key="HighlightColor">LightBlue</Color>
     <Color x:Key="MouseOverColor">LightSkyBlue</Color>
+    <Color x:Key="PressedColor">DeepSkyBlue</Color>
     <Color x:Key="ProgressBarColor">DeepSkyBlue</Color>
     <Color x:Key="ProgressBarBorderColor">Gray</Color>
     <Color x:Key="ButtonBackgroundColor">LightSlateGray</Color>
+    <Color x:Key="SecondaryButtonBackgroundColor">LightGray</Color>
     <Color x:Key="ErrorBackgroundColor">IndianRed</Color>
     <Color x:Key="ErrorMouseOverBackgroundColor">Tomato</Color>
+    <Color x:Key="SideBarMouseOverColor">DarkGray</Color>
+    <Color x:Key="SideBarPressedColor">Gray</Color>
+    <Color x:Key="ShowSeasonPressedColor">DeepSkyBlue</Color>
+    <Color x:Key="SelectedSourceFileColor">LightBlue</Color>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
     <SolidColorBrush x:Key="HighlightBrush" Color="{StaticResource HighlightColor}"/>
     <SolidColorBrush x:Key="MouseOverBrush" Color="{StaticResource MouseOverColor}"/>
+    <SolidColorBrush x:Key="PressedBrush" Color="{StaticResource PressedColor}"/>
     <SolidColorBrush x:Key="ProgressBarBrush" Color="{StaticResource ProgressBarColor}"/>
     <SolidColorBrush x:Key="ProgressBarBorderBrush" Color="{StaticResource ProgressBarBorderColor}"/>
     <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="{StaticResource ButtonBackgroundColor}"/>
+    <SolidColorBrush x:Key="SecondaryButtonBackgroundBrush" Color="{StaticResource SecondaryButtonBackgroundColor}"/>
     <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{StaticResource ErrorBackgroundColor}" Opacity="0.5"/>
     <SolidColorBrush x:Key="ErrorMouseOverBackgroundBrush" Color="{StaticResource ErrorMouseOverBackgroundColor}" Opacity="0.5"/>
+    <SolidColorBrush x:Key="SideBarMouseOverBrush" Color="{StaticResource SideBarMouseOverColor}"/>
+    <SolidColorBrush x:Key="SideBarPressedBrush" Color="{StaticResource SideBarPressedColor}"/>
+    <SolidColorBrush x:Key="ShowSeasonPressedBrush" Color="{StaticResource ShowSeasonPressedColor}"/>
+    <SolidColorBrush x:Key="SelectedSourceFileBrush" Color="{StaticResource SelectedSourceFileColor}"/>
 
 </ResourceDictionary>

@@ -1,29 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using AutoEncodeUtilities.Enums;
 
 namespace AutoEncodeUtilities.Logger
 {
-    internal enum Severity
-    {
-        [Description("Debug")]
-        DEBUG = 0,
-        [Description("Info")]
-        INFO = 1,
-        [Description("Warning")]
-        WARNING,
-        [Description("Error")]
-        ERROR = 3,
-        [Description("Fatal")]
-        FATAL = 4
-    }
-
     public class Logger : ILogger
     {
         private readonly string LogFileFullPath;
@@ -84,7 +70,7 @@ namespace AutoEncodeUtilities.Logger
             if (details is not null)
             {
                 StringBuilder detailsSb = new("Details: ");
-                foreach(var prop in details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                foreach (var prop in details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
                 {
                     detailsSb.Append($"{prop.Name} = {prop.GetValue(details).ToString()} | ");
                 }

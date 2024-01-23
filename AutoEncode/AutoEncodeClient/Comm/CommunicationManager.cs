@@ -2,80 +2,66 @@
 using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Messages;
 using NetMQ;
-using NetMQ.Monitoring;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
 {
-    public partial class CommunicationManager : IDisposable
+    public partial class CommunicationManager
     {
         private readonly ILogger Logger = null;
-        private readonly RequestSocket RequestSocket = null;
         private readonly string ConnectionString = string.Empty;
-        private readonly NetMQMonitor Monitor = null;
-
-        public bool Connected { get; private set; }
 
         public CommunicationManager(ILogger logger, string ipAddress, int port)
         {
             Logger = logger;
             ConnectionString = $"tcp://{ipAddress}:{port}";
-
-            RequestSocket = new RequestSocket();
-
-            Monitor = new NetMQMonitor(RequestSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
-            Monitor.Connected += Socket_Connected;
-            Monitor.Disconnected += Socket_Disconnected;
-            Monitor.StartAsync();
-
-            RequestSocket.Connect(ConnectionString);
         }
-
-        public void Dispose()
-        {
-            RequestSocket?.Disconnect(ConnectionString);
-            RequestSocket?.Close();
-            Monitor.Stop();
-            Monitor.Dispose();
-        }
-
-        #region Socket Events
-        private void Socket_Connected(object sender, NetMQMonitorSocketEventArgs e)
-        {
-            Connected = true;
-            Logger.LogInfo($"Connected to {e.Address}", nameof(CommunicationManager));
-        }
-
-        private void Socket_Disconnected(object sender, NetMQMonitorSocketEventArgs e)
-        {
-            Connected = false;
-            Logger.LogInfo($"Disconnected from {e.Address}", nameof(CommunicationManager));
-        }
-        #endregion Socket Events
 
         #region Private Functions
-        private AEMessage<T> SendReceive<T>(AEMessage request)
+        private async Task<AEMessage<T>> SendReceiveAsync<T>(AEMessage request)
         {
-            AEMessage<T> messageResponse = null;
-
-            string serializedRequest = JsonConvert.SerializeObject(request, CommunicationConstants.SerializerSettings);
-
-            if (string.IsNullOrWhiteSpace(serializedRequest) is false)
+            return await Task.Factory.StartNew(() =>
             {
-                RequestSocket.SendFrame(serializedRequest);
+                AEMessage<T> messageResponse = null;
 
-                string response = RequestSocket.ReceiveFrameString();
-
-                if (string.IsNullOrWhiteSpace(response) is false && response.IsValidJson())
+                using (DealerSocket client = new(ConnectionString))
                 {
-                    messageResponse = JsonConvert.DeserializeObject<AEMessage<T>>(response, CommunicationConstants.SerializerSettings);
-                }
-            }
+                    client.Options.Identity = Encoding.ASCII.GetBytes(Guid.NewGuid().ToString());
 
-            return messageResponse;
+                    string serializedRequest = JsonConvert.SerializeObject(request, CommunicationConstants.SerializerSettings);
+
+                    if (string.IsNullOrWhiteSpace(serializedRequest) is false)
+                    {
+                        NetMQMessage netMqMessage = new();
+                        netMqMessage.AppendEmptyFrame();
+                        netMqMessage.Append(serializedRequest);
+
+                        client.SendMultipartMessage(netMqMessage);
+
+                        NetMQMessage response = client.ReceiveMultipartMessage();
+
+                        if (response.FrameCount == 2)
+                        {
+                            string responseString = response[1].ConvertToString();
+
+                            if (string.IsNullOrWhiteSpace(responseString) is false && responseString.IsValidJson())
+                            {
+                                messageResponse = JsonConvert.DeserializeObject<AEMessage<T>>(responseString, CommunicationConstants.SerializerSettings);
+                            }
+                        }
+                    }
+                }
+
+                return messageResponse;
+
+            }, TaskCreationOptions.LongRunning);
+
         }
+
         #endregion Private Functions
     }
 }

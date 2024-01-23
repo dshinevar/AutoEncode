@@ -60,6 +60,8 @@ namespace AutoEncodeClient.Collections
                 {
                     if (oldItem is IUpdateable<T> updateableOldData) updateableOldData.Update(item);
                     else item.CopyProperties(oldItem);
+
+                    OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
                 }
                 else
                 {

@@ -5,36 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoEncodeClient.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        xmlns:converters="clr-namespace:AutoEncodeClient.Converters"
         xmlns:designData="clr-namespace:AutoEncodeClient.Views.DesignData"
         xmlns:utilData="clr-namespace:AutoEncodeUtilities.Data;assembly=AutoEncodeUtilities"
         xmlns:utilEnums="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
+        xmlns:viewModels="clr-namespace:AutoEncodeClient.ViewModels"
         mc:Ignorable="d"
         Icon="../Resources/AutoEncode.ico"
-        Height="500" Width="800"
+        Height="720" Width="1280"
         Background="LightSlateGray"
         Closed="Window_Closed"
         d:Title="AutoEncodeClient"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="../Resources/Styles.xaml"/>
-                <ResourceDictionary Source="../Resources/Brushes.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-            <converters:EncodedColorConverter x:Key="EncodedColorConverter"/>
-            <converters:EnumDisplayNameConverter x:Key="EnumDisplayNameConverter"/>
-            <converters:EnumDisplayShortNameConverter x:Key="EnumDisplayShortNameConverter"/>
-            <converters:EnumDisplayDescriptionConverter x:Key="EnumDisplayDescriptionConverter"/>
-            <converters:EncodingJobStatusToVisibilityConverter x:Key="EncodingJobStatusToVisibilityConverter"/>
-            <converters:IsNullVisibilityConverter x:Key="IsNullVisibilityConverter"/>
-            <converters:VisibleWhenGreaterThanConverter x:Key="VisibleWhenGreaterThanConverter" />
-            <converters:FormatTimeSpanConverter x:Key="FormatTimeSpanConverter"/>
-            <converters:SecondsToTimestampConverter x:Key="SecondsToTimestampConverter" />
-            <converters:IsNotNullVisibilityConverter x:Key="IsNotNullVisibilityConverter"/>
-            <converters:FlagToNamesConverter x:Key="FlagToNamesConverter" />
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"
@@ -43,7 +24,7 @@
                               MinWidth="140"/>
         </Grid.ColumnDefinitions>
 
-        <!-- SOURCE FILES -->
+        <!-- #region SOURCE FILES -->
         <Border Grid.Column="0"
                 Margin="0,0,5,0"
                 BorderBrush="Black"
@@ -51,25 +32,24 @@
                 CornerRadius="0,2,2,0"
                 BorderThickness="1.5">
             <Expander Grid.Column="0"
-                      Style="{StaticResource ExpanderStyle}"
+                      Style="{StaticResource SourceFilesSideBarExpanderStyle}"
                       ExpandDirection="Right"
                       MaxWidth="600">
                 <Expander.Header>
-                    <DockPanel Height="30">
+                    <DockPanel Height="40">
                         <TextBlock Text="SOURCE FILES"
+                                   FontSize="16"
                                    FontWeight="DemiBold"
                                    VerticalAlignment="Center"
                                    IsHitTestVisible="False"/>
                         <Button Command="{Binding RefreshSourceFilesCommand}"
                                 ToolTip="Click to Refresh Source Files"
-                                Margin="2">
+                                Margin="5">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border BorderThickness="1"
-                                            BorderBrush="Black"
-                                            CornerRadius="2"
-                                            Padding="2"
-                                            Margin="10,0,0,0">
+                                    <Border Padding="2"
+                                            Margin="10,0,0,0"
+                                            Style="{StaticResource PrimaryButtonBorderStyle}">
                                         <VisualStateManager.VisualStateGroups>
                                             <VisualStateGroup x:Name="CommonStates">
                                                 <VisualState x:Name="Normal">
@@ -94,19 +74,6 @@
                                                 <RotateTransform x:Name="btnRefreshImageRotation" Angle="0"/>
                                             </Image.RenderTransform>
                                         </Image>
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background"
-                                                        Value="{StaticResource ButtonBackgroundBrush}"/>
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver"
-                                                             Value="True">
-                                                        <Setter Property="Background"
-                                                                Value="{StaticResource MouseOverBrush}"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
                                     </Border>
                                 </ControlTemplate>
                             </Button.Template>
@@ -116,122 +83,89 @@
                         </DockPanel.LayoutTransform>
                     </DockPanel>
                 </Expander.Header>
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              CanContentScroll="False"
-                              PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
-                    <Grid>
-                        <Grid.Resources>
-                            <Style x:Key="LibraryHeaderBorder"
-                                   TargetType="Border">
-                                <Setter Property="BorderBrush"
-                                        Value="Gray"/>
-                                <Setter Property="BorderThickness"
-                                        Value="0,0,0,1"/>
-                                <Setter Property="Background"
-                                        Value="WhiteSmoke"/>
-                                <Setter Property="HorizontalAlignment"
-                                        Value="Stretch"/>
-                            </Style>
-                            <Style x:Key="LibraryHeaderText"
-                                   TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment"
-                                        Value="Center"/>
-                                <Setter Property="VerticalAlignment"
-                                        Value="Center"/>
-                                <Setter Property="Padding"
-                                        Value="2,0"/>
-                                <Setter Property="FontWeight"
-                                        Value="SemiBold"/>
-                            </Style>
-                        </Grid.Resources>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Border Grid.Row="0"
-                                Style="{StaticResource LibraryHeaderBorder}"
-                                Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                            <TextBlock Text="Movie Libraries"
-                                       Style="{StaticResource LibraryHeaderText}"/>
-                        </Border>
-                        <TreeView Grid.Row="1"
-                                  Margin="0,0,5,0"
-                                  Style="{StaticResource TreeViewStyle}"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                  ItemsSource="{Binding MovieSourceFiles}"
-                                  Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Value}">
-                                    <TextBlock Text="{Binding Key}"/>
-                                    <HierarchicalDataTemplate.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding FileName}"
-                                                       Foreground="{Binding Encoded, Converter={StaticResource EncodedColorConverter}}"/>
-                                        </DataTemplate>
-                                    </HierarchicalDataTemplate.ItemTemplate>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-
-                        <Border Grid.Row="2"
-                                Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                            <Border.Style>
-                                <Style TargetType="Border"
-                                       BasedOn="{StaticResource LibraryHeaderBorder}">
+                <Border BorderThickness="0,0,1.5,0"
+                        BorderBrush="Black"
+                        Background="{StaticResource BackgroundBrush}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  CanContentScroll="False"
+                                  PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
+                                  MaxWidth="350">
+                        <Grid>
+                            <Grid.Resources>
+                                <Style x:Key="LibraryHeaderBorder"
+                                       TargetType="Border">
+                                    <Setter Property="BorderBrush"
+                                            Value="Black"/>
                                     <Setter Property="BorderThickness"
-                                            Value="0,1,0,1"/>
+                                            Value="0,0,0,1"/>
+                                    <Setter Property="Background"
+                                            Value="WhiteSmoke"/>
+                                    <Setter Property="HorizontalAlignment"
+                                            Value="Stretch"/>
+                                    <Setter Property="Height"
+                                            Value="30"/>
                                 </Style>
-                            </Border.Style>
-                            <TextBlock Text="Show Libraries"
-                                   Style="{StaticResource LibraryHeaderText}"/>
-                        </Border>
-                        <TreeView Grid.Row="3"
-                                  Margin="0,0,5,0"
-                                  Style="{StaticResource TreeViewStyle}"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                  ItemsSource="{Binding ShowSourceFiles}"
-                                  Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate ItemsSource="{Binding Value}">
-                                    <TextBlock Text="{Binding Key}"/>
-                                    <HierarchicalDataTemplate.ItemTemplate>
-                                        <HierarchicalDataTemplate ItemsSource="{Binding Seasons}">
-                                            <TextBlock Text="{Binding ShowName}"/>
-                                            <HierarchicalDataTemplate.ItemTemplate>
-                                                <HierarchicalDataTemplate ItemsSource="{Binding Episodes}">
-                                                    <TextBlock Text="{Binding Season}"/>
-                                                    <HierarchicalDataTemplate.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock Text="{Binding FileName}"
-                                                               Foreground="{Binding Encoded, Converter={StaticResource EncodedColorConverter}}"/>
-                                                        </DataTemplate>
-                                                    </HierarchicalDataTemplate.ItemTemplate>
-                                                </HierarchicalDataTemplate>
-                                            </HierarchicalDataTemplate.ItemTemplate>
-                                        </HierarchicalDataTemplate>
-                                    </HierarchicalDataTemplate.ItemTemplate>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-                    </Grid>
-                </ScrollViewer>
+                                <Style x:Key="LibraryHeaderText"
+                                        TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment"
+                                            Value="Center"/>
+                                    <Setter Property="VerticalAlignment"
+                                            Value="Center"/>
+                                    <Setter Property="FontWeight"
+                                            Value="DemiBold"/>
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0"
+                                    Style="{StaticResource LibraryHeaderBorder}"
+                                    Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                <TextBlock Text="Movie Libraries"
+                                           Style="{StaticResource LibraryHeaderText}"/>
+                            </Border>
+
+                            <ItemsControl Grid.Row="1"
+                                          ItemsSource="{Binding MovieSourceFiles}"
+                                          ItemTemplate="{StaticResource SourceFileDataTemplate}"/>
+
+                            <Border Grid.Row="2"
+                                    Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
+                                <Border.Style>
+                                    <Style TargetType="Border"
+                                           BasedOn="{StaticResource LibraryHeaderBorder}">
+                                        <Setter Property="BorderThickness"
+                                                Value="0,1,0,1"/>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="Show Libraries"
+                                       Style="{StaticResource LibraryHeaderText}"/>
+                            </Border>
+
+                            <ItemsControl Grid.Row="3"
+                                          ItemsSource="{Binding ShowSourceFiles}"
+                                          ItemTemplate="{StaticResource ShowSourceFileDataTemplate}"/>
+                        </Grid>
+                    </ScrollViewer>
+                </Border>
             </Expander>
         </Border>
+        
+        <!--#endregion SOURCE FILES -->
  
         <Grid Grid.Column="1"
               Margin="0,2,2,2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"
-                               MaxHeight="150"/>
-                <RowDefinition Height="2.75*"/>
+                <RowDefinition Height="150"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- ENCODING JOBS QUEUE -->
+            <!-- #region ENCODING JOBS QUEUE -->
             <Border Grid.Row="0"
                     BorderBrush="Black"
                     BorderThickness="2"
@@ -242,7 +176,7 @@
                     <ListView Grid.Row="0"
                               ItemsSource="{Binding EncodingJobs}"
                               SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay}"
-                              ItemContainerStyle="{StaticResource ListViewItemContainerStyle}"
+                              ItemContainerStyle="{StaticResource EncodingQueueJobListViewItemStyle}"
                               Visibility="{Binding EncodingJobs.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}"
                               VerticalAlignment="Stretch"
                               HorizontalAlignment="Stretch"
@@ -280,13 +214,15 @@
                 </Grid>
             </Border>
             
-            <!-- SELECTED ENCODING JOB -->
+            <!--#endregion ENCODING JOBS QUEUE --> 
+            
+            <!--#region SELECTED ENCODING JOB -->
             <Border Grid.Row="1"
                     BorderBrush="Black"
                     BorderThickness="2"
                     CornerRadius="5"
                     Margin="0,5,0,0"
-                    Padding="5,2"
+                    Padding="5,3"
                     Background="{StaticResource BackgroundBrush}"
                     DataContext="{Binding SelectedEncodingJobViewModel}"
                     Visibility="{Binding DataContext, RelativeSource={RelativeSource Mode=Self}, Converter={StaticResource IsNullVisibilityConverter}}">
@@ -294,136 +230,203 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
+
+                    <!-- Title Bar / Controls / Progress -->
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="14*"/>
-                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Main Info -->
+                        <!-- Title -->
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding Name}"
+                                   FontSize="14"
+                                   FontWeight="DemiBold"
+                                   VerticalAlignment="Center"/>
+                        
+                        <!-- Button Controls -->
+                        <StackPanel Grid.Column="1"
+                                    Margin="5,0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <Button Height="25"
+                                    Padding="5,0">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Command"
+                                                Value="{Binding PauseCommand}"/>
+                                        <Setter Property="ToolTip"
+                                                Value="Pause"/>
+                                        <Setter Property="IsEnabled"
+                                                Value="True"/>
+                                        <Style.Triggers>
+
+                                            <DataTrigger Binding="{Binding Paused}"
+                                                         Value="True">
+                                                <Setter Property="Command"
+                                                        Value="{Binding ResumeCommand}"/>
+                                                <Setter Property="ToolTip"
+                                                        Value="Resume"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Style="{StaticResource PrimaryButtonBorderStyle}">
+                                            <Image>
+                                                <Image.Style>
+                                                    <Style TargetType="Image">
+                                                        <Setter Property="Source"
+                                                                Value="../Resources/pause.png"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Paused}"
+                                                                         Value="True">
+                                                                <Setter Property="Source"
+                                                                        Value="../Resources/play.png"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Command="{Binding CancelCommand}"
+                                    Height="25"
+                                    Margin="5,0"
+                                    ToolTip="Cancel">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Style="{StaticResource PrimaryButtonBorderStyle}">
+                                            <Image Source="../Resources/cancel.png"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Cancel Then Pause"
+                                                  Command="{Binding CancelThenPauseCommand}"
+                                                  ToolTip="Cancels Then Immediately Pauses The Job"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </StackPanel>
+                        
+                        <!-- Progress Bar -->
+                        <Grid Grid.Column="2"
+                              VerticalAlignment="Center">
+                            <TextBlock FontSize="12"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0"
+                                       Panel.ZIndex="1">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text"
+                                                Value="{Binding Status, Converter={StaticResource EnumDisplayShortNameConverter}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
+                                                <Setter Property="Text">
+                                                    <Setter.Value>
+                                                        <MultiBinding StringFormat="{}{0} ({1})">
+                                                            <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
+                                                            <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
+                                                <Setter Property="Text">
+                                                    <Setter.Value>
+                                                        <MultiBinding StringFormat="{}{0} ({1}%)">
+                                                            <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
+                                                            <Binding Path="EncodingProgress"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock FontSize="12"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0"
+                                       Panel.ZIndex="1">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text"
+                                                Value="{x:Static sys:String.Empty}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
+                                                <Setter Property="Text"
+                                                        Value="{Binding Path=ElapsedEncodingTime, Converter={StaticResource FormatTimeSpanConverter}, StringFormat={}Time Elapsed: {0}}">
+                                                </Setter>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODED}">
+                                                <Setter Property="Text">
+                                                    <Setter.Value>
+                                                        <MultiBinding StringFormat="{}Encoding Completed: {0} (Time Elapsed: {1})">
+                                                            <Binding Path="CompletedEncodingDateTime"/>
+                                                            <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ProgressBar Value="{Binding EncodingProgress}"
+                                         Height="25"
+                                         Margin="0,5"
+                                         BorderThickness="1.5">
+                                <ProgressBar.Style>
+                                    <Style TargetType="ProgressBar"
+                                           BasedOn="{StaticResource ProgressBarBaseStyle}">
+                                        <Setter Property="IsIndeterminate"
+                                                Value="False"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
+                                                <Setter Property="IsIndeterminate"
+                                                        Value="True"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}"
+                                                         Value="{x:Static utilEnums:EncodingJobStatus.POST_PROCESSING}">
+                                                <Setter Property="IsIndeterminate"
+                                                        Value="True"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ProgressBar.Style>
+                            </ProgressBar>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Other Top Level Info / Status Image -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Top Level Info -->
                         <StackPanel Grid.Column="0"
                                     Orientation="Vertical">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0"
-                                           Text="{Binding Name}"
-                                           FontSize="14"
-                                           FontWeight="DemiBold"/>
-                                <StackPanel Grid.Column="1"
-                                            Margin="5,0"
-                                            Orientation="Horizontal">
-                                    <Button Command="{Binding CancelCommand}"
-                                            Height="20"
-                                            Margin="5,0"
-                                            ToolTip="Cancel">
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border BorderBrush="Black"
-                                                        BorderThickness="1"
-                                                        CornerRadius="2">
-                                                    <Image Source="../Resources/cancel.png"/>
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Background"
-                                                                    Value="{StaticResource ButtonBackgroundBrush}"/>
-                                                            <Style.Triggers>
-                                                                <Trigger Property="IsMouseOver"
-                                                                         Value="True">
-                                                                    <Setter Property="Background"
-                                                                            Value="{StaticResource MouseOverBrush}"/>
-                                                                </Trigger>
-                                                                <Trigger Property="IsEnabled"
-                                                                         Value="False">
-                                                                    <Setter Property="Background"
-                                                                            Value="Transparent"/>
-                                                                </Trigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                        <Button.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="Cancel Then Pause"
-                                                          Command="{Binding CancelThenPauseCommand}"
-                                                          ToolTip="Cancels Then Immediately Pauses The Job"/>
-                                            </ContextMenu>
-                                        </Button.ContextMenu>
-                                    </Button>
-                                    <Button Height="20"
-                                            Padding="5,0">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Command"
-                                                        Value="{Binding PauseCommand}"/>
-                                                <Setter Property="ToolTip"
-                                                        Value="Pause"/>
-                                                <Setter Property="IsEnabled"
-                                                        Value="True"/>
-                                                <Style.Triggers>
-
-                                                    <DataTrigger Binding="{Binding Paused}"
-                                                                 Value="True">
-                                                        <Setter Property="Command"
-                                                                Value="{Binding ResumeCommand}"/>
-                                                        <Setter Property="ToolTip"
-                                                                Value="Resume"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                        <Button.Template>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border BorderBrush="Black"
-                                                        BorderThickness="1"
-                                                        CornerRadius="2">
-                                                    <Image>
-                                                        <Image.Style>
-                                                            <Style TargetType="Image">
-                                                                <Setter Property="Source"
-                                                                        Value="../Resources/pause.png"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Paused}"
-                                                                                 Value="True">
-                                                                        <Setter Property="Source"
-                                                                                Value="../Resources/play.png"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Image.Style>
-                                                    </Image>
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Background"
-                                                                    Value="{StaticResource ButtonBackgroundBrush}"/>
-                                                            <Style.Triggers>
-                                                                <Trigger Property="IsMouseOver"
-                                                                         Value="True">
-                                                                    <Setter Property="Background"
-                                                                            Value="{StaticResource MouseOverBrush}"/>
-                                                                </Trigger>
-                                                                <Trigger Property="IsEnabled"
-                                                                         Value="False">
-                                                                    <Setter Property="Background"
-                                                                            Value="Transparent"/>
-                                                                </Trigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Button.Template>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
                             <TextBlock TextWrapping="NoWrap">
                                 <TextBlock.Inlines>
                                     <Run Text="ID:" FontWeight="DemiBold"/>
@@ -447,8 +450,9 @@
                         <!-- Error/Success/Paused Image -->
                         <Image Grid.Column="1"
                                VerticalAlignment="Center"
-                               HorizontalAlignment="Left"
-                               Margin="0,0,10,0">
+                               HorizontalAlignment="Center"
+                               Margin="10,5"
+                               Height="50">
                             <Image.Style>
                                 <Style TargetType="Image">
                                     <Setter Property="Visibility"
@@ -494,88 +498,8 @@
                         </Image>
                     </Grid>
 
-                    <!-- Encoding Progress Bar -->
-                    <Grid Grid.Row="1">
-                        <TextBlock FontSize="12"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Panel.ZIndex="1">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text"
-                                            Value="{Binding Status, Converter={StaticResource EnumDisplayShortNameConverter}}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Status}"
-                                                     Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
-                                            <Setter Property="Text">
-                                                <Setter.Value>
-                                                    <MultiBinding StringFormat="{}{0} ({1})">
-                                                        <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                        <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Path=Status}"
-                                                     Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                            <Setter Property="Text">
-                                                <Setter.Value>
-                                                    <MultiBinding StringFormat="{}{0} ({1}%)">
-                                                        <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                        <Binding Path="EncodingProgress"/>
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <ProgressBar Value="{Binding EncodingProgress}"
-                                     Height="25"
-                                     Margin="10,5"
-                                     BorderThickness="1.5">
-                            <ProgressBar.Style>
-                                <Style TargetType="ProgressBar"
-                                       BasedOn="{StaticResource ProgressBarBaseStyle}">
-                                    <Setter Property="IsIndeterminate"
-                                            Value="False"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Status}"
-                                                     Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
-                                            <Setter Property="IsIndeterminate"
-                                                    Value="True"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Status}"
-                                                     Value="{x:Static utilEnums:EncodingJobStatus.POST_PROCESSING}">
-                                            <Setter Property="IsIndeterminate"
-                                                    Value="True"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ProgressBar.Style>
-                        </ProgressBar>
-                    </Grid>
-
-                    <!-- Encoding Completion -->
-                    <StackPanel Grid.Row="2"
-                                Orientation="Vertical">
-                        <TextBlock TextWrapping="NoWrap">
-                            <TextBlock.Inlines>
-                                <Run Text="Encoding Time Elapsed:" FontWeight="DemiBold"/>
-                                <Run Text="{Binding ElapsedEncodingTime, Converter={StaticResource FormatTimeSpanConverter}, TargetNullValue='-', FallbackValue={x:Static sys:String.Empty}}"/>
-                            </TextBlock.Inlines>
-                        </TextBlock>
-                        <TextBlock TextWrapping="NoWrap">
-                            <TextBlock.Inlines>
-                                <Run Text="Encoding Completed:" FontWeight="DemiBold"/>
-                                <Run Text="{Binding CompletedEncodingDateTime, TargetNullValue='-', FallbackValue={x:Static sys:String.Empty}}"/>
-                            </TextBlock.Inlines>
-                        </TextBlock>
-                    </StackPanel>
-
-                    <TabControl Grid.Row="3"
+                    <!-- EncodingJob Details -->
+                    <TabControl Grid.Row="2"
                                 Margin="0,5,0,0">
                         <TabControl.Resources>
                             <Style x:Key="SourceDataBorder"
@@ -960,6 +884,8 @@
                     </TabControl>
                 </Grid>
             </Border>
+            <!--#endregion SELECTED ENCODING JOB-->
+
         </Grid>
     </Grid>
 </Window>

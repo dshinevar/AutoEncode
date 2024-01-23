@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ProgressBarBase Style -->
+    <Style x:Key="ProgressBarBaseStyle"
+           TargetType="ProgressBar">
+        <Setter Property="Foreground"
+                Value="{StaticResource ProgressBarBrush}"/>
+        <Setter Property="BorderBrush"
+                Value="{StaticResource ProgressBarBorderBrush}"/>
+        <Setter Property="Minimum"
+                Value="0"/>
+        <Setter Property="Maximum"
+                Value="100"/>
+    </Style>
+
+</ResourceDictionary>

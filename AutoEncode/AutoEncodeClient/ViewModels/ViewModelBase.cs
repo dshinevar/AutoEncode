@@ -9,18 +9,18 @@ namespace AutoEncodeClient.ViewModels
     /// <summary>ViewModelBase for when functionality is needed but not a backing model.</summary>
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
-        private Dictionary<string, List<AECommand>> Commands = null;
+        private Dictionary<string, List<IAECommand>> Commands = null;
 
-        protected void AddCommand(AECommand command, string propertyName) => AddCommand(command, new string[] { propertyName });
+        protected void AddCommand(IAECommand command, string propertyName) => AddCommand(command, new string[] { propertyName });
 
-        protected void AddCommand(AECommand command, IEnumerable<string> propertyNames)
+        protected void AddCommand(IAECommand command, IEnumerable<string> propertyNames)
         {
-            Commands ??= new Dictionary<string, List<AECommand>>();
+            Commands ??= new Dictionary<string, List<IAECommand>>();
             foreach (string propertyName in propertyNames)
             {
                 if (Commands.ContainsKey(propertyName) is false)
                 {
-                    Commands[propertyName] = new List<AECommand>();
+                    Commands[propertyName] = new List<IAECommand>();
                 }
                 Commands[propertyName].Add(command);
             }
@@ -41,7 +41,7 @@ namespace AutoEncodeClient.ViewModels
 
             if (Commands is not null)
             {
-                Commands.TryGetValue(propertyName, out List<AECommand> commands);
+                Commands.TryGetValue(propertyName, out List<IAECommand> commands);
                 commands?.ForEach(x => x?.RaiseCanExecuteChanged());
             }
         }

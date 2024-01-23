@@ -18,11 +18,25 @@ namespace AutoEncodeUtilities.Data
         /// <summary> Default Constructor </summary>
         public EncodingJob() { }
 
+        /// <summary>Preferred Constructor</summary>
+        /// <param name="jobId"></param>
+        /// <param name="sourceFileData"></param>
+        /// <param name="postProcessingSettings"></param>
+        public EncodingJob(ulong jobId, SourceFileData sourceFileData, PostProcessingSettings postProcessingSettings)
+        {
+            Id = jobId;
+            SourceFullPath = sourceFileData.FullPath;
+            DestinationFullPath = sourceFileData.DestinationFullPath;
+            PostProcessingSettings = postProcessingSettings;
+            SetPostProcessingFlags();
+        }
+
         /// <summary> Preferred Constructor </summary>
         /// <param name="jobId">JobId assigned by EncodingJobQueue on the server.</param>
         /// <param name="sourceFullPath">Full path of the source file.</param>
         /// <param name="destinationFullPath">Full path of the expected destination file.</param>
         /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
+        [Obsolete]
         public EncodingJob(ulong jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
         {
             Id = jobId;
@@ -34,6 +48,11 @@ namespace AutoEncodeUtilities.Data
 
         /// <summary>Unique job identifier </summary>
         public ulong? Id { get; } = null;
+
+        private string _title = string.Empty;
+        /// <summary>Title of job -- to be used in metadata</summary>
+        public string Title => string.IsNullOrWhiteSpace(_title) ? Name : _title;
+
         /// <summary>Name of job (FileName without extension) </summary>
         public string Name => Path.GetFileNameWithoutExtension(FileName);
         /// <summary>FileName of Job </summary>

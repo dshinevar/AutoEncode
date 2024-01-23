@@ -7,17 +7,14 @@ namespace AutoEncodeUtilities.Messages
 {
     public static class AEMessageFactory
     {
-        public static AEMessage CreateMovieSourceFilesRequest()
-            => new(AEMessageType.Status_MovieSourceFiles_Request);
+        public static AEMessage CreateSourceFilesRequest() => new(AEMessageType.Source_Files_Request);
 
-        public static AEMessage<Dictionary<string, List<VideoSourceData>>> CreateMovieSourceFilesResponse(Dictionary<string, List<VideoSourceData>> files)
-            => new(AEMessageType.Status_MovieSourceFiles_Response, files);
-
-        public static AEMessage CreateShowSourceFilesRequest()
-            => new(AEMessageType.Status_ShowSourceFiles_Request);
-
-        public static AEMessage<Dictionary<string, List<ShowSourceData>>> CreateShowSourceFilesResponse(Dictionary<string, List<ShowSourceData>> files)
-            => new(AEMessageType.Status_ShowSourceFiles_Response, files);
+        public static AEMessage<SourceFilesResponse> CreateSourceFilesResponse(IDictionary<string, IEnumerable<SourceFileData>> movies, IDictionary<string, IEnumerable<ShowSourceFileData>> shows)
+            => new(AEMessageType.Source_Files_Response, new()
+            {
+                MovieSourceFiles = movies,
+                ShowSourceFiles = shows
+            });
 
         public static AEMessage<ulong> CreateCancelRequest(ulong jobId) => new(AEMessageType.Cancel_Request, jobId);
 
@@ -34,5 +31,14 @@ namespace AutoEncodeUtilities.Messages
         public static AEMessage<ulong> CreateCancelPauseRequest(ulong jobId) => new(AEMessageType.Cancel_Pause_Request, jobId);
 
         public static AEMessage<bool> CreateCancelPauseResponse(bool success) => new(AEMessageType.Cancel_Pause_Response, success);
+
+        public static AEMessage<EncodeRequest> CreateEncodeRequest(Guid guid, bool isShow) =>
+            new(AEMessageType.Encode_Request, new EncodeRequest()
+            {
+                Guid = guid,
+                IsShow = isShow
+            });
+
+        public static AEMessage<bool> CreateEncodeResponse(bool success) => new(AEMessageType.Encode_Response, success);
     }
 }

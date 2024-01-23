@@ -13,9 +13,9 @@ namespace AutoEncodeClient.ViewModels.Interfaces
 
         EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
 
-        ObservableDictionary<string, BulkObservableCollection<VideoSourceData>> MovieSourceFiles { get; }
+        ObservableDictionary<string, BulkObservableCollection<SourceFileData>> MovieSourceFiles { get; }
 
-        ObservableDictionary<string, BulkObservableCollection<ShowSourceData>> ShowSourceFiles { get; }
+        ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> ShowSourceFiles { get; }
 
         bool ConnectedToServer { get; }
     }

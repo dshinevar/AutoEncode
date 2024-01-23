@@ -2,52 +2,36 @@
 using AutoEncodeUtilities.Messages;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
 {
     public partial class CommunicationManager
     {
-        public Dictionary<string, List<VideoSourceData>> GetMovieSourceData()
+        public async Task<(IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows)> RequestSourceFiles()
         {
-            Dictionary<string, List<VideoSourceData>> returnData = null;
+            (IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows) returnData = (null, null);
 
             try
             {
-                AEMessage<Dictionary<string, List<VideoSourceData>>> returnMessage = SendReceive<Dictionary<string, List<VideoSourceData>>>(AEMessageFactory.CreateMovieSourceFilesRequest());
-                returnData = returnMessage.Data;
+                AEMessage<SourceFilesResponse> returnMessage = await SendReceiveAsync<SourceFilesResponse>(AEMessageFactory.CreateSourceFilesRequest());
+                returnData = (returnMessage.Data.MovieSourceFiles, returnMessage.Data.ShowSourceFiles);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to get movie source data.", nameof(CommunicationManager), new { ConnectionString });
+                Logger.LogException(ex, "Failed to get source files.", nameof(CommunicationManager), new { ConnectionString });
             }
 
             return returnData;
         }
 
-        public Dictionary<string, List<ShowSourceData>> GetShowSourceData()
-        {
-            Dictionary<string, List<ShowSourceData>> returnData = null;
-
-            try
-            {
-                AEMessage<Dictionary<string, List<ShowSourceData>>> returnMessage = SendReceive<Dictionary<string, List<ShowSourceData>>>(AEMessageFactory.CreateShowSourceFilesRequest());
-                returnData = returnMessage.Data;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, "Failed to get show source data.", nameof(CommunicationManager), new { ConnectionString });
-            }
-
-            return returnData;
-        }
-
-        public bool CancelJob(ulong jobId)
+        public async Task<bool> CancelJob(ulong jobId)
         {
             bool returnData = false;
 
             try
             {
-                AEMessage<bool> returnMessage = SendReceive<bool>(AEMessageFactory.CreateCancelRequest(jobId));
+                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateCancelRequest(jobId));
                 returnData = returnMessage.Data;
             }
             catch (Exception ex)
@@ -58,13 +42,13 @@ namespace AutoEncodeClient.Comm
             return returnData;
         }
 
-        public bool PauseJob(ulong jobId)
+        public async Task<bool> PauseJob(ulong jobId)
         {
             bool returnData = false;
 
             try
             {
-                AEMessage<bool> returnMessage = SendReceive<bool>(AEMessageFactory.CreatePauseRequest(jobId));
+                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreatePauseRequest(jobId));
                 returnData = returnMessage.Data;
             }
             catch (Exception ex)
@@ -75,13 +59,13 @@ namespace AutoEncodeClient.Comm
             return returnData;
         }
 
-        public bool ResumeJob(ulong jobId)
+        public async Task<bool> ResumeJob(ulong jobId)
         {
             bool returnData = false;
 
             try
             {
-                AEMessage<bool> returnMessage = SendReceive<bool>(AEMessageFactory.CreateResumeRequest(jobId));
+                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateResumeRequest(jobId));
                 returnData = returnMessage.Data;
             }
             catch (Exception ex)
@@ -92,18 +76,34 @@ namespace AutoEncodeClient.Comm
             return returnData;
         }
 
-        public bool CancelThenPauseJob(ulong jobId)
+        public async Task<bool> CancelThenPauseJob(ulong jobId)
         {
             bool returnData = false;
 
             try
             {
-                AEMessage<bool> returnMessage = SendReceive<bool>(AEMessageFactory.CreateCancelPauseRequest(jobId));
+                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateCancelPauseRequest(jobId));
                 returnData = returnMessage.Data;
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex, "Failed to cancel then pause job", nameof(CommunicationManager), new { jobId });
+            }
+
+            return returnData;
+        }
+
+        public async Task<bool> RequestEncode(Guid sourceFileGuid, bool isShow)
+        {
+            bool returnData = false;
+            try
+            {
+                AEMessage<bool> returnMessage =  await SendReceiveAsync<bool>(AEMessageFactory.CreateEncodeRequest(sourceFileGuid, isShow));
+                returnData = returnMessage.Data;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to request encode.", nameof(CommunicationManager), new { sourceFileGuid, isShow });
             }
 
             return returnData;

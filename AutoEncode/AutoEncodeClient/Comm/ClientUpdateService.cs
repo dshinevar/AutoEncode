@@ -2,10 +2,12 @@
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
 using NetMQ;
+using NetMQ.Monitoring;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
@@ -14,9 +16,12 @@ namespace AutoEncodeClient.Comm
     {
         private readonly SubscriberSocket SubscriberSocket = null;
         private readonly NetMQPoller Poller = null;
+        private readonly NetMQMonitor Monitor = null;
         private readonly ILogger Logger = null;
         private readonly string ConnectionString = string.Empty;
+
         public event EventHandler<List<EncodingJobData>> DataReceived;
+        public bool Connected { get; private set; }
 
 #if DEBUG
         /// <summary>Quick Debug Constructor where IP is localhost</summary>
@@ -29,9 +34,13 @@ namespace AutoEncodeClient.Comm
             ConnectionString = $"tcp://{ipAddress}:{port}";
             Logger = logger;
             SubscriberSocket = new SubscriberSocket();
+            SubscriberSocket.Options.ReceiveHighWatermark = 1;
             Poller = new NetMQPoller { SubscriberSocket };
+            Monitor = new(SubscriberSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
+            Monitor.Connected += Monitor_Connected;
+            Monitor.Disconnected += Monitor_Disconnected;
 
-            SubscriberSocket.ReceiveReady += (s, a) =>
+            SubscriberSocket.ReceiveReady += async (s, a) =>
             {
                 string topic = string.Empty;
                 string message = string.Empty;
@@ -47,7 +56,7 @@ namespace AutoEncodeClient.Comm
 
                         if (clientUpdateData is not null)
                         {
-                            Task.Factory.StartNew(() => DataReceived?.Invoke(this, clientUpdateData));
+                            await Task.Factory.StartNew(() => DataReceived?.Invoke(this, clientUpdateData));
                         }
                     }
                 }
@@ -58,6 +67,7 @@ namespace AutoEncodeClient.Comm
             };
         }
 
+        #region Public Methods
         public void Start()
         {
             try
@@ -65,6 +75,7 @@ namespace AutoEncodeClient.Comm
                 SubscriberSocket.Connect(ConnectionString);
                 SubscriberSocket.Subscribe(CommunicationConstants.ClientUpdateTopic);
                 Poller.RunAsync();
+                Monitor.StartAsync();
             }
             catch (Exception ex)
             {
@@ -76,6 +87,8 @@ namespace AutoEncodeClient.Comm
         {
             try
             {
+                Monitor.Stop();
+                Monitor.Dispose();
                 Poller.Stop();
                 Poller.Dispose();
                 SubscriberSocket.Unsubscribe(CommunicationConstants.ClientUpdateTopic);
@@ -88,5 +101,18 @@ namespace AutoEncodeClient.Comm
         }
 
         public void Dispose() => Stop();
+        #endregion Public Methods
+
+        private void Monitor_Disconnected(object sender, NetMQMonitorSocketEventArgs e)
+        {
+            Connected = false;
+            Logger.LogInfo($"Disconnected from {e.Address}", nameof(CommunicationManager));
+        }
+
+        private void Monitor_Connected(object sender, NetMQMonitorSocketEventArgs e)
+        {
+            Connected = true;
+            Logger.LogInfo($"Connected to {e.Address}", nameof(ClientUpdateService));
+        }
     }
 }
