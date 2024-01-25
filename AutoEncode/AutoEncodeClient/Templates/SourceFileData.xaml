@@ -11,8 +11,7 @@
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ItemTemplate="{StaticResource SourceFileListViewItemTemplate}"
                       ItemContainerStyle="{StaticResource SourceFileListViewItemContainerStyle}"
-                      Background="Transparent">
-            </ListView>
+                      Background="Transparent"/>
         </Expander>
     </DataTemplate>
 

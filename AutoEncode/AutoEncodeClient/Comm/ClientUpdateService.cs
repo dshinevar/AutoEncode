@@ -7,48 +7,51 @@ using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
 {
     public class ClientUpdateService : IDisposable
     {
-        private readonly SubscriberSocket SubscriberSocket = null;
-        private readonly NetMQPoller Poller = null;
-        private readonly NetMQMonitor Monitor = null;
-        private readonly ILogger Logger = null;
-        private readonly string ConnectionString = string.Empty;
+        private readonly SubscriberSocket _subscriberSocket = null;
+        private readonly NetMQPoller _poller = null;
+        private readonly NetMQMonitor _monitor = null;
+        private readonly ILogger _logger = null;
+        private readonly ManualResetEvent _flowControlMRE = new(true);
+
 
         public event EventHandler<List<EncodingJobData>> DataReceived;
         public bool Connected { get; private set; }
-
-#if DEBUG
-        /// <summary>Quick Debug Constructor where IP is localhost</summary>
-        /// <param name="logger"></param>
-        public ClientUpdateService(ILogger logger) : this(logger, "127.0.0.1", 39000) { }
-#endif
+        public string IpAddress { get; }
+        public int Port { get; }
+        public string ConnectionString => $"tcp://{IpAddress}:{Port}";
 
         public ClientUpdateService(ILogger logger, string ipAddress, int port)
         {
-            ConnectionString = $"tcp://{ipAddress}:{port}";
-            Logger = logger;
-            SubscriberSocket = new SubscriberSocket();
-            SubscriberSocket.Options.ReceiveHighWatermark = 1;
-            Poller = new NetMQPoller { SubscriberSocket };
-            Monitor = new(SubscriberSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
-            Monitor.Connected += Monitor_Connected;
-            Monitor.Disconnected += Monitor_Disconnected;
+            _logger = logger;
+            IpAddress = ipAddress;
+            Port = port;
 
-            SubscriberSocket.ReceiveReady += async (s, a) =>
+            _subscriberSocket = new SubscriberSocket();
+            _subscriberSocket.Options.ReceiveHighWatermark = 1;
+            _poller = new NetMQPoller { _subscriberSocket };
+            _monitor = new(_subscriberSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
+            _monitor.Connected += Monitor_Connected;
+            _monitor.Disconnected += Monitor_Disconnected;
+
+            _subscriberSocket.ReceiveReady += async (s, a) =>
             {
                 string topic = string.Empty;
                 string message = string.Empty;
 
+                if (_flowControlMRE.WaitOne(0) is false) return;
+                _flowControlMRE.Reset();
+
                 try
                 {
-                    topic = SubscriberSocket?.ReceiveFrameString();
-                    message = SubscriberSocket?.ReceiveFrameString();
+                    topic = _subscriberSocket?.ReceiveFrameString();
+                    message = _subscriberSocket?.ReceiveFrameString();
 
                     if (string.IsNullOrWhiteSpace(message) is false && message.IsValidJson() is true)
                     {
@@ -62,8 +65,10 @@ namespace AutoEncodeClient.Comm
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogException(ex, "Error with Client Update", "ClientUpdateService", new { topic, message, ConnectionString });
+                    _logger.LogException(ex, "Error with Client Update", "ClientUpdateService", new { topic, message, ConnectionString });
                 }
+
+                _flowControlMRE.Set();
             };
         }
 
@@ -72,14 +77,14 @@ namespace AutoEncodeClient.Comm
         {
             try
             {
-                SubscriberSocket.Connect(ConnectionString);
-                SubscriberSocket.Subscribe(CommunicationConstants.ClientUpdateTopic);
-                Poller.RunAsync();
-                Monitor.StartAsync();
+                _subscriberSocket.Connect(ConnectionString);
+                _subscriberSocket.Subscribe(CommunicationConstants.ClientUpdateTopic);
+                _poller.RunAsync();
+                _monitor.StartAsync();
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to Start ClientUpdateService", nameof(ClientUpdateService), new { ConnectionString });
+                _logger.LogException(ex, "Failed to Start ClientUpdateService", nameof(ClientUpdateService), new { ConnectionString });
             }
         }
 
@@ -87,16 +92,16 @@ namespace AutoEncodeClient.Comm
         {
             try
             {
-                Monitor.Stop();
-                Monitor.Dispose();
-                Poller.Stop();
-                Poller.Dispose();
-                SubscriberSocket.Unsubscribe(CommunicationConstants.ClientUpdateTopic);
-                SubscriberSocket.Close();
+                _monitor.Stop();
+                _monitor.Dispose();
+                _poller.Stop();
+                _poller.Dispose();
+                _subscriberSocket.Unsubscribe(CommunicationConstants.ClientUpdateTopic);
+                _subscriberSocket.Close();
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to Stop ClientUpdateService", nameof(ClientUpdateService));
+                _logger.LogException(ex, "Failed to Stop ClientUpdateService", nameof(ClientUpdateService));
             }
         }
 
@@ -106,13 +111,13 @@ namespace AutoEncodeClient.Comm
         private void Monitor_Disconnected(object sender, NetMQMonitorSocketEventArgs e)
         {
             Connected = false;
-            Logger.LogInfo($"Disconnected from {e.Address}", nameof(CommunicationManager));
+            _logger.LogInfo($"Disconnected from {e.Address}", nameof(CommunicationManager));
         }
 
         private void Monitor_Connected(object sender, NetMQMonitorSocketEventArgs e)
         {
             Connected = true;
-            Logger.LogInfo($"Connected to {e.Address}", nameof(ClientUpdateService));
+            _logger.LogInfo($"Connected to {e.Address}", nameof(ClientUpdateService));
         }
     }
 }

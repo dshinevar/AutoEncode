@@ -1,4 +1,5 @@
 ﻿using AutoEncodeClient.Command;
+using AutoEncodeClient.Dialogs;
 using AutoEncodeClient.Models;
 using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
@@ -30,8 +31,9 @@ namespace AutoEncodeClient.ViewModels
             CancelThenPauseCommand = cancelThenPauseCommand;
             AddCommand(cancelThenPauseCommand, nameof(CanCancel));
 
-            AECommand resumeCommand = new(Resume);
-            ResumeCommand = resumeCommand;
+            ResumeCommand = new AECommand(Resume);
+
+            RemoveCommand = new AECommand(Remove);
         }
 
         public ulong? Id => Model.Id;
@@ -152,6 +154,7 @@ namespace AutoEncodeClient.ViewModels
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand CancelThenPauseCommand { get; }
+        public ICommand RemoveCommand { get; }
         #endregion Commands
 
         public void Update(IEncodingJobData updatedData)
@@ -167,13 +170,50 @@ namespace AutoEncodeClient.ViewModels
             }   
         }
 
-        private void Cancel() => Model.Cancel();
+        private async void Cancel()
+        {
+            bool success = await Model.Cancel();
+            if (success is false)
+            {
+                AEDialogHandler.ShowError($"Failed to cancel job for {FileName}", "Cancel Failed");
+            }
+        }
 
-        private void Pause() => Model.Pause();
+        private async void Pause()
+        {
+            bool success = await Model.Pause();
+            if (success is false)
+            {
+                AEDialogHandler.ShowError($"Failed to pause job for {FileName}", "Pause Failed");
+            }
+        }
 
-        private void Resume() => Model.Resume();
+        private async void Resume()
+        {
+            bool success = await Model.Resume();
+            if (success is false)
+            {
+                AEDialogHandler.ShowError($"Failed to resume job for {FileName}", "Resume Failed");
+            }
+        }
 
-        private void CancelThenPause() => Model.CancelThenPause();
+        private async void CancelThenPause()
+        {
+            bool success = await Model.CancelThenPause();
+            if (success is false)
+            {
+                AEDialogHandler.ShowError($"Failed to cancel then pause job for {FileName}", "Cancel Then Pause Failed");
+            }
+        }
+
+        private async void Remove()
+        {
+            bool success = await Model.Remove();
+            if (success is false)
+            {
+                AEDialogHandler.ShowError($"Failed to remove job {FileName} from encoding queue.", "Removal Failed");
+            }
+        }
 
         public bool Equals(IEncodingJobData data) => Id == data.Id;
     }

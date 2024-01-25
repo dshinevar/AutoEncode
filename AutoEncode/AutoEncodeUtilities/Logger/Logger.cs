@@ -12,10 +12,11 @@ namespace AutoEncodeUtilities.Logger
 {
     public class Logger : ILogger
     {
-        private readonly string LogFileFullPath;
-        private long MaxSizeInBytes { get; set; }
-        private int BackupFileCount { get; set; }
-        private readonly object FileLock = new();
+        private readonly object _fileLock = new();
+
+        public string LogFileFullPath { get; set; }
+        public long MaxSizeInBytes { get; set; }
+        public int BackupFileCount { get; set; }
 
         public Logger(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
         {
@@ -117,7 +118,7 @@ namespace AutoEncodeUtilities.Logger
 
             try
             {
-                lock (FileLock)
+                lock (_fileLock)
                 {
                     File.AppendAllText(LogFileFullPath, sbLogMsg.ToString());
                 }
@@ -143,7 +144,7 @@ namespace AutoEncodeUtilities.Logger
 
                     if (fileInfo.Exists && fileInfo.Length >= MaxSizeInBytes)
                     {
-                        lock (FileLock)
+                        lock (_fileLock)
                         {
                             DoRollover();
                         }

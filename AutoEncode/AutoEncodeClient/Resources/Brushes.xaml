@@ -4,6 +4,7 @@
     <Color x:Key="BackgroundColor">GhostWhite</Color>
     <Color x:Key="HighlightColor">LightBlue</Color>
     <Color x:Key="MouseOverColor">LightSkyBlue</Color>
+    <Color x:Key="CautionMouseOverColor">IndianRed</Color>
     <Color x:Key="PressedColor">DeepSkyBlue</Color>
     <Color x:Key="ProgressBarColor">DeepSkyBlue</Color>
     <Color x:Key="ProgressBarBorderColor">Gray</Color>
@@ -20,6 +21,7 @@
     <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
     <SolidColorBrush x:Key="HighlightBrush" Color="{StaticResource HighlightColor}"/>
     <SolidColorBrush x:Key="MouseOverBrush" Color="{StaticResource MouseOverColor}"/>
+    <SolidColorBrush x:Key="CautionMouseOverBrush" Color="{StaticResource CautionMouseOverColor}"/>
     <SolidColorBrush x:Key="PressedBrush" Color="{StaticResource PressedColor}"/>
     <SolidColorBrush x:Key="ProgressBarBrush" Color="{StaticResource ProgressBarColor}"/>
     <SolidColorBrush x:Key="ProgressBarBorderBrush" Color="{StaticResource ProgressBarBorderColor}"/>

@@ -12,16 +12,18 @@ namespace AutoEncodeServer.Comm
 {
     public class ClientUpdateService
     {
-        private readonly ILogger Logger = null;
-        private Timer PublishTimer = null;
-        private readonly PublisherSocket PublisherSocket = null;
-        private readonly int Port;
+        private readonly ILogger _logger = null;
+        private Timer _publishTimer = null;
+        private readonly PublisherSocket _publisherSocket = null;
+
+        public int Port { get; }    
 
         public ClientUpdateService(ILogger logger, int port = 39000)
         {
-            Logger = logger;
+            _logger = logger;
             Port = port;
-            PublisherSocket = new PublisherSocket();
+            _publisherSocket = new PublisherSocket();
+            _publisherSocket.Options.SendHighWatermark = 1;
         }
 
         public bool Initialize()
@@ -29,13 +31,13 @@ namespace AutoEncodeServer.Comm
             bool success = true;
             try
             {
-                Logger.LogInfo($"Binding to *:{Port}", nameof(ClientUpdateService));
-                PublisherSocket.Bind($"tcp://*:{Port}");
-                PublishTimer = new Timer(SendUpdateToClients, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1));
+                _logger.LogInfo($"Binding to *:{Port}", nameof(ClientUpdateService));
+                _publisherSocket.Bind($"tcp://*:{Port}");
+                _publishTimer = new Timer(SendUpdateToClients, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error Initializing ClientUpdateService.", nameof(ClientUpdateService), new { Port });
+                _logger.LogException(ex, "Error Initializing ClientUpdateService.", nameof(ClientUpdateService), new { Port });
                 success = false;
             }
 
@@ -46,15 +48,15 @@ namespace AutoEncodeServer.Comm
         {
             try
             {
-                Logger.LogInfo($"Shutting down ClientUpdateService", nameof(ClientUpdateService));
-                PublishTimer?.Dispose();
+                _logger.LogInfo($"Shutting down ClientUpdateService", nameof(ClientUpdateService));
+                _publishTimer?.Dispose();
 
-                PublisherSocket?.Close();
-                PublisherSocket?.Dispose();
+                _publisherSocket?.Close();
+                _publisherSocket?.Dispose();
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error shutting down ClientUpdateService", nameof(ClientUpdateService), new { Port });
+                _logger.LogException(ex, "Error shutting down ClientUpdateService", nameof(ClientUpdateService), new { Port });
             }
         }
 
@@ -67,12 +69,12 @@ namespace AutoEncodeServer.Comm
 
                 if (string.IsNullOrWhiteSpace(output) is false)
                 {
-                    PublisherSocket.SendMoreFrame(CommunicationConstants.ClientUpdateTopic).SendFrame(output);
+                    _publisherSocket.SendMoreFrame(CommunicationConstants.ClientUpdateTopic).SendFrame(output);
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error Sending Update To Clients", nameof(ClientUpdateService), new { Port });
+                _logger.LogException(ex, "Error Sending Update To Clients", nameof(ClientUpdateService), new { Port });
             }
         }
     }

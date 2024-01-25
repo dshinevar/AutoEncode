@@ -23,7 +23,7 @@ namespace AutoEncodeClient
     {
         private const string LOG_FILENAME = "aeclient.log";
         private ILogger logger = null;
-        private CommunicationManager communicationManager = null;
+        private ICommunicationManager communicationManager = null;
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {
             AEClientConfig clientConfig = null;
@@ -99,7 +99,7 @@ namespace AutoEncodeClient
             // Build and show view
             try
             {
-                communicationManager = new(logger, clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
+                communicationManager = new CommunicationManager(logger, clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
 
                 AutoEncodeClientModel model = new(logger, communicationManager, clientConfig);
                 AutoEncodeClientViewModel viewModel = new(model, logger, communicationManager, clientConfig);

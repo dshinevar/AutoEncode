@@ -178,7 +178,7 @@ namespace AutoEncodeServer
         /// <returns>IReadOnlyList of <see cref="EncodingJob"/></returns>
         public static IReadOnlyList<EncodingJob> GetErroredJobs() => jobQueue.Where(x => x.Error is true).ToList();
 
-        public static string Output()
+        public new static string ToString()
         {
             string output = string.Empty;
             foreach (EncodingJob job in jobQueue)

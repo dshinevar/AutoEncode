@@ -11,6 +11,27 @@ namespace AutoEncodeUtilities
 {
     public static class ExtensionMethods
     {
+        public static bool IsNullOrDefault<T>(this T obj)
+        {
+            // Typical checks
+            if (obj is null) return true;
+            if (Equals(obj, default)) return true;
+
+            // Non-null nullables
+            Type methodType = typeof(T);
+            if (Nullable.GetUnderlyingType(methodType) != null) return false;
+
+            // Boxed values
+            Type objType = obj.GetType();
+            if (objType.IsValueType && objType != methodType)
+            {
+                object testObj = Activator.CreateInstance(objType);
+                return testObj.Equals(obj);
+            }
+
+            return false;
+        }
+
         public static T DeepClone<T>(this T source)
         {
             // Don't serialize a null object, simply return the default for that object

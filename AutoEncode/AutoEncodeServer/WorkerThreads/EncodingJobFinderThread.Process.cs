@@ -17,10 +17,10 @@ namespace AutoEncodeServer.WorkerThreads
     {
         private readonly object _lock = new();
 
-        private readonly AutoResetEvent _buildingSourceFilesEvent = new(false);
+        private readonly ManualResetEvent _buildingSourceFilesEvent = new(false);
         private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
-        private ConcurrentDictionary<string, List<SourceFileData>> MovieSourceFiles { get; set; } = new();
-        private ConcurrentDictionary<string, List<ShowSourceFileData>> ShowSourceFiles { get; set; } = new();
+        private ConcurrentDictionary<string, (bool IsShows, List<SourceFileData> Files)> SourceFiles { get; set; } = new();
+        private IDictionary<Guid, (string Directory, SourceFileData SourceFiles)> SourceFilesByGuid { get; set; }
 
         protected void ThreadLoop(object data)
         {
@@ -41,20 +41,12 @@ namespace AutoEncodeServer.WorkerThreads
                         shutdownToken.ThrowIfCancellationRequested();
 
                         // Add encoding jobs for automated search directories and files not encoded
-                        foreach (KeyValuePair<string, List<SourceFileData>> entry in MovieSourceFiles)
+                        foreach (KeyValuePair<string, (bool IsShows, List<SourceFileData> Files)> entry in SourceFiles)
                         {
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
-                                List<SourceFileData> moviesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                moviesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, shutdownToken));
-                            }
-                        }
-                        foreach (KeyValuePair<string, List<ShowSourceFileData>> entry in ShowSourceFiles)
-                        {
-                            if (SearchDirectories[entry.Key].Automated is true)
-                            {
-                                List<ShowSourceFileData> episodesToEncode = entry.Value.Where(x => x.Encoded is false).ToList();
-                                episodesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, shutdownToken));
+                                List<SourceFileData> filesToEncode = entry.Value.Files.Where(x => x.Encoded is false).ToList();
+                                filesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, shutdownToken));
                             }
                         }
                     }
@@ -80,11 +72,8 @@ namespace AutoEncodeServer.WorkerThreads
             searchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
 
             // Remove any old directories (keys) in source files
-            List<string> deleteKeys = ShowSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
-            deleteKeys.ForEach(x => ShowSourceFiles.Remove(x, out _));
-
-            deleteKeys = MovieSourceFiles.Keys.Except(searchDirectories.Keys).ToList();
-            deleteKeys.ForEach(x => MovieSourceFiles.Remove(x, out _));
+            List<string> deleteKeys = SourceFiles.Keys.Except(searchDirectories.Keys).ToList();
+            deleteKeys.ForEach(x => SourceFiles.Remove(x, out _));
 
             DirectoryUpdate = false;
         }
@@ -92,14 +81,17 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary> Builds out SourceFiles from the search directories </summary>
         private void BuildSourceFiles()
         {
+            _buildingSourceFilesEvent.Reset();
+
+            // Clear Guid lookup
+            SourceFilesByGuid = null;
+
             Parallel.ForEach(SearchDirectories, entry =>
             {
                 try
                 {
                     if (Directory.Exists(entry.Value.Source))
                     {
-                        List<SourceFile> sourceFiles = new();
-
                         IEnumerable<string> sourceFilePaths = Directory.GetFiles(entry.Value.Source, "*.*", SearchOption.AllDirectories)
                             .Where(file => ValidSourceFile(file));
                         HashSet<string> destinationFiles = Directory.GetFiles(entry.Value.Destination, "*.*", SearchOption.AllDirectories)
@@ -107,38 +99,33 @@ namespace AutoEncodeServer.WorkerThreads
                             .Select(file => Path.GetFileNameWithoutExtension(file))
                             .ToHashSet();
 
-                        foreach (string sourceFilePath in sourceFilePaths)
+                        // Ensure we find any source files
+                        if (sourceFilePaths.Any())
                         {
-                            if (File.Exists(sourceFilePath) is false) continue;
+                            List<SourceFile> sourceFiles = new();
 
-                            SourceFile sourceFile = new()
+                            foreach (string sourceFilePath in sourceFilePaths)
                             {
-                                FullPath = sourceFilePath,
-                                DestinationFullPath = sourceFilePath.Replace(entry.Value.Source, entry.Value.Destination),
-                                Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFilePath)) &&
-                                            (EncodingJobQueue.IsEncodingByFileName(Path.GetFileName(sourceFilePath)) is false)
-                            };
+                                if (File.Exists(sourceFilePath) is false) continue;
 
-                            sourceFiles.Add(sourceFile);
-                        }
+                                SourceFile sourceFile = new()
+                                {
+                                    FullPath = sourceFilePath,
+                                    DestinationFullPath = sourceFilePath.Replace(entry.Value.Source, entry.Value.Destination),
+                                    Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFilePath)) &&
+                                                (EncodingJobQueue.IsEncodingByFileName(Path.GetFileName(sourceFilePath)) is false)
+                                };
 
-                        if (entry.Value.TVShowStructure is true)
-                        {
-                            if (ShowSourceFiles.ContainsKey(entry.Key) is false)
-                            {
-                                ShowSourceFiles[entry.Key] = new List<ShowSourceFileData>();
+                                sourceFiles.Add(sourceFile);
                             }
 
-                            ShowSourceFiles[entry.Key].UpdateShowSourceFiles(sourceFiles);
-                        }
-                        else
-                        {
-                            if (MovieSourceFiles.ContainsKey(entry.Key) is false)
+                            if (SourceFiles.ContainsKey(entry.Key) is false)
                             {
-                                MovieSourceFiles[entry.Key] = new List<SourceFileData>();
+                                SourceFiles[entry.Key] = (entry.Value.TVShowStructure, new List<SourceFileData>());
                             }
 
-                            MovieSourceFiles[entry.Key].UpdateSourceFiles(sourceFiles);
+                            var sourceFilesForDirectory = SourceFiles[entry.Key];
+                            UpdateSourceFiles(ref sourceFilesForDirectory, sourceFiles);
                         }
                     }
                     else
@@ -153,6 +140,9 @@ namespace AutoEncodeServer.WorkerThreads
                     return;
                 }
             });
+
+            // Rebuild the guid lookup
+            SourceFilesByGuid = SourceFiles.SelectMany(kvp => kvp.Value.Files, (kvp, file) => (kvp.Key, file)).ToDictionary(f => f.file.Guid);
 
             _buildingSourceFilesEvent.Set();
         }
@@ -264,18 +254,20 @@ namespace AutoEncodeServer.WorkerThreads
         }
         #endregion PRIVATE FUNCTIONS
 
-        private void UpdateSourceFiles(List<SourceFileData> sourceFiles, IEnumerable<SourceFile> newSourceFiles)
+        private void UpdateSourceFiles(ref (bool IsShows, List<SourceFileData> Files) sourceFiles, IEnumerable<SourceFile> newSourceFiles)
         {
-            IEnumerable<SourceFileData> sourceFilesToRemove = sourceFiles.Except(newSourceFiles, (s, n) => string.Equals(s.FullPath, n.FullPath, StringComparison.OrdinalIgnoreCase));
-            sourceFiles.RemoveRange(sourceFilesToRemove);
+            bool isShows = sourceFiles.IsShows;
 
-            IEnumerable<SourceFileData> sourceFilesToAdd = newSourceFiles.Except(sourceFiles, (n, s) => string.Equals(n.FullPath, s.FullPath, StringComparison.OrdinalIgnoreCase))
-                .Select(x => new SourceFileData(x));
-            sourceFiles.AddRange(sourceFilesToAdd);
+            IEnumerable<SourceFileData> sourceFilesToRemove = sourceFiles.Files.Except(newSourceFiles, (s, n) => string.Equals(s.FullPath, n.FullPath, StringComparison.OrdinalIgnoreCase));
+            sourceFiles.Files.RemoveRange(sourceFilesToRemove);
 
-            Debug.Assert(sourceFiles.Count == newSourceFiles.Count(), "Number of incoming source files should match outgoing number of source files.");
+            IEnumerable<SourceFileData> sourceFilesToAdd = newSourceFiles.Except(sourceFiles.Files, (n, s) => string.Equals(n.FullPath, s.FullPath, StringComparison.OrdinalIgnoreCase))
+                .Select(x => isShows is true ? new ShowSourceFileData(x) : new SourceFileData(x));
+            sourceFiles.Files.AddRange(sourceFilesToAdd);
 
-            sourceFiles.Sort(SourceFileData.CompareByFileName);
+            Debug.Assert(sourceFiles.Files.Count == newSourceFiles.Count(), "Number of incoming source files should match outgoing number of source files.");
+
+            sourceFiles.Files.Sort(SourceFileData.CompareByFileName);
         }
     }
 }

@@ -5,8 +5,6 @@ namespace AutoEncodeUtilities.Messages
 {
     public class SourceFilesResponse
     {
-        public IDictionary<string, IEnumerable<SourceFileData>> MovieSourceFiles { get; set; }
-
-        public IDictionary<string, IEnumerable<ShowSourceFileData>> ShowSourceFiles { get; set; }
+        public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> SourceFiles { get; set; }
     }
 }

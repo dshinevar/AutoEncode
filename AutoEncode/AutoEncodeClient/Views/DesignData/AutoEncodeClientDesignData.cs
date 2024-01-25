@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Controls.Primitives;
+using AutoEncodeClient.Comm;
 
 namespace AutoEncodeClient.Views.DesignData
 {
@@ -231,6 +232,26 @@ namespace AutoEncodeClient.Views.DesignData
         }
 
         #region Properties
+        public ISourceFilesViewModel SourceFilesViewModel { get; set; } = new SourceFilesViewModel()
+        {
+            MovieSourceFiles = new ObservableDictionary<string, BulkObservableCollection<SourceFileData>>()
+            {
+                {   "Movies",
+                    new BulkObservableCollection<SourceFileData>()
+                    {
+                        new SourceFileData() { FullPath = "C:\\Movies\\Knifin Around (1984).mkv", Encoded = true },
+                        new SourceFileData() { FullPath = "C:\\Movies\\Halloween - Michael's Birthday Party (2030).mkv", Encoded = false }
+                    }
+                },
+                {
+                    "Kids Movies",
+                    new BulkObservableCollection<SourceFileData>()
+                    {
+                        new SourceFileData() { FullPath = "C:\\Kids Movies\\Paddington 2077 (2077).mkv", Encoded = true}
+                    }
+                }
+            }
+        };
         public ICommand RefreshSourceFilesCommand { get; }
         public BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; }
         public EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
