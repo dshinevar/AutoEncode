@@ -26,6 +26,8 @@
 
         <!-- #region SOURCE FILES -->
         <Border Grid.Column="0"
+                x:Name="SourceFilesRoot"
+                DataContext="{Binding SourceFilesViewModel}"
                 Margin="0,0,5,0"
                 BorderBrush="Black"
                 Background="{StaticResource BackgroundBrush}"
@@ -315,6 +317,18 @@
                                                   ToolTip="Cancels Then Immediately Pauses The Job"/>
                                     </ContextMenu>
                                 </Button.ContextMenu>
+                            </Button>
+                            <Button Command="{Binding RemoveCommand}"
+                                    Height="25"
+                                    Margin="0"
+                                    ToolTip="Remove / Delete">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Style="{StaticResource CautionButtonBorderStyle}">
+                                            <Image Source="../Resources/delete.png"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
                             </Button>
                         </StackPanel>
                         

@@ -229,7 +229,7 @@
             <Button Grid.Column="1"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    Command="{Binding DataContext.RequestEncodeCommand, RelativeSource={RelativeSource AncestorType=views:AutoEncodeClientView}}"
+                    Command="{Binding DataContext.RequestEncodeCommand, ElementName=SourceFilesRoot}"
                     CommandParameter="{Binding .}"
                     Visibility="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource BoolToVisibilityConverter}}"
                     ToolTip="Request Encode">

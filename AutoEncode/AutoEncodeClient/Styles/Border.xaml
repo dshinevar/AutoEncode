@@ -48,4 +48,28 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <Style x:Key="CautionButtonBorderStyle"
+           TargetType="Border">
+        <Setter Property="BorderBrush"
+                Value="Black"/>
+        <Setter Property="BorderThickness"
+                Value="1"/>
+        <Setter Property="CornerRadius"
+                Value="2"/>
+        <Setter Property="Background"
+                Value="{StaticResource ButtonBackgroundBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver"
+                     Value="True">
+                <Setter Property="Background"
+                        Value="{StaticResource CautionMouseOverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled"
+                     Value="False">
+                <Setter Property="Background"
+                        Value="Transparent"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 </ResourceDictionary>

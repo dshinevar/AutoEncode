@@ -14,6 +14,7 @@
     <None Remove="Resources\AutoEncode.png" />
     <None Remove="Resources\cancel.png" />
     <None Remove="Resources\debug.png" />
+    <None Remove="Resources\delete.png" />
     <None Remove="Resources\error.png" />
     <None Remove="Resources\gear.png" />
     <None Remove="Resources\info.png" />
@@ -47,6 +48,7 @@
     </Resource>
     <Resource Include="Resources\cancel.png" />
     <Resource Include="Resources\debug.png" />
+    <Resource Include="Resources\delete.png" />
     <Resource Include="Resources\error.png" />
     <Resource Include="Resources\gear.png" />
     <Resource Include="Resources\info.png" />

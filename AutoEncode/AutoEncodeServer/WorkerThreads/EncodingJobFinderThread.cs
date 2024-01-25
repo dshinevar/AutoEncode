@@ -40,69 +40,50 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary>Signal to thread to update directories to search for jobs.</summary>
         public void UpdateSearchDirectories() => DirectoryUpdate = true;
 
-        /// <summary>Gets a copy of video source files </summary>
-        /// <returns></returns>
-        public IDictionary<string, IEnumerable<SourceFileData>> GetMovieSourceFiles() => MovieSourceFiles.ToDictionary(x => x.Key, x => x.Value.AsEnumerable());
-
-        /// <summary>Gets a copy of show source files</summary>
-        /// <returns></returns>
-        public IDictionary<string, IEnumerable<ShowSourceFileData>> GetShowSourceFiles() => ShowSourceFiles.ToDictionary(x => x.Key, x => x.Value.AsEnumerable());
-
-        public (IDictionary<string, IEnumerable<SourceFileData>>, IDictionary<string, IEnumerable<ShowSourceFileData>>) RequestSourceFiles()
+        /// <summary>Forces thread to wake and rebuild source files </summary>
+        /// <returns>Source Files</returns>
+        public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> RequestSourceFiles()
         {
             Wake();
 
             Thread.Sleep(2);
 
-            bool finished = _buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30));
+            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30)))
+            {
+                return SourceFiles.ToDictionary(x => x.Key, x => (x.Value.IsShows, x.Value.Files.AsEnumerable()));
+            }
 
-            if (finished is false) return (null, null);
-
-            return (GetMovieSourceFiles(), GetShowSourceFiles());
+            return null;
         }
 
-        public bool RequestEncodingJob(Guid guid, bool isShow)
+        public bool RequestEncodingJob(Guid guid)
         {
             bool success = false;
 
-            if (isShow is true)
+            // Wait for source file building if occurring
+            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30)))
             {
-                (string directory, ShowSourceFileData fileToEncode) = ShowSourceFiles.SelectMany(kvp => kvp.Value, (kvp, file) => (kvp.Key, file)).FirstOrDefault(x => x.file.Guid == guid);
-
-                if (fileToEncode is not null) 
+                if (SourceFilesByGuid.TryGetValue(guid, out (string Directory, SourceFileData File) sourceFile))
                 {
-                    if (CreateEncodingJob(fileToEncode, SearchDirectories[directory].PostProcessing, SearchDirectories[directory].Source) is true)
+                    if (string.IsNullOrWhiteSpace(sourceFile.Directory) is false && sourceFile.File is not null)
                     {
-                        success = true;
+                        if (CreateEncodingJob(sourceFile.File, SearchDirectories[sourceFile.Directory].PostProcessing, SearchDirectories[sourceFile.Directory].Source) is true)
+                        {
+                            success = true;
+                        }
+                        else
+                        {
+                            Logger.LogError($"Failed to create encoding job for requested file {sourceFile.File.FullPath}");
+                        }
                     }
                     else
                     {
-                        Logger.LogError($"Failed to create encoding job for requested file {fileToEncode.FullPath}");
+                        Logger.LogError("Source file has invalid data.");
                     }
                 }
                 else
                 {
-                    Logger.LogError("CLIENT REQUEST: Failed to find an episode of a show to encode with the requested GUID.");
-                }
-            }
-            else
-            {
-                (string directory, SourceFileData fileToEncode) = MovieSourceFiles.SelectMany(kvp => kvp.Value, (kvp, file) => (kvp.Key, file)).FirstOrDefault(x => x.file.Guid == guid);
-
-                if (fileToEncode is not null)
-                {
-                    if (CreateEncodingJob(fileToEncode, SearchDirectories[directory].PostProcessing, SearchDirectories[directory].Source) is true)
-                    {
-                        success = true;
-                    }
-                    else
-                    {
-                        Logger.LogError($"Failed to create encoding job for requested file {fileToEncode.FullPath}");
-                    }
-                }
-                else
-                {
-                    Logger.LogError("CLIENT REQUEST: Failed to find movie to encode with the requested GUID.");
+                    Logger.LogError("CLIENT REQUEST: Failed to find source file to encode with the requested GUID.");
                 }
             }
 

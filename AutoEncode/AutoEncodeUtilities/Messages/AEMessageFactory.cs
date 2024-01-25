@@ -9,11 +9,10 @@ namespace AutoEncodeUtilities.Messages
     {
         public static AEMessage CreateSourceFilesRequest() => new(AEMessageType.Source_Files_Request);
 
-        public static AEMessage<SourceFilesResponse> CreateSourceFilesResponse(IDictionary<string, IEnumerable<SourceFileData>> movies, IDictionary<string, IEnumerable<ShowSourceFileData>> shows)
+        public static AEMessage<SourceFilesResponse> CreateSourceFilesResponse(IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> sourceFiles)
             => new(AEMessageType.Source_Files_Response, new()
             {
-                MovieSourceFiles = movies,
-                ShowSourceFiles = shows
+                SourceFiles = sourceFiles
             });
 
         public static AEMessage<ulong> CreateCancelRequest(ulong jobId) => new(AEMessageType.Cancel_Request, jobId);
@@ -32,13 +31,12 @@ namespace AutoEncodeUtilities.Messages
 
         public static AEMessage<bool> CreateCancelPauseResponse(bool success) => new(AEMessageType.Cancel_Pause_Response, success);
 
-        public static AEMessage<EncodeRequest> CreateEncodeRequest(Guid guid, bool isShow) =>
-            new(AEMessageType.Encode_Request, new EncodeRequest()
-            {
-                Guid = guid,
-                IsShow = isShow
-            });
+        public static AEMessage<Guid> CreateEncodeRequest(Guid guid) => new(AEMessageType.Encode_Request, guid);
 
         public static AEMessage<bool> CreateEncodeResponse(bool success) => new(AEMessageType.Encode_Response, success);
+
+        public static AEMessage<ulong> CreateRemoveJobRequest(ulong jobId) => new(AEMessageType.Remove_Job_Request, jobId);
+
+        public static AEMessage<bool> CreateRemoveJobResponse(bool success) => new(AEMessageType.Remove_Job_Response, success);
     }
 }

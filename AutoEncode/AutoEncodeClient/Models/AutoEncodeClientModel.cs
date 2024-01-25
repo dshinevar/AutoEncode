@@ -11,7 +11,7 @@ namespace AutoEncodeClient.Models
     public class AutoEncodeClientModel
     {
         #region Private Properties
-        private CommunicationManager CommunicationManager { get; set; }
+        private ICommunicationManager CommunicationManager { get; set; }
 
         private ILogger Logger { get; set; }
         private AEClientConfig Config { get; set; }
@@ -20,16 +20,12 @@ namespace AutoEncodeClient.Models
         #region Properties
         #endregion Properties
 
-        public AutoEncodeClientModel(ILogger logger, CommunicationManager communicationManager, AEClientConfig config)
+        public AutoEncodeClientModel(ILogger logger, ICommunicationManager communicationManager, AEClientConfig config)
         {
             Logger = logger;
             Config = config;
             CommunicationManager = communicationManager;
             Logger.CheckAndDoRollover();
         }
-
-        public async Task<(IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows)> RequestSourceFiles() => await CommunicationManager.RequestSourceFiles();
-
-        public async Task<bool> RequestEncodingJob(Guid guid, bool isShow) => await CommunicationManager.RequestEncode(guid, isShow);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AutoEncodeUtilities.Data;
+using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Messages;
 using System;
 using System.Collections.Generic;
@@ -6,23 +7,21 @@ using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
 {
-    public partial class CommunicationManager
+    public partial class CommunicationManager : ICommunicationManager
     {
-        public async Task<(IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows)> RequestSourceFiles()
+        public async Task<IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)>> RequestSourceFiles()
         {
-            (IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows) returnData = (null, null);
-
             try
             {
-                AEMessage<SourceFilesResponse> returnMessage = await SendReceiveAsync<SourceFilesResponse>(AEMessageFactory.CreateSourceFilesRequest());
-                returnData = (returnMessage.Data.MovieSourceFiles, returnMessage.Data.ShowSourceFiles);
+                SourceFilesResponse data = await SendReceive<SourceFilesResponse>(AEMessageFactory.CreateSourceFilesRequest(), AEMessageType.Source_Files_Response);
+                return data.SourceFiles;
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to get source files.", nameof(CommunicationManager), new { ConnectionString });
+                _logger.LogException(ex, "Failed to get source files.", nameof(CommunicationManager));
             }
 
-            return returnData;
+            return null;
         }
 
         public async Task<bool> CancelJob(ulong jobId)
@@ -31,12 +30,11 @@ namespace AutoEncodeClient.Comm
 
             try
             {
-                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateCancelRequest(jobId));
-                returnData = returnMessage.Data;
+                return await SendReceive<bool>(AEMessageFactory.CreateCancelRequest(jobId), AEMessageType.Cancel_Response);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to cancel job", nameof(CommunicationManager), new { jobId });
+                _logger.LogException(ex, "Failed to cancel job", nameof(CommunicationManager), new { jobId });
             }
 
             return returnData;
@@ -48,12 +46,11 @@ namespace AutoEncodeClient.Comm
 
             try
             {
-                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreatePauseRequest(jobId));
-                returnData = returnMessage.Data;
+                return await SendReceive<bool>(AEMessageFactory.CreatePauseRequest(jobId), AEMessageType.Pause_Response);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to pause job", nameof(CommunicationManager), new { jobId });
+                _logger.LogException(ex, "Failed to pause job", nameof(CommunicationManager), new { jobId });
             }
 
             return returnData;
@@ -65,12 +62,11 @@ namespace AutoEncodeClient.Comm
 
             try
             {
-                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateResumeRequest(jobId));
-                returnData = returnMessage.Data;
+                return await SendReceive<bool>(AEMessageFactory.CreateResumeRequest(jobId), AEMessageType.Resume_Response);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to resume job", nameof(CommunicationManager), new { jobId });
+                _logger.LogException(ex, "Failed to resume job", nameof(CommunicationManager), new { jobId });
             }
 
             return returnData;
@@ -82,28 +78,42 @@ namespace AutoEncodeClient.Comm
 
             try
             {
-                AEMessage<bool> returnMessage = await SendReceiveAsync<bool>(AEMessageFactory.CreateCancelPauseRequest(jobId));
-                returnData = returnMessage.Data;
+                return await SendReceive<bool>(AEMessageFactory.CreateCancelPauseRequest(jobId), AEMessageType.Cancel_Pause_Response);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to cancel then pause job", nameof(CommunicationManager), new { jobId });
+                _logger.LogException(ex, "Failed to cancel then pause job", nameof(CommunicationManager), new { jobId });
             }
 
             return returnData;
         }
 
-        public async Task<bool> RequestEncode(Guid sourceFileGuid, bool isShow)
+        public async Task<bool> RequestEncode(Guid sourceFileGuid)
         {
             bool returnData = false;
             try
             {
-                AEMessage<bool> returnMessage =  await SendReceiveAsync<bool>(AEMessageFactory.CreateEncodeRequest(sourceFileGuid, isShow));
-                returnData = returnMessage.Data;
+                return await SendReceive<bool>(AEMessageFactory.CreateEncodeRequest(sourceFileGuid), AEMessageType.Encode_Response);
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Failed to request encode.", nameof(CommunicationManager), new { sourceFileGuid, isShow });
+                _logger.LogException(ex, "Failed to request encode.", nameof(CommunicationManager), new { sourceFileGuid });
+            }
+
+            return returnData;
+        }
+
+        public async Task<bool> RequestRemoveJob(ulong jobId)
+        {
+            bool returnData = false;
+
+            try
+            {
+                return await SendReceive<bool>(AEMessageFactory.CreateRemoveJobRequest(jobId), AEMessageType.Remove_Job_Response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogException(ex, "Failed to remove job from queue.", nameof(CommunicationManager), new { jobId });
             }
 
             return returnData;

@@ -12,33 +12,38 @@ namespace AutoEncodeServer.Comm
 {
     public class CommunicationManager
     {
-        private readonly ILogger Logger;
-        private readonly AEServerMainThread MainThread;
-        private readonly RouterSocket RouterSocket = null;
-        private readonly NetMQPoller Poller = null;
-        private readonly int Port;
+        #region Private Properties
+        private readonly ILogger _logger;
+        private readonly AEServerMainThread _mainThread;
+        private readonly RouterSocket _routerSocket = null;
+        private readonly NetMQPoller _poller = null;
+        #endregion Private Properties
+
+        public string ConnectionString => $"tcp://*:{Port}";
+        public int Port { get; }
 
         public CommunicationManager(AEServerMainThread mainThread, ILogger logger, int port = 39001)
         {
-            MainThread = mainThread;
-            Logger = logger;
+            _mainThread = mainThread;
+            _logger = logger;
             Port = port;
-            RouterSocket = new RouterSocket();
-            Poller = new NetMQPoller { RouterSocket };
-            RouterSocket.ReceiveReady += RouterSocket_ReceiveReady;
+
+            _routerSocket = new RouterSocket();
+            _poller = new NetMQPoller { _routerSocket };
+            _routerSocket.ReceiveReady += RouterSocket_ReceiveReady;
         }
 
         public void Start()
         {
             try
             {
-                Logger.LogInfo($"Binding to *:{Port}", nameof(CommunicationManager));
-                RouterSocket.Bind($"tcp://*:{Port}");
-                Poller.RunAsync();
+                _logger.LogInfo($"Binding to *:{Port}", nameof(CommunicationManager));
+                _routerSocket.Bind(ConnectionString);
+                _poller.RunAsync();
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error Starting Comm Manager", nameof(CommunicationManager), new { Port });
+                _logger.LogException(ex, "Error Starting Comm Manager", nameof(CommunicationManager), new { Port });
             }
         }
 
@@ -46,14 +51,14 @@ namespace AutoEncodeServer.Comm
         {
             try
             {
-                Logger.LogInfo("Stopping Comm Manager", nameof(CommunicationManager));
-                Poller.Stop();
-                Poller.Dispose();
-                RouterSocket.Close();
+                _logger.LogInfo("Stopping Comm Manager", nameof(CommunicationManager));
+                _poller.Stop();
+                _poller.Dispose();
+                _routerSocket.Close();
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error Stopping Comm Manager", nameof(CommunicationManager), new { Port });
+                _logger.LogException(ex, "Error Stopping Comm Manager", nameof(CommunicationManager), new { Port });
             }
         }
 
@@ -78,7 +83,7 @@ namespace AutoEncodeServer.Comm
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, "Error handling received message.", nameof(CommunicationManager), new { Port });
+                _logger.LogException(ex, "Error handling received message.", nameof(CommunicationManager), new { Port });
             }
         }
 
@@ -92,7 +97,7 @@ namespace AutoEncodeServer.Comm
 
             message.Append(response);
 
-            RouterSocket.SendMultipartMessage(message);
+            _routerSocket.SendMultipartMessage(message);
         }
 
         private void ProcessMessage(NetMQFrame clientAddress, string message)
@@ -105,8 +110,8 @@ namespace AutoEncodeServer.Comm
                 {
                     case AEMessageType.Source_Files_Request:
                     {
-                        var (Movies, Shows) = MainThread.RequestSourceFiles();
-                        var response = AEMessageFactory.CreateSourceFilesResponse(Movies, Shows);
+                        var sourceFiles = _mainThread.RequestSourceFiles();
+                        var response = AEMessageFactory.CreateSourceFilesResponse(sourceFiles);
                         SendMessage(clientAddress, response);
                         break;
                     }
@@ -140,9 +145,17 @@ namespace AutoEncodeServer.Comm
                     }
                     case AEMessageType.Encode_Request:
                     {
-                        EncodeRequest request = ((AEMessage<EncodeRequest>)aeMessage).Data;
-                        bool success = MainThread.RequestEncodingJob(request.Guid, request.IsShow);
+                        Guid guid = ((AEMessage<Guid>)aeMessage).Data;
+                        bool success = _mainThread.RequestEncodingJob(guid);
                         SendMessage(clientAddress, AEMessageFactory.CreateEncodeResponse(success));
+                        break;
+                    }
+                    case AEMessageType.Remove_Job_Request:
+                    {
+                        ulong jobId = ((AEMessage<ulong>)aeMessage).Data;
+                        bool success = EncodingJobQueue.CancelThenPauseJob(jobId);
+                        if (success is true) success = EncodingJobQueue.RemoveEncodingJobById(jobId);
+                        SendMessage(clientAddress,AEMessageFactory.CreateRemoveJobResponse(success));
                         break;
                     }
                 }

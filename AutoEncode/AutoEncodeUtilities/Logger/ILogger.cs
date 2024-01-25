@@ -6,6 +6,15 @@ namespace AutoEncodeUtilities.Logger
 {
     public interface ILogger
     {
+        /// <summary>Full path of the log file location </summary>
+        string LogFileFullPath { get; }
+
+        /// <summary>Maximum size a log file should be in bytes (for rollover to occur)</summary>
+        long MaxSizeInBytes { get; }
+
+        /// <summary>Number of previous log files to keep around</summary>
+        int BackupFileCount { get; }
+
         /// <summary> Log an Info Message </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>

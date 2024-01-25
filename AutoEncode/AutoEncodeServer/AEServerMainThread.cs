@@ -102,8 +102,8 @@ namespace AutoEncodeServer
         #endregion START/SHUTDOWN FUNCTIONS
 
         #region PROCESSING
-        public (IDictionary<string, IEnumerable<SourceFileData>> Movies, IDictionary<string, IEnumerable<ShowSourceFileData>> Shows) RequestSourceFiles() => EncodingJobFinderThread.RequestSourceFiles();
-        public bool RequestEncodingJob(Guid guid, bool isShow) => EncodingJobFinderThread.RequestEncodingJob(guid, isShow);
+        public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> RequestSourceFiles() => EncodingJobFinderThread.RequestSourceFiles();
+        public bool RequestEncodingJob(Guid guid) => EncodingJobFinderThread.RequestEncodingJob(guid);
         #endregion PROCESSING
     }
 }

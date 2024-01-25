@@ -7,6 +7,7 @@ using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Json;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models
 {
@@ -14,7 +15,7 @@ namespace AutoEncodeClient.Models
         ModelBase,
         IUpdateable<IEncodingJobData>
     {
-        private readonly CommunicationManager CommunicationManager;
+        private readonly ICommunicationManager CommunicationManager;
 
         #region Properties
         /// <summary>Unique job identifier </summary>
@@ -80,7 +81,7 @@ namespace AutoEncodeClient.Models
 
         /// <summary>Constructor</summary>
         /// <param name="encodingJobData"><see cref="IEncodingJobData"/></param>
-        public EncodingJobClientModel(IEncodingJobData encodingJobData, CommunicationManager communicationManager)
+        public EncodingJobClientModel(IEncodingJobData encodingJobData, ICommunicationManager communicationManager)
         {
             encodingJobData.CopyProperties(this);
             if (encodingJobData.SourceStreamData is not null)
@@ -104,13 +105,15 @@ namespace AutoEncodeClient.Models
             }  
         }
 
-        public async void Cancel() => await CommunicationManager.CancelJob((ulong)Id);
+        public async Task<bool> Cancel() => await CommunicationManager.CancelJob((ulong)Id);
 
-        public async void Pause() => await CommunicationManager.PauseJob((ulong)Id);
+        public async Task<bool> Pause() => await CommunicationManager.PauseJob((ulong)Id);
 
-        public async void Resume() => await CommunicationManager.ResumeJob((ulong)Id);
+        public async Task<bool> Resume() => await CommunicationManager.ResumeJob((ulong)Id);
 
-        public async void CancelThenPause() => await CommunicationManager.CancelThenPauseJob((ulong)Id);
+        public async Task<bool> CancelThenPause() => await CommunicationManager.CancelThenPauseJob((ulong)Id);
+
+        public async Task<bool> Remove() => await CommunicationManager.RequestRemoveJob((ulong)Id);
 
         public override bool Equals(object obj)
         {
