@@ -2,12 +2,13 @@
 using AutoEncodeUtilities.Enums;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace AutoEncodeServer
 {
     public static class EncodingJobQueue
     {
-        private static readonly List<EncodingJob> jobQueue = new();
+        private static readonly List<EncodingJob> jobQueue = [];
         private static readonly object jobLock = new();
         private static ulong _idNumber = 1;
         private static ulong IdNumber
@@ -20,7 +21,7 @@ namespace AutoEncodeServer
             }
         }
 
-        public static bool Any() => jobQueue.Any();
+        public static bool Any() => jobQueue.Count != 0;
 
         public static int Count => jobQueue.Count;
 
@@ -180,12 +181,12 @@ namespace AutoEncodeServer
 
         public new static string ToString()
         {
-            string output = string.Empty;
+            StringBuilder sbOutput = new();
             foreach (EncodingJob job in jobQueue)
             {
-                output += $"{job.Id} - {job.FileName} ";
+                sbOutput.AppendLine($"{job.Id} - {job.FileName}");
             }
-            return output;
+            return sbOutput.ToString();
         }
 
         #region Actions On Encoding Jobs

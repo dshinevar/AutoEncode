@@ -25,7 +25,7 @@ namespace AutoEncodeServer
             AEServerConfig serverState = null; // State after startup checks
             ILogger logger = null;
             ManualResetEvent Shutdown = new(false);
-            List<string> startupLog = new();
+            List<string> startupLog = [];
 
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
 
@@ -111,7 +111,7 @@ namespace AutoEncodeServer
             try
             {
                 ffmpegVersion = GetFFmpegVersion(serverConfig.ServerSettings.FFmpegDirectory);
-                if (ffmpegVersion?.Any() is false)
+                if (ffmpegVersion?.Count == 0)
                 {
                     throw new Exception("No ffmpeg version returned.");
                 }
@@ -242,7 +242,7 @@ namespace AutoEncodeServer
         {
             try
             {
-                List<string> ffmpegVersionLines = new();
+                List<string> ffmpegVersionLines = [];
 
                 ProcessStartInfo startInfo = new()
                 {
@@ -316,7 +316,7 @@ namespace AutoEncodeServer
         {
             try
             {
-                List<string> x265Version = new();
+                List<string> x265Version = [];
 
                 ProcessStartInfo startInfo = new()
                 {

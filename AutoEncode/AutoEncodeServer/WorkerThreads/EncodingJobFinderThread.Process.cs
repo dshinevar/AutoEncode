@@ -102,7 +102,7 @@ namespace AutoEncodeServer.WorkerThreads
                         // Ensure we find any source files
                         if (sourceFilePaths.Any())
                         {
-                            List<SourceFile> sourceFiles = new();
+                            List<SourceFile> sourceFiles = [];
 
                             foreach (string sourceFilePath in sourceFilePaths)
                             {
@@ -235,7 +235,7 @@ namespace AutoEncodeServer.WorkerThreads
         /// <returns>True if file is ready; False, otherwise</returns>
         private static bool CheckFileReady(string filePath)
         {
-            List<long> fileSizes = new();
+            List<long> fileSizes = [];
             FileInfo fileInfo = new(filePath);
             fileSizes.Add(fileInfo.Length);
 

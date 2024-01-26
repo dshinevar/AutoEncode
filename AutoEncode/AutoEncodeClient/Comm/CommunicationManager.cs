@@ -11,26 +11,19 @@ using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Comm
 {
-    public partial class CommunicationManager : ICommunicationManager
+    public partial class CommunicationManager(ILogger logger, string ipAddress, int port) : ICommunicationManager
     {
-        private readonly ILogger _logger = null;
+        private readonly ILogger _logger = logger;
 
         public string ConnectionString => $"tcp://{IpAddress}:{Port}";
-        public string IpAddress { get; set; }
-        public int Port { get; set; }
-
-        public CommunicationManager(ILogger logger, string ipAddress, int port)
-        {
-            _logger = logger;
-            IpAddress = ipAddress;
-            Port = port;
-        }
+        public string IpAddress { get; set; } = ipAddress;
+        public int Port { get; set; } = port;
 
         #region Private Functions
         private async Task<T> SendReceive<T>(AEMessage message, AEMessageType expectedResponseType)
         {
             var response = await SendReceiveAsync<T>(message);
-            return HandleResponseMessage<T>(response, expectedResponseType);
+            return HandleResponseMessage(response, expectedResponseType);
         }
 
         private async Task<AEMessage<T>> SendReceiveAsync<T>(AEMessage request)

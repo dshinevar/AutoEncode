@@ -15,7 +15,7 @@ namespace AutoEncodeClient.Models
         ModelBase,
         IUpdateable<IEncodingJobData>
     {
-        private readonly ICommunicationManager CommunicationManager;
+        private readonly ICommunicationManager _communicationManager;
 
         #region Properties
         /// <summary>Unique job identifier </summary>
@@ -89,7 +89,7 @@ namespace AutoEncodeClient.Models
                 SourceStreamData = new(encodingJobData.SourceStreamData);
             }
 
-            CommunicationManager = communicationManager;
+            _communicationManager = communicationManager;
         }
 
         public void Update(IEncodingJobData encodingJobData)
@@ -105,15 +105,15 @@ namespace AutoEncodeClient.Models
             }  
         }
 
-        public async Task<bool> Cancel() => await CommunicationManager.CancelJob((ulong)Id);
+        public async Task<bool> Cancel() => await _communicationManager.CancelJob((ulong)Id);
 
-        public async Task<bool> Pause() => await CommunicationManager.PauseJob((ulong)Id);
+        public async Task<bool> Pause() => await _communicationManager.PauseJob((ulong)Id);
 
-        public async Task<bool> Resume() => await CommunicationManager.ResumeJob((ulong)Id);
+        public async Task<bool> Resume() => await _communicationManager.ResumeJob((ulong)Id);
 
-        public async Task<bool> CancelThenPause() => await CommunicationManager.CancelThenPauseJob((ulong)Id);
+        public async Task<bool> CancelThenPause() => await _communicationManager.CancelThenPauseJob((ulong)Id);
 
-        public async Task<bool> Remove() => await CommunicationManager.RequestRemoveJob((ulong)Id);
+        public async Task<bool> Remove() => await _communicationManager.RequestRemoveJob((ulong)Id);
 
         public override bool Equals(object obj)
         {
