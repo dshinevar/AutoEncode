@@ -22,7 +22,7 @@ namespace AutoEncodeServer
         /// <summary>Clears out completed encoding jobs.</summary>
         private void ClearCompletedJobs()
         {
-            List<string> jobsRemovedLog = new();
+            List<string> jobsRemovedLog = [];
 
             // Encoded jobs that don't need post-processing
             IReadOnlyList<EncodingJob> encodedJobs = EncodingJobQueue.GetEncodedEncodingJobs();
@@ -88,7 +88,7 @@ namespace AutoEncodeServer
         /// <summary>Clears out errored encoding jobs.</summary>
         private void ClearErroredJobs()
         {
-            List<string> jobsRemovedLog = new();
+            List<string> jobsRemovedLog = [];
 
             IReadOnlyList<EncodingJob> erroredJobs = EncodingJobQueue.GetErroredJobs();
             foreach (EncodingJob job in erroredJobs)

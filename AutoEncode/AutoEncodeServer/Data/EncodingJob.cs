@@ -1,5 +1,4 @@
 ﻿using AutoEncodeServer.Interfaces;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Json;
@@ -11,7 +10,7 @@ using System.Threading;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJob : 
+    public class EncodingJob :
         IEncodingJobData,
         IEncodingJobBuildData
     {
@@ -27,21 +26,6 @@ namespace AutoEncodeUtilities.Data
             Id = jobId;
             SourceFullPath = sourceFileData.FullPath;
             DestinationFullPath = sourceFileData.DestinationFullPath;
-            PostProcessingSettings = postProcessingSettings;
-            SetPostProcessingFlags();
-        }
-
-        /// <summary> Preferred Constructor </summary>
-        /// <param name="jobId">JobId assigned by EncodingJobQueue on the server.</param>
-        /// <param name="sourceFullPath">Full path of the source file.</param>
-        /// <param name="destinationFullPath">Full path of the expected destination file.</param>
-        /// <param name="postProcessingSettings"><see cref="PostProcessingSettings"/></param>
-        [Obsolete]
-        public EncodingJob(ulong jobId, string sourceFullPath, string destinationFullPath, PostProcessingSettings postProcessingSettings)
-        {
-            Id = jobId;
-            SourceFullPath = sourceFullPath;
-            DestinationFullPath = destinationFullPath;
             PostProcessingSettings = postProcessingSettings;
             SetPostProcessingFlags();
         }
@@ -129,7 +113,7 @@ namespace AutoEncodeUtilities.Data
             {
                 ToBePaused = true;
                 Paused = false;
-            } 
+            }
         }
 
         public void Resume()
@@ -297,8 +281,6 @@ namespace AutoEncodeUtilities.Data
 
         public override int GetHashCode() => Id.GetHashCode();
 
-        // IN PROGRESS TESTING
         public CancellationTokenSource TaskCancellationTokenSource { get; set; }
-        // IN PROGRESS TESTING
     }
 }

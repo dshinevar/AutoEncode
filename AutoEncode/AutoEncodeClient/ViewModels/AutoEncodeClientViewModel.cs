@@ -17,19 +17,19 @@ namespace AutoEncodeClient.ViewModels
         IAutoEncodeClientViewModel,
         IDisposable
     {
-        private readonly ClientUpdateService ClientUpdateService;
-        private readonly ICommunicationManager CommunicationManager;
+        private readonly ClientUpdateService _clientUpdateService;
+        private readonly ICommunicationManager _communicationManager;
 
         public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, ICommunicationManager communicationManager, AEClientConfig config)
             : base(model)
         {
-            CommunicationManager = communicationManager;
+            _communicationManager = communicationManager;
 
-            SourceFilesViewModel = new SourceFilesViewModel(communicationManager);
+            SourceFilesViewModel = new SourceFilesViewModel(_communicationManager);
 
-            ClientUpdateService = new ClientUpdateService(logger, config.ConnectionSettings.IPAddress, config.ConnectionSettings.ClientUpdatePort);
-            ClientUpdateService.DataReceived += (s, data) => UpdateClient(data);
-            ClientUpdateService.Start();
+            _clientUpdateService = new ClientUpdateService(logger, config.ConnectionSettings.IPAddress, config.ConnectionSettings.ClientUpdatePort);
+            _clientUpdateService.DataReceived += (s, data) => UpdateClient(data);
+            _clientUpdateService.Start();
 
             SourceFilesViewModel.RefreshSourceFiles();
         }
@@ -47,16 +47,16 @@ namespace AutoEncodeClient.ViewModels
         #endregion SubViewModels
 
         #region Properties
-        public bool ConnectedToServer => ClientUpdateService.Connected;
+        public bool ConnectedToServer => _clientUpdateService.Connected;
         #endregion Properties
 
         private void UpdateClient(List<EncodingJobData> encodingJobQueue)
         {
             if (encodingJobQueue is not null)
             {
-                if (encodingJobQueue.Any() is false)
+                if (encodingJobQueue.Count == 0)
                 {
-                    Application.Current.Dispatcher.Invoke(() => EncodingJobs.Clear());
+                    Application.Current.Dispatcher.Invoke(EncodingJobs.Clear);
                     return;
                 }
 
@@ -94,7 +94,7 @@ namespace AutoEncodeClient.ViewModels
                     }
                     else
                     {
-                        EncodingJobClientModel model = new(data, CommunicationManager);
+                        EncodingJobClientModel model = new(data, _communicationManager);
                         EncodingJobViewModel viewModel = new(model);
                         Application.Current.Dispatcher.Invoke(() => EncodingJobs.Insert(encodingJobQueue.IndexOf(data), viewModel));
                     }
@@ -104,7 +104,7 @@ namespace AutoEncodeClient.ViewModels
 
         public void Dispose()
         {
-            ClientUpdateService.Dispose();
+            _clientUpdateService.Dispose();
         }
     }
 }

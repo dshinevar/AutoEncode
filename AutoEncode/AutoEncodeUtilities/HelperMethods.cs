@@ -8,7 +8,7 @@ namespace AutoEncodeUtilities
     {
         public static string ConvertSecondsToTimestamp(int seconds) => TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
 
-        public static int ConvertTimestampToSeconds(string timestamp) => TimeSpan.TryParse(timestamp, out TimeSpan ts) ? Convert.ToInt32(ts.TotalSeconds) : -1;
+        public static double ConvertTimestampToSeconds(string timestamp) => TimeSpan.TryParse(timestamp, out TimeSpan ts) ? ts.TotalSeconds : -1.0;
 
         public static string JoinFilter(string separator, params string[] strings)
         {

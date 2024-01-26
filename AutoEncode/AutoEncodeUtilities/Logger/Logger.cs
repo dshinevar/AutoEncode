@@ -67,7 +67,7 @@ namespace AutoEncodeUtilities.Logger
         /// <param name="callingMemberName">Calling function.</param>
         public string LogException(Exception ex, string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "")
         {
-            List<string> messages = new() { msg };
+            List<string> messages = [msg];
             if (details is not null)
             {
                 StringBuilder detailsSb = new("Details: ");

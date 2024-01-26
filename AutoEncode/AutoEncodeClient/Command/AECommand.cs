@@ -9,18 +9,12 @@ namespace AutoEncodeClient.Command
         void RaiseCanExecuteChanged();
     }
 
-    public class AECommand : IAECommand
+    public class AECommand(Func<bool> canExecute, Action execute) : IAECommand
     {
-        private readonly Func<bool> _canExecute;
-        private readonly Action _execute;
+        private readonly Func<bool> _canExecute = canExecute;
+        private readonly Action _execute = execute;
 
         public event EventHandler CanExecuteChanged;
-
-        public AECommand(Func<bool> canExecute, Action execute)
-        {
-            _canExecute = canExecute;
-            _execute = execute;
-        }
 
         public AECommand(Action execute)
             : this(() => true, execute) { }
@@ -32,18 +26,12 @@ namespace AutoEncodeClient.Command
         public void Execute(object parameter) => _execute();
     }
 
-    public class AECommandWithParameter : IAECommand
+    public class AECommandWithParameter(Func<bool> canExecute, Action<object> execute) : IAECommand
     {
-        private readonly Func<bool> _canExecute;
-        private readonly Action<object> _execute;
+        private readonly Func<bool> _canExecute = canExecute;
+        private readonly Action<object> _execute = execute;
 
         public event EventHandler CanExecuteChanged;
-
-        public AECommandWithParameter(Func<bool> canExecute, Action<object> execute)
-        {
-            _canExecute = canExecute;
-            _execute = execute;
-        }
 
         public AECommandWithParameter(Action<object> execute)
             : this(() => true, execute) { }

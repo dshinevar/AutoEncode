@@ -4,25 +4,14 @@ using Newtonsoft.Json.Converters;
 
 namespace AutoEncodeUtilities.Messages
 {
-    public class AEMessage
+    public class AEMessage(AEMessageType messageType)
     {
         [JsonConverter(typeof(StringEnumConverter))]
-        public AEMessageType MessageType { get; }
-
-        public AEMessage(AEMessageType messageType)
-        {
-            MessageType = messageType;
-        }
+        public AEMessageType MessageType { get; } = messageType;
     }
 
-    public class AEMessage<T> : AEMessage
+    public class AEMessage<T>(AEMessageType messageType, T data) : AEMessage(messageType)
     {
-        public AEMessage(AEMessageType messageType, T data)
-            : base(messageType)
-        {
-            Data = data;
-        }
-
-        public T Data { get; }
+        public T Data { get; } = data;
     }
 }

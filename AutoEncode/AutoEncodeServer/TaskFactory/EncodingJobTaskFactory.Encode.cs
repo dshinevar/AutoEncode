@@ -139,7 +139,7 @@ namespace AutoEncodeServer.TaskFactory
                     if (job.EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
                     {
                         // Delete all possible HDRMetadata files
-                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
+                        job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(File.Delete);
                     }
                     logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
                 }
@@ -502,7 +502,7 @@ namespace AutoEncodeServer.TaskFactory
             {
                 string line = data;
                 string time = line.Substring(line.IndexOf("time="), 13);
-                int seconds = HelperMethods.ConvertTimestampToSeconds(time.Split('=')[1]);
+                double seconds = HelperMethods.ConvertTimestampToSeconds(time.Split('=')[1]);
                 encodingProgress = (int)((((double)seconds / (double)sourceDurationInSeconds) * 100) * adjustment); // Update percent complete
                 Debug.WriteLine(encodingProgress);
             }

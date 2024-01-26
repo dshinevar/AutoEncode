@@ -20,7 +20,6 @@ namespace AutoEncodeClient.Comm
         private readonly ILogger _logger = null;
         private readonly ManualResetEvent _flowControlMRE = new(true);
 
-
         public event EventHandler<List<EncodingJobData>> DataReceived;
         public bool Connected { get; private set; }
         public string IpAddress { get; }
@@ -35,7 +34,7 @@ namespace AutoEncodeClient.Comm
 
             _subscriberSocket = new SubscriberSocket();
             _subscriberSocket.Options.ReceiveHighWatermark = 1;
-            _poller = new NetMQPoller { _subscriberSocket };
+            _poller = [_subscriberSocket];
             _monitor = new(_subscriberSocket, $"inproc://req.inproc", SocketEvents.Connected | SocketEvents.Disconnected);
             _monitor.Connected += Monitor_Connected;
             _monitor.Disconnected += Monitor_Disconnected;
