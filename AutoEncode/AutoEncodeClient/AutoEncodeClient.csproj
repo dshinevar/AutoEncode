@@ -2,30 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <Authors>Daniel Shinevar</Authors>
     <Description>Client for connecting/interacting with AutoEncode Server.</Description>
     <PackageIcon>AutoEncode.png</PackageIcon>
     <ApplicationIcon>Resources\AutoEncode.ico</ApplicationIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="Resources\AutoEncode.png" />
-    <None Remove="Resources\cancel.png" />
-    <None Remove="Resources\debug.png" />
-    <None Remove="Resources\delete.png" />
-    <None Remove="Resources\error.png" />
-    <None Remove="Resources\gear.png" />
-    <None Remove="Resources\info.png" />
-    <None Remove="Resources\pause.png" />
-    <None Remove="Resources\play.png" />
-    <None Remove="Resources\plus_sign.png" />
-    <None Remove="Resources\refresh.png" />
-    <None Remove="Resources\skull.png" />
-    <None Remove="Resources\success.png" />
-    <None Remove="Resources\warning.png" />
-  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Resources\AutoEncode.ico" />
