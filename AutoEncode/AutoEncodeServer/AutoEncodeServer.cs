@@ -11,23 +11,33 @@ using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
+using Castle.Windsor;
+using Castle.MicroKernel.Registration;
+using Castle.Facilities.TypedFactory;
+using Castle.Windsor.Installer;
+using AutoEncodeServer.Interfaces;
+
 namespace AutoEncodeServer
 {
-    class AutoEncodeServer
+    internal partial class AutoEncodeServer
     {
         private const string LOG_THREAD_NAME = "STARTUP";
         private const string LOG_FILENAME = "aeserver.log";
 
         static void Main(string[] args)
         {
-            AEServerMainThread mainThread = null;
+            // Container Standup
+            WindsorContainer container = new();
+            RegisterContainerComponents(container);
+
+            ILogger logger = null;
+            IAEServerMainThread mainThread = null;
             AEServerConfig serverConfig = null; // As loaded from file
             AEServerConfig serverState = null; // State after startup checks
-            ILogger logger = null;
             ManualResetEvent Shutdown = new(false);
             List<string> startupLog = [];
 
-            AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, logger);
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, mainThread, Shutdown, container, logger);
 
             Debug.WriteLine("AutoEncodeServer Starting Up.");
             // LOAD CONFIG FILE
@@ -52,22 +62,7 @@ namespace AutoEncodeServer
             string LogFileLocation = serverConfig.ServerSettings.LoggerSettings.LogFileLocation;
             try
             {
-                DirectoryInfo directoryInfo = Directory.CreateDirectory(serverConfig.ServerSettings.LoggerSettings.LogFileLocation);
-
-                if (directoryInfo is null)
-                {
-                    Debug.WriteLine("Failed to create/find log directory. Checking backup.");
-
-                    DirectoryInfo backupDirectoryInfo = Directory.CreateDirectory(Lookups.LogBackupFileLocation);
-
-                    if (backupDirectoryInfo is null)
-                    {
-                        Debug.WriteLine("Failed to create/find backup log directory. Exiting.");
-                        Environment.Exit(-2);
-                    }
-
-                    LogFileLocation = Lookups.LogBackupFileLocation;
-                }
+                CreateLogFileDirectory(LogFileLocation);
             }
             catch (Exception ex)
             {
@@ -94,10 +89,13 @@ namespace AutoEncodeServer
                 }
             }
 
-            logger = new Logger(LogFileLocation,
+            logger = container.Resolve<ILogger>();
+            logger.Initialize(LogFileLocation,
                 LOG_FILENAME,
                 serverConfig.ServerSettings.LoggerSettings.MaxFileSizeInBytes,
                 serverConfig.ServerSettings.LoggerSettings.BackupFileCount);
+
+            //ITestClass testClass = container.Resolve<ITestClass>(); 
 
 
             if (logger.CheckAndDoRollover() is false)
@@ -216,15 +214,29 @@ namespace AutoEncodeServer
                 logger.LogException(ex, "Failed to delete previously encoding file or temp file.", LOG_THREAD_NAME);
             }
 
-            mainThread = new AEServerMainThread(serverState, serverConfig, logger, Shutdown);
-            mainThread.Start();
+            // SERVER STARTUP
+            try
+            {
+                mainThread = container.Resolve<IAEServerMainThread>();
+                mainThread.Initialize(serverState, serverConfig, Shutdown);
+                mainThread.Start();
+            }
+            catch (Exception ex) 
+            {
+                logger?.LogException(ex, "Failed to Start AutoEncodeServer", LOG_THREAD_NAME);
+
+                container.Release(mainThread);
+                mainThread = null;
+                Environment.Exit(-2);
+            }
 
             Shutdown.WaitOne();
 
+            container.Release(mainThread);
             mainThread = null;
         }
 
-        static void OnApplicationExit(object sender, EventArgs e, AEServerMainThread mainThread, ManualResetEvent shutdownMRE, ILogger logger)
+        static void OnApplicationExit(object sender, EventArgs e, IAEServerMainThread mainThread, ManualResetEvent shutdownMRE, WindsorContainer container, ILogger logger)
         {
             logger?.LogInfo("AutoEncodeServer Shutting Down.", "SHUTDOWN");
 
@@ -233,119 +245,10 @@ namespace AutoEncodeServer
                 mainThread.Shutdown();
                 shutdownMRE.WaitOne();
             }
+
+            ContainerCleanup(container);
         }
 
-        /// <summary>Gets FFmpeg version/Checks to make sure FFmpeg is accessible </summary>
-        /// <param name="ffmpegDirectory">FFmpeg directory from config</param>
-        /// <returns>List of strings from version output (for logging)</returns>
-        static List<string> GetFFmpegVersion(string ffmpegDirectory)
-        {
-            try
-            {
-                List<string> ffmpegVersionLines = [];
 
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = Path.Combine(ffmpegDirectory, "ffmpeg"),
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                };
-
-                using (Process ffprobeProcess = new())
-                {
-                    ffprobeProcess.StartInfo = startInfo;
-                    ffprobeProcess.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
-                    };
-                    ffprobeProcess.Start();
-                    ffprobeProcess.BeginOutputReadLine();
-                    ffprobeProcess.WaitForExit();
-                }
-
-                return ffmpegVersionLines;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        /// <summary>Gets mkvmerge version </summary>
-        /// <returns>mkvmerge version string</returns>
-        static string GetMKVMergeVersion(string mkvMergeFullPath)
-        {
-            try
-            {
-                string mkvMergeVersion = string.Empty;
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = string.IsNullOrWhiteSpace(mkvMergeFullPath) ? "mkvmerge" : mkvMergeFullPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                };
-
-                using (Process mkvMergeProcess = new())
-                {
-                    mkvMergeProcess.StartInfo = startInfo;
-                    mkvMergeProcess.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) mkvMergeVersion = e.Data; // Only expecting one line
-                    };
-                    mkvMergeProcess.Start();
-                    mkvMergeProcess.BeginOutputReadLine();
-                    mkvMergeProcess.WaitForExit();
-                }
-
-                return mkvMergeVersion;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        static List<string> Getx265Version(string x265FullPath)
-        {
-            try
-            {
-                List<string> x265Version = [];
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = x265FullPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardError = true
-                };
-
-                using (Process x265Process = new())
-                {
-                    x265Process.StartInfo = startInfo;
-                    x265Process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
-                    };
-                    x265Process.Start();
-                    x265Process.BeginErrorReadLine();
-                    x265Process.WaitForExit();
-                }
-
-                return x265Version;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
     }
 }

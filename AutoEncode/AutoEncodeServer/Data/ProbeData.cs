@@ -20,7 +20,7 @@ namespace AutoEncodeServer.Data
         internal class Frame
         {
             public string media_type;
-            public int stream_index;
+            public short stream_index;
             public string pix_fmt;
             public string color_space;
             public string color_primaries;
@@ -48,7 +48,7 @@ namespace AutoEncodeServer.Data
 
         internal class Stream
         {
-            public int index;
+            public short index;
             public string codec_type;
             public string codec_name;
             public string profile;
@@ -59,7 +59,7 @@ namespace AutoEncodeServer.Data
             public string color_transfer;
             public string color_primaries;
             public string chroma_location;
-            public int channels;
+            public short channels;
             public string channel_layout;
             public string r_frame_rate;
             public string avg_frame_rate;
@@ -133,8 +133,8 @@ namespace AutoEncodeServer.Data
             List<AudioStreamData> audioStreams = null;
             List<SubtitleStreamData> subtitleStreams = null;
 
-            int audioIndex = 0;
-            int subIndex = 0;
+            short audioIndex = 0;
+            short subIndex = 0;
             foreach (Stream stream in streams)
             {
                 if (stream.codec_type.Equals("video", StringComparison.OrdinalIgnoreCase) && videoStreamData is null)
@@ -214,7 +214,7 @@ namespace AutoEncodeServer.Data
                         audioStream.Commentary = true;
                     }
 
-                    audioStreams ??= new();
+                    audioStreams ??= [];
                     audioStreams.Add(audioStream);
                     audioIndex++;
                 }
@@ -230,7 +230,7 @@ namespace AutoEncodeServer.Data
                         Title = stream.tags.title ?? string.Empty
                     };
 
-                    subtitleStreams ??= new();
+                    subtitleStreams ??= [];
                     subtitleStreams.Add(subtitleStream);
                     subIndex++;
                 }
@@ -243,7 +243,7 @@ namespace AutoEncodeServer.Data
                 throw new Exception("No video stream found.");
             }
 
-            if ((audioStreams?.Any() ?? false) is false)
+            if ((audioStreams?.Count ?? -1) < 1)
             {
                 throw new Exception("No audio streams found.");
             }
@@ -278,7 +278,7 @@ namespace AutoEncodeServer.Data
                     videoStreamData.ChromaLocation ??= ConvertStringToChromaLocation(frame.chroma_location);
 
                     // Usually should have something in here
-                    if (frame?.side_data_list?.Any() ?? false)
+                    if ((frame?.side_data_list?.Count ?? -1) > 0)
                     {
                         // Should only be one
                         SideData masteringDisplayMetadata = frame.side_data_list.SingleOrDefault(x => x.side_data_type.Equals("Mastering display metadata", StringComparison.OrdinalIgnoreCase));
@@ -314,7 +314,7 @@ namespace AutoEncodeServer.Data
                                 hdrData.HDRFlags |= HDRFlags.HDR10PLUS;
                             }
 
-                            if (hdrData.IsDynamic) hdrData.DynamicMetadataFullPaths = new();
+                            if (hdrData.IsDynamic) hdrData.DynamicMetadataFullPaths = [];
 
                             videoStreamData.HDRData = hdrData;
                         }
@@ -322,14 +322,7 @@ namespace AutoEncodeServer.Data
                 }
             }
 
-            return new SourceStreamData()
-            {
-                DurationInSeconds = Convert.ToInt32(format.duration),
-                NumberOfFrames = numberOfFrames,
-                VideoStream = videoStreamData,
-                AudioStreams = audioStreams,
-                SubtitleStreams = subtitleStreams
-            };
+            return new SourceStreamData(Convert.ToInt32(format.duration), numberOfFrames, videoStreamData, audioStreams, subtitleStreams);
         }
     }
 #pragma warning restore CS0649

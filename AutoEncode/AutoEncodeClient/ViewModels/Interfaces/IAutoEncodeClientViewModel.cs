@@ -1,16 +1,17 @@
 ﻿using AutoEncodeClient.Collections;
+using AutoEncodeClient.Models.Interfaces;
 using System;
 
 namespace AutoEncodeClient.ViewModels.Interfaces
 {
     public interface IAutoEncodeClientViewModel : IDisposable
     {
+        void Initialize(IAutoEncodeClientModel model);
+
         ISourceFilesViewModel SourceFilesViewModel { get; }
 
-        BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; }
+        BulkObservableCollection<IEncodingJobViewModel> EncodingJobs { get; }
 
-        EncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
-
-        bool ConnectedToServer { get; }
+        IEncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
     }
 }

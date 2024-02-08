@@ -1,4 +1,5 @@
 ﻿using AutoEncodeUtilities;
+using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Interfaces;
 
@@ -13,8 +14,8 @@ namespace AutoEncodeClient.Models.StreamDataModels
         public void Update(StreamData data) => data.CopyProperties(this);
 
         #region Properties
-        private int _streamIndex;
-        public int StreamIndex
+        private short _streamIndex;
+        public short StreamIndex
         {
             get => _streamIndex;
             set => SetAndNotify(_streamIndex, value, () => _streamIndex = value);

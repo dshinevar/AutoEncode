@@ -1,6 +1,5 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:userControls="clr-namespace:AutoEncodeClient.UserControls"
                     xmlns:utilData="clr-namespace:AutoEncodeUtilities.Data;assembly=AutoEncodeUtilities"
                     xmlns:utilEnum="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
                     xmlns:views="clr-namespace:AutoEncodeClient.Views">
@@ -52,14 +51,13 @@
                                            VerticalAlignment="Top"
                                            HorizontalAlignment="Center"/>
                                 <ProgressBar Grid.Row="2"
-                                             Value="{Binding EncodingProgress}"
+                                             Value="{Binding EncodingProgress, Mode=OneWay}"
                                              Style="{StaticResource ProgressBarBaseStyle}"
                                              VerticalAlignment="Stretch"
-                                             MinHeight="15"
                                              Margin="5,3">
                                     <ProgressBar.Visibility>
                                         <MultiBinding Converter="{StaticResource MultiVisibilityConverter}">
-                                            <Binding Path="Error" Converter="{StaticResource BoolToInvisibilityConverter}"/>
+                                            <Binding Path="HasError" Converter="{StaticResource BoolToInvisibilityConverter}"/>
                                             <Binding Path="Status" Converter="{StaticResource EncodingJobStatusToVisibilityConverter}"/>
                                             <Binding Path="Complete" Converter="{StaticResource BoolToInvisibilityConverter}"/>
                                         </MultiBinding>
@@ -81,7 +79,7 @@
                     <ControlTemplate.Triggers>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Error}" Value="False"/>
+                                <Condition Binding="{Binding HasError}" Value="False"/>
                                 <Condition Binding="{Binding Complete}" Value="False"/>
                                 <Condition Binding="{Binding Paused}" Value="False"/>
                                 <Condition Binding="{Binding Status}" Value="{x:Static utilEnum:EncodingJobStatus.BUILDING}"/>
@@ -104,7 +102,7 @@
                         </MultiDataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Error}" Value="True"/>
+                                <Condition Binding="{Binding HasError}" Value="True"/>
                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="False"/>
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Background"
@@ -112,7 +110,7 @@
                         </MultiDataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Error}" Value="True"/>
+                                <Condition Binding="{Binding HasError}" Value="True"/>
                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Background"
@@ -120,7 +118,7 @@
                         </MultiDataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Error}" Value="False"/>
+                                <Condition Binding="{Binding HasError}" Value="False"/>
                                 <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Background"
@@ -128,7 +126,7 @@
                         </MultiDataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Error}" Value="False"/>
+                                <Condition Binding="{Binding HasError}" Value="False"/>
                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Background"

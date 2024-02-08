@@ -15,6 +15,13 @@ namespace AutoEncodeUtilities.Logger
         /// <summary>Number of previous log files to keep around</summary>
         int BackupFileCount { get; }
 
+        /// <summary>Sets initial data for use.</summary>
+        /// <param name="logFileLocation">Directory to place log file in</param>
+        /// <param name="logFileName">Name of log file</param>
+        /// <param name="maxSizeInBytes">Max size in bytes file should be before rolling over (when calling CheckAndDoRollover)</param>
+        /// <param name="backupFileCount">Number of backup log files to keep</param>
+        void Initialize(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0);
+
         /// <summary> Log an Info Message </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>

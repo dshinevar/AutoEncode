@@ -1,4 +1,5 @@
 ﻿using AutoEncodeClient.Collections;
+using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Interfaces;
 

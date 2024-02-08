@@ -17,7 +17,7 @@ namespace AutoEncodeUtilities.Messages
 
         public static AEMessage<ulong> CreateCancelRequest(ulong jobId) => new(AEMessageType.Cancel_Request, jobId);
 
-        public static AEMessage<bool> CreateCancelResponse(bool success) => new(AEMessageType.Cancel_Request, success);
+        public static AEMessage<bool> CreateCancelResponse(bool success) => new(AEMessageType.Cancel_Response, success);
 
         public static AEMessage<ulong> CreatePauseRequest(ulong jobId) => new(AEMessageType.Pause_Request, jobId);
 

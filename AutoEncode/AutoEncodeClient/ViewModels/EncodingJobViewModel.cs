@@ -1,8 +1,8 @@
 ﻿using AutoEncodeClient.Command;
 using AutoEncodeClient.Dialogs;
-using AutoEncodeClient.Models;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.Models.StreamDataModels;
-using AutoEncodeUtilities;
+using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
@@ -12,12 +12,12 @@ using System.Windows.Input;
 namespace AutoEncodeClient.ViewModels
 {
     public class EncodingJobViewModel :
-        ViewModelBase<EncodingJobClientModel>,
-        IUpdateable<IEncodingJobData>,
+        ViewModelBase<IEncodingJobClientModel>,
+        IEncodingJobViewModel,
         IEquatable<IEncodingJobData>
     {
-        public EncodingJobViewModel(EncodingJobClientModel model)
-            : base(model) 
+        public EncodingJobViewModel(IEncodingJobClientModel model)
+            : base(model)
         {
             AECommand cancelCommand = new(() => CanCancel, Cancel);
             CancelCommand = cancelCommand;
@@ -34,9 +34,13 @@ namespace AutoEncodeClient.ViewModels
             ResumeCommand = new AECommand(Resume);
 
             RemoveCommand = new AECommand(Remove);
+
+            Model.PropertyChanged += ModelPropertyChanged;
         }
 
-        public ulong? Id => Model.Id;
+        public ulong Id => Model.Id;
+
+        public string Title => Model.Title;
 
         public string Name => Model.Name;
 
@@ -50,16 +54,17 @@ namespace AutoEncodeClient.ViewModels
         public SourceStreamDataClientModel SourceStreamData
         {
             get => Model.SourceStreamData;
-            set => SetAndNotify(Model.SourceStreamData, value, () => Model.SourceStreamData = value);
+            //set => SetAndNotify(Model.SourceStreamData, value, () => Model.SourceStreamData = value);
         }
         public PostProcessingSettings PostProcessingSettings
         {
             get => Model.PostProcessingSettings;
-            set => SetAndNotify(Model.PostProcessingSettings, value, () =>
+            /*set => SetAndNotify(Model.PostProcessingSettings, value, () =>
             {
                 if (Model.PostProcessingSettings is null) Model.PostProcessingSettings = value;
                 else Model.PostProcessingSettings.Update(value);
             });
+            */
         }
         #endregion Processing Data
 
@@ -67,85 +72,85 @@ namespace AutoEncodeClient.ViewModels
         public EncodingJobStatus Status
         {
             get => Model.Status;
-            set => SetAndNotify(Model.Status, value, () => Model.Status = value);
+            //set => SetAndNotify(Model.Status, value, () => Model.Status = value);
         }
 
         public EncodingJobBuildingStatus BuildingStatus
         {
             get => Model.BuildingStatus;
-            set => SetAndNotify(Model.BuildingStatus, value, () => Model.BuildingStatus = value);
+            //set => SetAndNotify(Model.BuildingStatus, value, () => Model.BuildingStatus = value);
         }
 
-        public int EncodingProgress
+        public byte EncodingProgress
         {
             get => Model.EncodingProgress;
-            set => SetAndNotify(Model.EncodingProgress, value, () => Model.EncodingProgress = value);
+            //set => SetAndNotify(Model.EncodingProgress, value, () => Model.EncodingProgress = value);
         }
 
-        public bool Error
+        public bool HasError
         {
-            get => Model.Error;
-            set => SetAndNotify(Model.Error, value, () => Model.Error = value);
+            get => Model.HasError;
+            //set => SetAndNotify(Model.HasError, value, () => Model.HasError = value);
         }
 
         public bool ToBePaused
         {
             get => Model.ToBePaused;
-            set => SetAndNotify(Model.ToBePaused, value, () => Model.ToBePaused = value);
+            //set => SetAndNotify(Model.ToBePaused, value, () => Model.ToBePaused = value);
         }
 
         public bool Paused
         {
             get => Model.Paused;
-            set => SetAndNotify(Model.Paused, value, () => Model.Paused = value);
+            //set => SetAndNotify(Model.Paused, value, () => Model.Paused = value);
         }
 
-        public bool Cancelled
+        public bool Canceled
         {
-            get => Model.Cancelled;
-            set => SetAndNotify(Model.Cancelled, value, () => Model.Cancelled = value);
+            get => Model.Canceled;
+            //set => SetAndNotify(Model.Cancelled, value, () => Model.Cancelled = value);
         }
 
         public bool CanCancel
         {
             get => Model.CanCancel;
-            set => SetAndNotify(Model.CanCancel, value, () => Model.CanCancel = value);
+            //set => SetAndNotify(Model.CanCancel, value, () => Model.CanCancel = value);
         }
 
-        public string LastErrorMessage
+        public string ErrorMessage
         {
-            get => Model.LastErrorMessage;
-            set => SetAndNotify(Model.LastErrorMessage, value, () => Model.LastErrorMessage = value);
+            get => Model.ErrorMessage;
+            //set => SetAndNotify(Model.ErrorMessage, value, () => Model.ErrorMessage = value);
         }
 
         public DateTime? ErrorTime
         {
             get => Model.ErrorTime;
-            set => SetAndNotify(Model.ErrorTime, value, () => Model.ErrorTime = value);
+            //set => SetAndNotify(Model.ErrorTime, value, () => Model.ErrorTime = value);
         }
 
-        public TimeSpan? ElapsedEncodingTime
+        public TimeSpan ElapsedEncodingTime
         {
             get => Model.ElapsedEncodingTime;
-            set => SetAndNotify(Model.ElapsedEncodingTime, value, () => Model.ElapsedEncodingTime = value);
+            //set => SetAndNotify(Model.ElapsedEncodingTime, value, () => Model.ElapsedEncodingTime = value);
         }
 
         public DateTime? CompletedEncodingDateTime
         {
             get => Model.CompletedEncodingDateTime;
-            set => SetAndNotify(Model.CompletedEncodingDateTime, value, () => Model.CompletedEncodingDateTime = value);
+            //set => SetAndNotify(Model.CompletedEncodingDateTime, value, () => Model.CompletedEncodingDateTime = value);
         }
 
         public DateTime? CompletedPostProcessingTime
         {
             get => Model.CompletedPostProcessingTime;
-            set => SetAndNotify(Model.CompletedPostProcessingTime, value, () => Model.CompletedPostProcessingTime = value);
+            //set => SetAndNotify(Model.CompletedPostProcessingTime, value, () => Model.CompletedPostProcessingTime = value);
         }
 
         public bool Complete
         {
             get => Model.Complete;
-            set => SetAndNotify(Model.Complete, value, () => Model.Complete = value);
+            //set => SetAndNotify(Model.Complete, value, () => Model.Complete = value);
         }
         #endregion Status
 
@@ -157,19 +162,7 @@ namespace AutoEncodeClient.ViewModels
         public ICommand RemoveCommand { get; }
         #endregion Commands
 
-        public void Update(IEncodingJobData updatedData)
-        {
-            updatedData.CopyProperties(this);
-
-            if (updatedData.SourceStreamData is not null)
-            {
-                if (SourceStreamData is null) SourceStreamData = new(updatedData.SourceStreamData);
-                else SourceStreamData.Update(updatedData.SourceStreamData);
-
-                OnPropertyChanged(nameof(SourceStreamData));
-            }   
-        }
-
+        #region Command Methods
         private async void Cancel()
         {
             bool success = await Model.Cancel();
@@ -214,7 +207,10 @@ namespace AutoEncodeClient.ViewModels
                 AEDialogHandler.ShowError($"Failed to remove job {FileName} from encoding queue.", "Removal Failed");
             }
         }
+        #endregion Command Methods
 
+        #region Public Methods
         public bool Equals(IEncodingJobData data) => Id == data.Id;
+        #endregion Public Methods
     }
 }

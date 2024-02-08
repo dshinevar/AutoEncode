@@ -24,9 +24,9 @@ get_dependencies () {
 
 get_nasm () {
   cd ~/ffmpeg_sources && \
-  wget -q https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.bz2 && \
-  tar xjvf nasm-2.15.05.tar.bz2 && \
-  cd nasm-2.15.05 && \
+  wget -q https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.bz2 && \
+  tar xjvf nasm-2.16.01.tar.bz2 && \
+  cd nasm-2.16.01 && \
   ./autogen.sh && \
   PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" && \
   make && \

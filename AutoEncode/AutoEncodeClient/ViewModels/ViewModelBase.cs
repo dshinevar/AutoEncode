@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace AutoEncodeClient.ViewModels
 {
@@ -15,12 +16,12 @@ namespace AutoEncodeClient.ViewModels
 
         protected void AddCommand(IAECommand command, IEnumerable<string> propertyNames)
         {
-            Commands ??= new Dictionary<string, List<IAECommand>>();
+            Commands ??= [];
             foreach (string propertyName in propertyNames)
             {
                 if (Commands.ContainsKey(propertyName) is false)
                 {
-                    Commands[propertyName] = new List<IAECommand>();
+                    Commands[propertyName] = [];
                 }
                 Commands[propertyName].Add(command);
             }
@@ -52,11 +53,15 @@ namespace AutoEncodeClient.ViewModels
     /// <typeparam name="T">Model Type</typeparam>
     public abstract class ViewModelBase<T> : ViewModelBase
     {
-        protected T Model { get; private set; }
+        public T Model { get; protected set; }
+
+        protected ViewModelBase() { }
 
         protected ViewModelBase(T model)
         {
             Model = model;
         }
+
+        protected void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) => Application.Current.Dispatcher.Invoke(() => OnPropertyChanged(e.PropertyName));
     }
 }

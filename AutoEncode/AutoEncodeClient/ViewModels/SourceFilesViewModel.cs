@@ -1,6 +1,6 @@
 ﻿using AutoEncodeClient.Collections;
-using AutoEncodeClient.Comm;
 using AutoEncodeClient.Command;
+using AutoEncodeClient.Communication;
 using AutoEncodeClient.Dialogs;
 using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeUtilities.Data;
@@ -16,14 +16,12 @@ namespace AutoEncodeClient.ViewModels
         ViewModelBase,
         ISourceFilesViewModel
     {
-        private readonly ICommunicationManager CommunicationManager;
+        #region Dependencies
+        public ICommunicationManager CommunicationManager { get; set; }
+        #endregion Dependencies
 
-        public SourceFilesViewModel() { }
-
-        public SourceFilesViewModel(ICommunicationManager communicationManager)
+        public SourceFilesViewModel()
         {
-            CommunicationManager = communicationManager;
-
             AECommand refreshSourceFilesCommand = new(() => CanRefreshSourceFiles, RefreshSourceFiles);
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
             AddCommand(refreshSourceFilesCommand, nameof(CanRefreshSourceFiles));
@@ -34,8 +32,8 @@ namespace AutoEncodeClient.ViewModels
         }
 
         #region Properties
-        public ObservableDictionary<string, BulkObservableCollection<SourceFileData>> MovieSourceFiles { get; set; } = new();
-        public ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> ShowSourceFiles { get; set; } = new();
+        public ObservableDictionary<string, IEnumerable<SourceFileData>> MovieSourceFiles { get; set; } = [];
+        public ObservableDictionary<string, IEnumerable<ShowSourceFileViewModel>> ShowSourceFiles { get; set; } = [];
         #endregion Properties
 
         #region Commands
@@ -65,61 +63,58 @@ namespace AutoEncodeClient.ViewModels
             if (sourceFiles is null)
             {
                 AEDialogHandler.ShowError("Failed to get source files.", "Source File Request Failure");
+                CanRefreshSourceFiles = true;
                 return;
             }
 
-            var movies = new Dictionary<string, BulkObservableCollection<SourceFileData>>(sourceFiles.Where(x => x.Value.IsShows is false)
-                                                                                                        .ToDictionary(x => x.Key, x => new BulkObservableCollection<SourceFileData>(x.Value.Files)));
+            // Handle Movies
+            MovieSourceFiles.Clear();
 
-            var shows = sourceFiles.Where(x => x.Value.IsShows is true).ToDictionary(x => x.Key, x => x.Value.Files.Cast<ShowSourceFileData>());
-            var showsConverted = new Dictionary<string, BulkObservableCollection<ShowSourceFileData>>(shows.ToDictionary(x => x.Key, x => new BulkObservableCollection<ShowSourceFileData>(x.Value)));
+            var movies = sourceFiles.Where(x => x.Value.IsShows is false);
 
-            if (movies is not null)
+            foreach (var movieDir in movies)
             {
-                await Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    MovieSourceFiles.Refresh(movies);
-
-                    foreach (KeyValuePair<string, BulkObservableCollection<SourceFileData>> keyValuePair in MovieSourceFiles)
-                    {
-                        keyValuePair.Value.Sort(SourceFileData.CompareByFileName);
-                    }
-                });
+                Application.Current.Dispatcher.Invoke(() => MovieSourceFiles.Add(movieDir.Key, movieDir.Value.Files));
             }
 
-            if (shows is not null)
+            // Handle Shows
+            ShowSourceFiles.Clear();
+
+            var shows = sourceFiles.Where(x => x.Value.IsShows is true).ToDictionary(x => x.Key, x => x.Value.Files.Cast<ShowSourceFileData>());
+
+            foreach (KeyValuePair<string, IEnumerable<ShowSourceFileData>> showDir in shows)
             {
-                BuildShowSourceFiles(shows);
+                List<ShowSourceFileViewModel> showsInDir = [];
+                var groupedShows = showDir.Value.GroupBy(x => x.ShowName);
+
+                foreach (var group in groupedShows)
+                {
+                    ShowSourceFileViewModel showViewModel = new()
+                    {
+                        ShowName = group.Key
+                    };
+
+                    var groupedSeasons = group.GroupBy(x => x.SeasonInt).OrderBy(x => x.Key);
+
+                    foreach (var season in groupedSeasons)
+                    {
+                        SeasonSourceFileViewModel seasonViewModel = new()
+                        {
+                            SeasonInt = season.Key
+                        };
+
+                        var episodes = season.OrderBy(x => x.EpisodeInts.First());
+                        seasonViewModel.Episodes.AddRange(episodes);
+                        showViewModel.Seasons.Add(seasonViewModel);
+                    }
+
+                    showsInDir.Add(showViewModel);
+                }
+
+                Application.Current.Dispatcher.Invoke(() => ShowSourceFiles.Add(showDir.Key, showsInDir));
             }
 
             CanRefreshSourceFiles = true;
-        }
-
-        private async void BuildShowSourceFiles(IDictionary<string, IEnumerable<ShowSourceFileData>> showSourceData)
-        {
-            ObservableDictionary<string, ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>> updateFiles = new();
-
-            foreach (var directory in showSourceData)
-            {
-                var showSeasonsCompiled = new ObservableDictionary<string, ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>>();
-                Dictionary<string, IEnumerable<ShowSourceFileData>> filesByShow = directory.Value.GroupBy(s => s.ShowName).ToDictionary(x => x.Key, x => x.AsEnumerable());
-
-                foreach (var show in filesByShow)
-                {
-                    var filesBySeason =
-                        new ObservableDictionary<string, BulkObservableCollection<ShowSourceFileData>>(show.Value.GroupBy(x => x.Season)
-                            .ToDictionary(y => y.Key, y => new BulkObservableCollection<ShowSourceFileData>(y.Select(f => f).OrderBy(o => o.EpisodeInts.First()).ToList())));
-
-                    showSeasonsCompiled.Add(show.Key, filesBySeason);
-                }
-
-                updateFiles.Add(directory.Key, showSeasonsCompiled);
-            }
-
-            await Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                ShowSourceFiles.Refresh(updateFiles);
-            });
         }
 
         private async void RequestEncode(object obj)

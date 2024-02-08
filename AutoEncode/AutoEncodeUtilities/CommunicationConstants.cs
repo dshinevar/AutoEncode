@@ -9,6 +9,12 @@ namespace AutoEncodeUtilities
             TypeNameHandling = TypeNameHandling.All
         };
 
-        public const string ClientUpdateTopic = "ClientUpdate";
+        public const string EncodingJobStatusUpdate = "STATUS";
+
+        public const string EncodingJobProcessingDataUpdate = "PROCESSING_DATA";
+
+        public const string EncodingJobEncodingProgressUpdate = "ENCODING_PROGRESS";
+
+        public const string EncodingJobQueueUpdate = "QUEUE_UPDATE";
     }
 }

@@ -107,7 +107,7 @@ namespace AutoEncodeUtilities
         #region IEnumerable Extensions
         public static void RemoveRange<T>(this List<T> list, IEnumerable<T> remove)
         {
-            foreach (T item in remove)
+            foreach (T item in remove.ToList())
             {
                 list.Remove(item);
             }

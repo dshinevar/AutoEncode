@@ -1,22 +1,23 @@
 ﻿using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class SourceStreamData : ISourceStreamData
+    public class SourceStreamData(int durationInSeconds, int numberOfFrames, VideoStreamData videoStream, IEnumerable<AudioStreamData> audioStreams, IEnumerable<SubtitleStreamData> subtitleStreams) : ISourceStreamData
     {
-        public int DurationInSeconds { get; set; }
+        public int DurationInSeconds { get; } = durationInSeconds;
         /// <summary>This is an approx. number; Used for dolby vision jobs</summary>
-        public int NumberOfFrames { get; set; }
-        public VideoStreamData VideoStream { get; set; }
-        public List<AudioStreamData> AudioStreams { get; set; }
-        public List<SubtitleStreamData> SubtitleStreams { get; set; }
+        public int NumberOfFrames { get; } = numberOfFrames;
+        public VideoStreamData VideoStream { get; set; } = videoStream;
+        public IEnumerable<AudioStreamData> AudioStreams { get; set; } = audioStreams.ToList();
+        public IEnumerable<SubtitleStreamData> SubtitleStreams { get; set; } = subtitleStreams?.ToList();
     }
 
     public abstract class StreamData
     {
-        public int StreamIndex { get; set; } = -1;
+        public short StreamIndex { get; set; } = -1;
         public string Title { get; set; }
     }
 
@@ -64,10 +65,10 @@ namespace AutoEncodeUtilities.Data
         StreamData,
         IUpdateable<AudioStreamData>
     {
-        public int AudioIndex { get; set; } = -1;
+        public short AudioIndex { get; set; } = -1;
         public string CodecName { get; set; }
         public string Descriptor { get; set; }
-        public int Channels { get; set; }
+        public short Channels { get; set; }
         public string ChannelLayout { get; set; }
         public string Language { get; set; }
         public bool Commentary { get; set; }
@@ -91,7 +92,7 @@ namespace AutoEncodeUtilities.Data
         StreamData,
         IUpdateable<SubtitleStreamData>
     {
-        public int SubtitleIndex { get; set; } = -1;
+        public short SubtitleIndex { get; set; } = -1;
         public string Language { get; set; }
         public string Descriptor { get; set; }
         public bool Forced { get; set; }
