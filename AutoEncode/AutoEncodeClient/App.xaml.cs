@@ -1,15 +1,20 @@
-﻿using AutoEncodeClient.Comm;
+﻿using AutoEncodeClient.Communication;
 using AutoEncodeClient.Config;
 using AutoEncodeClient.Models;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.ViewModels;
+using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeClient.Views;
-using AutoEncodeUtilities.Config;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Logger;
+using Castle.Facilities.TypedFactory;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
+using Castle.Windsor.Installer;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Windows;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -22,18 +27,22 @@ namespace AutoEncodeClient
     public partial class App : Application
     {
         private const string LOG_FILENAME = "aeclient.log";
-        private ILogger logger = null;
-        private ICommunicationManager communicationManager = null;
+        private ILogger Logger = null;
+
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {
-            AEClientConfig clientConfig = null;
+            // Container Standup
+            WindsorContainer container = new();
+            RegisterContainerComponents(container);
+
+            AEClientConfig clientConfig = container.Resolve<AEClientConfig>();
             try
             {
                 using var reader = new StreamReader(Lookups.ConfigFileLocation);
                 string str = reader.ReadToEnd();
                 var deserializer = new DeserializerBuilder().WithNamingConvention(PascalCaseNamingConvention.Instance).Build();
 
-                clientConfig = deserializer.Deserialize<AEClientConfig>(str);
+                deserializer.Deserialize<AEClientConfig>(str).CopyProperties(clientConfig);
             }
             catch (Exception ex)
             {
@@ -89,33 +98,92 @@ namespace AutoEncodeClient
                 }
             }
 
-            logger = new Logger(LogFileLocation,
-                                            LOG_FILENAME,
-                                            clientConfig.LoggerSettings.MaxFileSizeInBytes,
-                                            clientConfig.LoggerSettings.BackupFileCount);
+            Logger = container.Resolve<ILogger>();
+            Logger.Initialize(LogFileLocation, LOG_FILENAME, clientConfig.LoggerSettings.MaxFileSizeInBytes, clientConfig.LoggerSettings.BackupFileCount);
+            if (Logger.CheckAndDoRollover() is false)
+            {
+                // If rollover fails, just exit
+                Environment.Exit(-2);
+            }
 
             Current.Dispatcher.UnhandledException += Dispatcher_UnhandledException;
 
             // Build and show view
             try
             {
-                communicationManager = new CommunicationManager(logger, clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
+                ICommunicationManager communicationManager = container.Resolve<ICommunicationManager>();
+                communicationManager.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
 
-                AutoEncodeClientModel model = new(logger, communicationManager, clientConfig);
-                AutoEncodeClientViewModel viewModel = new(model, logger, communicationManager, clientConfig);
+                IAutoEncodeClientModel clientModel = container.Resolve<IAutoEncodeClientModel>();   // Model currently doesn't do anything
+
+                IAutoEncodeClientViewModel viewModel = container.Resolve<IAutoEncodeClientViewModel>();
+                viewModel.Initialize(clientModel);
+
                 AutoEncodeClientView view = new(viewModel)
                 {
                     Title = $"AutoEncodeClient - {Assembly.GetExecutingAssembly().GetName().Version}"
                 };
                 view.ShowDialog();
+
+                viewModel.Dispose();
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
+                Logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
             }
         }
 
+        private static void RegisterContainerComponents(WindsorContainer container)
+        {
+            // Top Level Setup
+            container.Install(FromAssembly.This());
+
+            container.AddFacility<TypedFactoryFacility>();
+
+            // Register Container to be accessed later
+            container.Register(Component.For<IWindsorContainer>()
+                .ImplementedBy<WindsorContainer>()
+                .LifestyleSingleton());
+
+            // Register Components
+            container.Register(Component.For<ILogger>()
+                .ImplementedBy<Logger>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<ICommunicationManager>()
+                .ImplementedBy<CommunicationManager>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<IClientUpdateSubscriber>()
+                .ImplementedBy<ClientUpdateSubscriber>()
+                .LifestyleTransient());
+
+            container.Register(Component.For<AEClientConfig>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<IEncodingJobClientModelFactory>()
+                .AsFactory());
+
+            container.Register(Component.For<ISourceFilesViewModel>()
+                .ImplementedBy<SourceFilesViewModel>()
+                .LifestyleSingleton()
+                .OnCreate(instance => instance.RefreshSourceFiles()));
+
+            container.Register(Component.For<IAutoEncodeClientModel>()
+                .ImplementedBy<AutoEncodeClientModel>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<IAutoEncodeClientViewModel>()
+                .ImplementedBy<AutoEncodeClientViewModel>()
+                .LifestyleSingleton());
+
+            container.Register(Component.For<IEncodingJobClientModel>()
+                .ImplementedBy<EncodingJobClientModel>()
+                .LifestyleTransient()
+                .OnCreate(model => model.Initialize()));
+        }
+
         private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-            => logger?.LogException(e.Exception, "Unhandled Dispatcher Exception");
+            => Logger?.LogException(e.Exception, "Unhandled Dispatcher Exception");
     }
 }

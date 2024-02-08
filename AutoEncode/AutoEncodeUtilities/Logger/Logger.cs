@@ -13,16 +13,24 @@ namespace AutoEncodeUtilities.Logger
     public class Logger : ILogger
     {
         private readonly object _fileLock = new();
+        private bool _initialized = false;
 
         public string LogFileFullPath { get; set; }
         public long MaxSizeInBytes { get; set; }
         public int BackupFileCount { get; set; }
 
-        public Logger(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
+        public Logger() { }
+
+        public void Initialize(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
         {
-            LogFileFullPath = Path.Combine(logFileLocation, logFileName);
-            MaxSizeInBytes = maxSizeInBytes;
-            BackupFileCount = backupFileCount;
+            if (_initialized is false)
+            {
+                LogFileFullPath = Path.Combine(logFileLocation, logFileName);
+                MaxSizeInBytes = maxSizeInBytes;
+                BackupFileCount = backupFileCount;
+            }
+
+            _initialized = true;
         }
 
         #region Log Functions
@@ -92,6 +100,8 @@ namespace AutoEncodeUtilities.Logger
         /// <returns></returns>
         private string Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
         {
+            if (_initialized is false) throw new Exception("Logger not initialized");
+
             if (messages.Any() is false) return string.Empty;
 
             StringBuilder sbLogMsg = new();
@@ -135,6 +145,8 @@ namespace AutoEncodeUtilities.Logger
         #region Rollover Functions
         public bool CheckAndDoRollover()
         {
+            if (_initialized is false) throw new Exception("Logger not initialized");
+
             bool bSuccess = true;
             try
             {

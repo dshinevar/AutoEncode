@@ -1,10 +1,15 @@
 ﻿using AutoEncodeClient.Collections;
-using AutoEncodeClient.Comm;
+using AutoEncodeClient.Communication;
 using AutoEncodeClient.Config;
+using AutoEncodeClient.Data;
+using AutoEncodeClient.Enums;
 using AutoEncodeClient.Models;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.ViewModels.Interfaces;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
+using Castle.Windsor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,55 +18,70 @@ using System.Windows;
 namespace AutoEncodeClient.ViewModels
 {
     public class AutoEncodeClientViewModel :
-        ViewModelBase<AutoEncodeClientModel>,
+        ViewModelBase<IAutoEncodeClientModel>,
         IAutoEncodeClientViewModel,
         IDisposable
     {
-        private readonly ClientUpdateService _clientUpdateService;
-        private readonly ICommunicationManager _communicationManager;
+        #region Dependencies
+        public IWindsorContainer Container { get; set; }
 
-        public AutoEncodeClientViewModel(AutoEncodeClientModel model, ILogger logger, ICommunicationManager communicationManager, AEClientConfig config)
-            : base(model)
+        public ISourceFilesViewModel SourceFilesViewModel { get; set; }
+
+        public IClientUpdateSubscriber ClientUpdateSubscriber { get; set; }
+
+        public IEncodingJobClientModelFactory EncodingJobFactory { get; set; }
+
+        public AEClientConfig Config { get; set; }
+        #endregion Dependencies
+
+        /// <summary>Default Constructor </summary>
+        public AutoEncodeClientViewModel() { }
+
+        public void Initialize(IAutoEncodeClientModel model)
         {
-            _communicationManager = communicationManager;
+            ArgumentNullException.ThrowIfNull(model);
 
-            SourceFilesViewModel = new SourceFilesViewModel(_communicationManager);
-
-            _clientUpdateService = new ClientUpdateService(logger, config.ConnectionSettings.IPAddress, config.ConnectionSettings.ClientUpdatePort);
-            _clientUpdateService.DataReceived += (s, data) => UpdateClient(data);
-            _clientUpdateService.Start();
-
-            SourceFilesViewModel.RefreshSourceFiles();
+            Model = model;
+            ClientUpdateSubscriber.Initialize(Config.ConnectionSettings.IPAddress, Config.ConnectionSettings.ClientUpdatePort, [new SubscriberTopic(ClientUpdateType.Queue_Update, CommunicationConstants.EncodingJobQueueUpdate)]);
+            ClientUpdateSubscriber.QueueUpdateReceived += UpdateQueue;
+            ClientUpdateSubscriber.Start();
         }
 
-        #region SubViewModels
-        public ISourceFilesViewModel SourceFilesViewModel { get; }
-        public BulkObservableCollection<EncodingJobViewModel> EncodingJobs { get; } = new BulkObservableCollection<EncodingJobViewModel>();
+        public void Dispose() => ClientUpdateSubscriber.Stop();
 
-        private EncodingJobViewModel _selectedEncodingJobViewModel = null;
-        public EncodingJobViewModel SelectedEncodingJobViewModel
+        #region SubViewModels
+        public BulkObservableCollection<IEncodingJobViewModel> EncodingJobs { get; } = [];
+
+        private IEncodingJobViewModel _selectedEncodingJobViewModel = null;
+        public IEncodingJobViewModel SelectedEncodingJobViewModel
         {
             get => _selectedEncodingJobViewModel;
             set => SetAndNotify(_selectedEncodingJobViewModel, value, () => _selectedEncodingJobViewModel = value);
         }
         #endregion SubViewModels
 
-        #region Properties
-        public bool ConnectedToServer => _clientUpdateService.Connected;
-        #endregion Properties
-
-        private void UpdateClient(List<EncodingJobData> encodingJobQueue)
+        private void UpdateQueue(object sender, IEnumerable<EncodingJobData> encodingJobQueue)
         {
             if (encodingJobQueue is not null)
             {
-                if (encodingJobQueue.Count == 0)
+                List<EncodingJobData> encodingJobQueueList = encodingJobQueue.ToList();
+
+                // If empty just clear
+                if (encodingJobQueueList.Count == 0)
                 {
-                    Application.Current.Dispatcher.Invoke(EncodingJobs.Clear);
+                    IEnumerable<IEncodingJobViewModel> queue = EncodingJobs.ToList();
+                    Application.Current.Dispatcher.BeginInvoke(EncodingJobs.Clear);
+
+                    foreach (IEncodingJobViewModel viewModel in queue) 
+                    {
+                        EncodingJobFactory.Release(viewModel.Model);
+                    }
+
                     return;
                 }
 
                 // Remove jobs no longer in queue first
-                IEnumerable<EncodingJobViewModel> viewModelsToRemove = EncodingJobs.Where(x => !encodingJobQueue.Any(y => y.Id == x.Id));
+                IEnumerable<IEncodingJobViewModel> viewModelsToRemove = EncodingJobs.Where(x => !encodingJobQueueList.Any(y => y.Id == x.Id)).ToList();
                 bool selectedViewModelWillBeRemoved = viewModelsToRemove.Any(x => x.Id == SelectedEncodingJobViewModel?.Id);
 
                 Application.Current.Dispatcher.Invoke(() =>
@@ -70,41 +90,32 @@ namespace AutoEncodeClient.ViewModels
                     EncodingJobs.RemoveRange(viewModelsToRemove);
                 });
 
-                // Update or Create the rest
-                foreach (EncodingJobData data in encodingJobQueue)
+                foreach (IEncodingJobViewModel viewModel in viewModelsToRemove)
                 {
-                    EncodingJobViewModel job = EncodingJobs.SingleOrDefault(x => x.Equals(data));
-                    if (job is not null)
+                    EncodingJobFactory.Release(viewModel.Model);
+                }
+
+                // Add new jobs
+                IEnumerable<EncodingJobData> newJobs = encodingJobQueueList.Where(x => !EncodingJobs.Any(y => y.Id == x.Id)).ToList();
+                foreach (EncodingJobData newJob in newJobs)
+                {
+                    IEncodingJobClientModel model = EncodingJobFactory.Create(newJob);
+                    IEncodingJobViewModel viewModel = new EncodingJobViewModel(model);
+                    Application.Current.Dispatcher.Invoke(() => EncodingJobs.Add(viewModel));
+                }
+
+                // Sort
+                foreach (EncodingJobData data in encodingJobQueueList)
+                {
+                    IEncodingJobViewModel viewModel = EncodingJobs.FirstOrDefault(x => x.Id == data.Id);
+                    int oldIndex = EncodingJobs.IndexOf(viewModel);
+                    int newIndex = encodingJobQueueList.IndexOf(data);
+                    if (oldIndex != newIndex)
                     {
-                        Application.Current.Dispatcher.Invoke(() => job.Update(data));
-
-                        int currentIndex = EncodingJobs.IndexOf(job);
-                        int newIndex = encodingJobQueue.IndexOf(data);
-
-                        bool isSelectedViewModel = job.Id == SelectedEncodingJobViewModel?.Id;
-
-                        if (currentIndex != newIndex)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                EncodingJobs.Move(currentIndex, newIndex);
-                                if (isSelectedViewModel is true) SelectedEncodingJobViewModel = job;
-                            });
-                        }
-                    }
-                    else
-                    {
-                        EncodingJobClientModel model = new(data, _communicationManager);
-                        EncodingJobViewModel viewModel = new(model);
-                        Application.Current.Dispatcher.Invoke(() => EncodingJobs.Insert(encodingJobQueue.IndexOf(data), viewModel));
-                    }
+                        Application.Current.Dispatcher.Invoke(() => EncodingJobs.Move(oldIndex, newIndex));
+                    }   
                 }
             }
-        }
-
-        public void Dispose()
-        {
-            _clientUpdateService.Dispose();
         }
     }
 }

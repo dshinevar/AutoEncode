@@ -10,7 +10,9 @@ namespace AutoEncodeUtilities.Data
     public class EncodingJobData : IEncodingJobData
     {
         /// <summary>Unique job identifier </summary>
-        public ulong? Id { get; set; } = null;
+        public ulong Id { get; set; }
+        /// <summary>Title of job</summary>
+        public string Title { get; set; } = string.Empty;
         /// <summary>Name of job (FileName without extension) </summary>
         public string Name => Path.GetFileNameWithoutExtension(FileName);
         /// <summary>FileName of Job </summary>
@@ -28,21 +30,21 @@ namespace AutoEncodeUtilities.Data
         /// <summary>Building SubStatus</summary>
         public EncodingJobBuildingStatus BuildingStatus { get; set; } = EncodingJobBuildingStatus.BUILDING;
         /// <summary>Flag showing if a job is in error </summary>
-        public bool Error { get; set; } = false;
+        public bool HasError { get; set; } = false;
         /// <summary>Error message from when a job was last marked in error. </summary>
-        public string LastErrorMessage { get; set; } = string.Empty;
+        public string ErrorMessage { get; set; } = string.Empty;
         /// <summary> Flag showing a job is to be paused.</summary>
         public bool ToBePaused { get; set; } = false;
         /// <summary> Flag showing if a job is paused </summary>
         public bool Paused { get; set; } = false;
         /// <summary> Flag showing if a job is cancelled </summary>
-        public bool Cancelled { get; set; } = false;
+        public bool Canceled { get; set; } = false;
         /// <summary>Shows if the job is in a state that can be cancelled.</summary>
         public bool CanCancel { get; set; } = false;
         /// <summary>Encoding Progress Percentage </summary>
-        public int EncodingProgress { get; set; }
+        public byte EncodingProgress { get; set; }
         /// <summary>Amount of time spent encoding. </summary>
-        public TimeSpan? ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
+        public TimeSpan ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
         /// <summary> DateTime when encoding was completed </summary>
         public DateTime? CompletedEncodingDateTime { get; set; } = null;
         /// <summary> DateTime when postprocessing was completed </summary>

@@ -363,7 +363,7 @@
                                                     <Setter.Value>
                                                         <MultiBinding StringFormat="{}{0} ({1}%)">
                                                             <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                            <Binding Path="EncodingProgress"/>
+                                                            <Binding Path="EncodingProgress" Mode="OneWay"/>
                                                         </MultiBinding>
                                                     </Setter.Value>
                                                 </Setter>
@@ -404,8 +404,7 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <ProgressBar Value="{Binding EncodingProgress}"
-                                         Height="25"
+                            <ProgressBar Value="{Binding EncodingProgress, Mode=OneWay}"
                                          Margin="0,5"
                                          BorderThickness="1.5">
                                 <ProgressBar.Style>
@@ -472,7 +471,7 @@
                                     <Setter Property="Visibility"
                                             Value="Hidden"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Error}"
+                                        <DataTrigger Binding="{Binding HasError}"
                                                      Value="True">
                                             <Setter Property="Visibility"
                                                     Value="Visible"/>
@@ -483,7 +482,7 @@
                                         </DataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding Error}" Value="False"/>
+                                                <Condition Binding="{Binding HasError}" Value="False"/>
                                                 <Condition Binding="{Binding Complete}" Value="True"/>
                                             </MultiDataTrigger.Conditions>
                                             <Setter Property="Visibility"
@@ -495,7 +494,7 @@
                                         </MultiDataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding Error}" Value="False"/>
+                                                <Condition Binding="{Binding HasError}" Value="False"/>
                                                 <Condition Binding="{Binding Complete}" Value="False"/>
                                                 <Condition Binding="{Binding Paused}" Value="True"/>
                                             </MultiDataTrigger.Conditions>
@@ -867,7 +866,7 @@
                                     <Setter Property="Background"
                                             Value="Transparent"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Error}"
+                                        <DataTrigger Binding="{Binding HasError}"
                                                      Value="True">
                                             <Setter Property="Background"
                                                     Value="{StaticResource ErrorBackgroundBrush}"/>
@@ -881,7 +880,7 @@
                                     <Image Source="../Resources/error.png"
                                            Margin="3,0,0,0"
                                            Height="16"
-                                           Visibility="{Binding Error, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -890,7 +889,7 @@
                                         Margin="2">
                                 <TextBlock Text="{Binding ErrorTime, StringFormat=Error Occurred: {0}}"/>
                                 <TextBlock Text="Last Error Message:"/>
-                                <TextBlock Text="{Binding LastErrorMessage}"
+                                <TextBlock Text="{Binding ErrorMessage}"
                                            TextWrapping="Wrap"
                                            Padding="20,0"/>
                             </StackPanel>

@@ -10,15 +10,15 @@ namespace AutoEncodeUtilities.Interfaces
     public interface IEncodingJobData
     {
         /// <summary>Unique job identifier </summary>
-        ulong? Id { get; }
+        ulong Id { get; }
+        /// <summary>Title of job</summary>
+        string Title { get; }
         /// <summary>Name of job (FileName without extension) </summary>
         string Name { get; }
         /// <summary>FileName of Job </summary>
         string FileName { get; }
         /// <summary>Full Path of the job's Source File </summary>
         string SourceFullPath { get; }
-        /// <summary>Directory of destination file full path </summary>
-        string DestinationDirectory { get; }
         /// <summary>Full Path of the job's expected Destination File </summary>
         string DestinationFullPath { get; }
 
@@ -27,21 +27,21 @@ namespace AutoEncodeUtilities.Interfaces
 
         EncodingJobBuildingStatus BuildingStatus { get; }
         /// <summary>Flag showing if a job is in error </summary>
-        bool Error { get; }
+        bool HasError { get; }
         /// <summary>Error message from when a job was last marked in error. </summary>
-        string LastErrorMessage { get; }
+        string ErrorMessage { get; }
         /// <summary> Flag showing a job is to be paused.</summary>
         bool ToBePaused { get; }
         /// <summary> Flag showing if a job is paused </summary>
         bool Paused { get; }
         /// <summary> Flag showing if a job is cancelled </summary>
-        bool Cancelled { get; }
+        bool Canceled { get; }
         /// <summary>Shows if the job is in a state that can be cancelled.</summary>
         bool CanCancel { get; }
         /// <summary>Encoding Progress Percentage </summary>
-        int EncodingProgress { get; }
+        byte EncodingProgress { get; }
         /// <summary>Amount of time spent encoding. </summary>
-        TimeSpan? ElapsedEncodingTime { get; }
+        TimeSpan ElapsedEncodingTime { get; }
         /// <summary> DateTime when encoding was completed </summary>
         DateTime? CompletedEncodingDateTime { get; }
         /// <summary> DateTime when postprocessing was completed </summary>

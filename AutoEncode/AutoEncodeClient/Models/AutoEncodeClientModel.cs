@@ -1,31 +1,19 @@
-﻿using AutoEncodeClient.Comm;
-using AutoEncodeClient.Config;
-using AutoEncodeUtilities.Data;
+﻿using AutoEncodeClient.Config;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeUtilities.Logger;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models
 {
-    public class AutoEncodeClientModel
+    public class AutoEncodeClientModel : IAutoEncodeClientModel
     {
-        #region Private Properties
-        private ICommunicationManager CommunicationManager { get; set; }
-
+        #region Dependencies
         private ILogger Logger { get; set; }
         private AEClientConfig Config { get; set; }
-        #endregion Private Properties
+        #endregion Dependencies
 
         #region Properties
         #endregion Properties
 
-        public AutoEncodeClientModel(ILogger logger, ICommunicationManager communicationManager, AEClientConfig config)
-        {
-            Logger = logger;
-            Config = config;
-            CommunicationManager = communicationManager;
-            Logger.CheckAndDoRollover();
-        }
+        public AutoEncodeClientModel() { }
     }
 }

@@ -1,5 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:AutoEncodeClient.ViewModels">
 
     <DataTemplate x:Key="SourceFileDataTemplate">
         <Expander Style="{StaticResource SourceFilesExpanderStyle}">
@@ -23,23 +24,23 @@
             </Expander.Header>
             <ItemsControl ItemsSource="{Binding Value}">
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:ShowSourceFileViewModel}">
                         <Expander Style="{StaticResource ShowSeasonExpanderStyle}"
                                   Margin="10,0,0,0">
                             <Expander.Header>
-                                <TextBlock Text="{Binding Key}"
+                                <TextBlock Text="{Binding ShowName}"
                                            Style="{StaticResource SourceFileDataExpanderHeaderStyle}"/>
                             </Expander.Header>
-                            <ItemsControl ItemsSource="{Binding Value}">
+                            <ItemsControl ItemsSource="{Binding Seasons}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SeasonSourceFileViewModel}">
                                         <Expander Style="{StaticResource ShowSeasonExpanderStyle}"
                                                   Margin="15,0,0,0">
                                             <Expander.Header>
-                                                <TextBlock Text="{Binding Key}"
+                                                <TextBlock Text="{Binding Season}"
                                                            Style="{StaticResource SourceFileDataExpanderHeaderStyle}"/>
                                             </Expander.Header>
-                                            <ListView ItemsSource="{Binding Value}"
+                                            <ListView ItemsSource="{Binding Episodes}"
                                                       BorderThickness="0"
                                                       Margin="30,0,0,0"
                                                       Background="Transparent"

@@ -9,7 +9,7 @@
         <Setter Property="RenderTransformOrigin"
                 Value="0.5,0.5"/>
         <Style.Triggers>
-            <DataTrigger Binding="{Binding Error}"
+            <DataTrigger Binding="{Binding HasError}"
                          Value="True">
                 <Setter Property="Visibility"
                         Value="Visible"/>
@@ -20,7 +20,7 @@
             </DataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding Error}" Value="False"/>
+                    <Condition Binding="{Binding HasError}" Value="False"/>
                     <Condition Binding="{Binding Complete}" Value="True"/>
                 </MultiDataTrigger.Conditions>
                 <Setter Property="Visibility"
@@ -32,7 +32,7 @@
             </MultiDataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding Error}" Value="False"/>
+                    <Condition Binding="{Binding HasError}" Value="False"/>
                     <Condition Binding="{Binding Complete}" Value="False"/>
                     <Condition Binding="{Binding Paused}" Value="True"/>
                 </MultiDataTrigger.Conditions>
@@ -45,7 +45,7 @@
             </MultiDataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding Error}" Value="False"/>
+                    <Condition Binding="{Binding HasError}" Value="False"/>
                     <Condition Binding="{Binding Complete}" Value="False"/>
                     <Condition Binding="{Binding Paused}" Value="False"/>
                     <Condition Binding="{Binding Status}" Value="{x:Static utilEnum:EncodingJobStatus.BUILDING}"/>

@@ -1,4 +1,5 @@
-﻿using AutoEncodeUtilities;
+﻿using AutoEncodeServer.Interfaces;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Logger;
@@ -9,39 +10,80 @@ using System.Threading;
 
 namespace AutoEncodeServer.WorkerThreads
 {
-    public partial class EncodingJobFinderThread
+    public partial class EncodingJobFinderThread : IEncodingJobFinderThread
     {
-        private bool DirectoryUpdate = false;
-        private AutoResetEvent SleepARE { get; set; } = new AutoResetEvent(false);
+        #region Private Properties / Fields
+        private bool _directoryUpdate = false;
+        private bool _initialized = false;
+        private readonly AutoResetEvent _sleepARE = new(false);
 
-        #region References
-        /// <summary> Reference to the <see cref="AEServerMainThread"/></summary>
-        protected AEServerMainThread MainThread { get; set; }
+        private ManualResetEvent ShutdownMRE { get; set; }
+        private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
+
         /// <summary> Reference to the Server State</summary>
-        protected AEServerConfig State { get; set; }
-        /// <summary>Logger Reference</summary>
-        protected ILogger Logger { get; set; }
-        #endregion References
+        private AEServerConfig State { get; set; }
 
-        /// <summary>Constructor</summary>
-        /// <param name="mainThread">Main Thread handle <see cref="AEServerMainThread"/></param>
-        /// <param name="serverState">Current Server State<see cref="AEServerConfig"/></param>
-        public EncodingJobFinderThread(AEServerMainThread mainThread, AEServerConfig serverState, ILogger logger, ManualResetEvent shutdownMRE)
-        {
-            MainThread = mainThread;
-            State = serverState;
-            Logger = logger;
-            ShutdownMRE = shutdownMRE;
-            ThreadSleep = State.JobFinderSettings.ThreadSleep;
-            SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
-        }
+        private Thread WorkerThread { get; set; }
+        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
+        private string ThreadName => WorkerThread?.Name ?? nameof(EncodingJobFinderThread);
+        #endregion Private Properties / Fields
+
+        #region Dependencies
+        public ILogger Logger { get; set; }
+
+        public IEncodingJobManager EncodingJobManager { get; set; }
+        #endregion Dependencies
+
+        /// <summary>Default Constructor</summary>
+        public EncodingJobFinderThread() { }
 
         #region Public Functions
-        /// <summary>Signal to thread to update directories to search for jobs.</summary>
-        public void UpdateSearchDirectories() => DirectoryUpdate = true;
+        public void Initialize(AEServerConfig serverState, ManualResetEvent shutdownMRE)
+        {
+            if (_initialized is false)
+            {
+                State = serverState;
+                ShutdownMRE = shutdownMRE;
+                ThreadSleep = State.JobFinderSettings.ThreadSleep;
+                SearchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());
+            }
 
-        /// <summary>Forces thread to wake and rebuild source files </summary>
-        /// <returns>Source Files</returns>
+            _initialized = true;
+        }
+
+        public void Start()
+        {
+            if (_initialized is false) throw new Exception($"{ThreadName} is not initialized.");
+
+            Logger.LogInfo($"{ThreadName} Starting", ThreadName);
+
+
+            WorkerThread = new Thread(ThreadLoop)
+            {
+                Name = ThreadName,
+                IsBackground = true
+            };
+
+            BuildSourceFiles();
+
+            WorkerThread.Start(_shutdownCancellationTokenSource.Token);
+        }
+
+        public void Stop()
+        {
+            Logger.LogInfo($"{ThreadName} Shutting Down", ThreadName);
+
+            _shutdownCancellationTokenSource.Cancel();
+
+            Wake();
+
+            WorkerThread.Join();
+
+            ShutdownMRE.Set();
+        }
+
+        public void UpdateSearchDirectories() => _directoryUpdate = true;
+
         public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> RequestSourceFiles()
         {
             Wake();
@@ -67,7 +109,7 @@ namespace AutoEncodeServer.WorkerThreads
                 {
                     if (string.IsNullOrWhiteSpace(sourceFile.Directory) is false && sourceFile.File is not null)
                     {
-                        if (CreateEncodingJob(sourceFile.File, SearchDirectories[sourceFile.Directory].PostProcessing, SearchDirectories[sourceFile.Directory].Source) is true)
+                        if (CreateEncodingJob(sourceFile.File, SearchDirectories[sourceFile.Directory]) is true)
                         {
                             success = true;
                         }
@@ -90,5 +132,19 @@ namespace AutoEncodeServer.WorkerThreads
             return success;
         }
         #endregion Public Functions
+
+        #region Private Functions
+        /// <summary> Wakes up thread by setting the Sleep AutoResetEvent.</summary>
+        private void Wake() => _sleepARE.Set();
+
+        /// <summary> Sleeps thread for certain amount of time. </summary>
+        private void Sleep()
+        {
+            if (_shutdownCancellationTokenSource.IsCancellationRequested is false)
+            {
+                _sleepARE.WaitOne(ThreadSleep);
+            }
+        }
+        #endregion Private Functions
     }
 }

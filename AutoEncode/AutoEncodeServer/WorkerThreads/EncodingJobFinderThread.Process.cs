@@ -20,7 +20,7 @@ namespace AutoEncodeServer.WorkerThreads
         private readonly ManualResetEvent _buildingSourceFilesEvent = new(false);
         private Dictionary<string, SearchDirectory> SearchDirectories { get; set; }
         private ConcurrentDictionary<string, (bool IsShows, List<SourceFileData> Files)> SourceFiles { get; set; } = new();
-        private IDictionary<Guid, (string Directory, SourceFileData SourceFiles)> SourceFilesByGuid { get; set; }
+        private Dictionary<Guid, (string Directory, SourceFileData SourceFiles)> SourceFilesByGuid { get; set; }
 
         protected void ThreadLoop(object data)
         {
@@ -30,11 +30,10 @@ namespace AutoEncodeServer.WorkerThreads
             {
                 try
                 {
-                    ThreadStatus = AEWorkerThreadStatus.Processing;
-                    if (DirectoryUpdate) UpdateSearchDirectories(SearchDirectories);
+                    if (_directoryUpdate) UpdateSearchDirectories(SearchDirectories);
 
                     // Don't do anything if the queue is full
-                    if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
+                    if (EncodingJobManager.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                     {
                         BuildSourceFiles();
 
@@ -46,7 +45,7 @@ namespace AutoEncodeServer.WorkerThreads
                             if (SearchDirectories[entry.Key].Automated is true)
                             {
                                 List<SourceFileData> filesToEncode = entry.Value.Files.Where(x => x.Encoded is false).ToList();
-                                filesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key].PostProcessing, SearchDirectories[entry.Key].Source, shutdownToken));
+                                filesToEncode.ForEach(x => CreateEncodingJob(x, SearchDirectories[entry.Key], shutdownToken));
                             }
                         }
                     }
@@ -60,7 +59,7 @@ namespace AutoEncodeServer.WorkerThreads
                 catch (Exception ex)
                 {
                     Logger.LogException(ex, "Error during looking for encoding jobs. Thread stopping.", ThreadName,
-                        details: new { ThreadStatus, EncodingJobQueueCount = EncodingJobQueue.Count, SearchDirectoriesCount = SearchDirectories.Count });
+                        details: new { EncodingJobQueueCount = EncodingJobManager.Count, SearchDirectoriesCount = SearchDirectories.Count });
                     return;
                 }
             }
@@ -75,7 +74,7 @@ namespace AutoEncodeServer.WorkerThreads
             List<string> deleteKeys = SourceFiles.Keys.Except(searchDirectories.Keys).ToList();
             deleteKeys.ForEach(x => SourceFiles.Remove(x, out _));
 
-            DirectoryUpdate = false;
+            _directoryUpdate = false;
         }
 
         /// <summary> Builds out SourceFiles from the search directories </summary>
@@ -113,7 +112,7 @@ namespace AutoEncodeServer.WorkerThreads
                                     FullPath = sourceFilePath,
                                     DestinationFullPath = sourceFilePath.Replace(entry.Value.Source, entry.Value.Destination),
                                     Encoded = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFilePath)) &&
-                                                (EncodingJobQueue.IsEncodingByFileName(Path.GetFileName(sourceFilePath)) is false)
+                                                (EncodingJobManager.IsEncodingByFileName(Path.GetFileName(sourceFilePath)) is false)
                                 };
 
                                 sourceFiles.Add(sourceFile);
@@ -147,7 +146,7 @@ namespace AutoEncodeServer.WorkerThreads
             _buildingSourceFilesEvent.Set();
         }
 
-        private bool CreateEncodingJob(SourceFileData sourceFileData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath)
+        private bool CreateEncodingJob(SourceFileData sourceFileData, SearchDirectory searchDirectory)
         {
             bool jobCreated = false;
             try
@@ -155,30 +154,31 @@ namespace AutoEncodeServer.WorkerThreads
                 lock (_lock)
                 {
                     // Don't create encoding job if we are at max count
-                    if (EncodingJobQueue.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
+                    if (EncodingJobManager.Count < State.GlobalJobSettings.MaxNumberOfJobsInQueue)
                     {
                         // Only add encoding job if file is ready.
                         if (CheckFileReady(sourceFileData.FullPath))
                         {
+                            PostProcessingSettings searchDirectoryPostProcessingSettings = searchDirectory.PostProcessing;
                             // Prep Data for creating job
                             List<string> updatedCopyFilePaths = null;
-                            if (postProcessingSettings?.CopyFilePaths?.Any() ?? false)
+                            if ((searchDirectoryPostProcessingSettings?.CopyFilePaths?.Count ?? -1) > 0 is true)
                             {
                                 // Update copy file paths with full destination directory (for extras and shows with subdirectories)
-                                updatedCopyFilePaths = new List<string>();
-                                foreach (string oldPath in postProcessingSettings.CopyFilePaths)
+                                updatedCopyFilePaths = [];
+                                foreach (string oldPath in searchDirectoryPostProcessingSettings.CopyFilePaths)
                                 {
-                                    updatedCopyFilePaths.Add($"{oldPath}{sourceFileData.FullPath.Replace(sourceDirectoryPath, "")}");
+                                    updatedCopyFilePaths.Add($"{oldPath}{sourceFileData.FullPath.Replace(searchDirectory.Source, "")}");
                                 }
                             }
 
                             PostProcessingSettings updatedPostProcessingSettings = new()
                             {
                                 CopyFilePaths = updatedCopyFilePaths,
-                                DeleteSourceFile = postProcessingSettings?.DeleteSourceFile ?? false
+                                DeleteSourceFile = searchDirectoryPostProcessingSettings?.DeleteSourceFile ?? false
                             };
 
-                            ulong? newJobId = EncodingJobQueue.CreateEncodingJob(sourceFileData, updatedPostProcessingSettings);
+                            ulong? newJobId = EncodingJobManager.CreateEncodingJob(sourceFileData, updatedPostProcessingSettings);
                             if (newJobId is not null)
                             {
                                 jobCreated = true;
@@ -196,10 +196,10 @@ namespace AutoEncodeServer.WorkerThreads
             return jobCreated;
         }
 
-        private bool CreateEncodingJob(SourceFileData sourceFileData, PostProcessingSettings postProcessingSettings, string sourceDirectoryPath, CancellationToken shutdownToken)
+        private bool CreateEncodingJob(SourceFileData sourceFileData, SearchDirectory searchDirectory, CancellationToken shutdownToken)
         {
             shutdownToken.ThrowIfCancellationRequested();
-            return CreateEncodingJob(sourceFileData, postProcessingSettings, sourceDirectoryPath);
+            return CreateEncodingJob(sourceFileData, searchDirectory);
         }
 
         /// <summary> Checks if a file is valid for being considered a source file.
