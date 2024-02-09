@@ -15,7 +15,7 @@ namespace AutoEncodeServer.WorkerThreads
         #region Private Properties / Fields
         private bool _directoryUpdate = false;
         private bool _initialized = false;
-        private readonly AutoResetEvent _sleepARE = new(false);
+        private readonly ManualResetEvent _sleepMRE = new(false);
 
         private ManualResetEvent ShutdownMRE { get; set; }
         private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
@@ -88,9 +88,9 @@ namespace AutoEncodeServer.WorkerThreads
         {
             Wake();
 
-            Thread.Sleep(2);
+            bool success = _buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30));
 
-            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30)))
+            if (success)
             {
                 return SourceFiles.ToDictionary(x => x.Key, x => (x.Value.IsShows, x.Value.Files.AsEnumerable()));
             }
@@ -135,14 +135,15 @@ namespace AutoEncodeServer.WorkerThreads
 
         #region Private Functions
         /// <summary> Wakes up thread by setting the Sleep AutoResetEvent.</summary>
-        private void Wake() => _sleepARE.Set();
+        private void Wake() => _sleepMRE.Set();
 
         /// <summary> Sleeps thread for certain amount of time. </summary>
         private void Sleep()
         {
             if (_shutdownCancellationTokenSource.IsCancellationRequested is false)
             {
-                _sleepARE.WaitOne(ThreadSleep);
+                _sleepMRE.Reset();
+                _sleepMRE.WaitOne(ThreadSleep);
             }
         }
         #endregion Private Functions
