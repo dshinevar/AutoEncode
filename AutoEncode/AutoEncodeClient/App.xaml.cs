@@ -114,6 +114,10 @@ namespace AutoEncodeClient
                 ICommunicationManager communicationManager = container.Resolve<ICommunicationManager>();
                 communicationManager.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
 
+                IClientUpdateSubscriber clientUpdateSubscriber = container.Resolve<IClientUpdateSubscriber>();
+                clientUpdateSubscriber.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.ClientUpdatePort);
+                clientUpdateSubscriber.Start();
+
                 IAutoEncodeClientModel clientModel = container.Resolve<IAutoEncodeClientModel>();   // Model currently doesn't do anything
 
                 IAutoEncodeClientViewModel viewModel = container.Resolve<IAutoEncodeClientViewModel>();
@@ -125,7 +129,10 @@ namespace AutoEncodeClient
                 };
                 view.ShowDialog();
 
-                viewModel.Dispose();
+                clientUpdateSubscriber.Stop();
+
+                container.Release(communicationManager);
+                container.Release(clientUpdateSubscriber);
             }
             catch (Exception ex)
             {
@@ -142,8 +149,7 @@ namespace AutoEncodeClient
 
             // Register Container to be accessed later
             container.Register(Component.For<IWindsorContainer>()
-                .ImplementedBy<WindsorContainer>()
-                .LifestyleSingleton());
+                .Instance(container));
 
             // Register Components
             container.Register(Component.For<ILogger>()
@@ -156,7 +162,7 @@ namespace AutoEncodeClient
 
             container.Register(Component.For<IClientUpdateSubscriber>()
                 .ImplementedBy<ClientUpdateSubscriber>()
-                .LifestyleTransient());
+                .LifestyleSingleton());
 
             container.Register(Component.For<AEClientConfig>()
                 .LifestyleSingleton());

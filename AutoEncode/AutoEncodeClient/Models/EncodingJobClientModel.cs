@@ -1,7 +1,4 @@
 ﻿using AutoEncodeClient.Communication;
-using AutoEncodeClient.Config;
-using AutoEncodeClient.Data;
-using AutoEncodeClient.Enums;
 using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
@@ -12,7 +9,6 @@ using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Json;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models
@@ -20,14 +16,13 @@ namespace AutoEncodeClient.Models
     public class EncodingJobClientModel :
         ModelBase,
         IEncodingJobClientModel,
-        IUpdateable<IEncodingJobData>
+        IUpdateable<IEncodingJobData>,
+        IDisposable
     {
         #region Dependencies
         public ICommunicationManager CommunicationManager { get; set; }
 
         public IClientUpdateSubscriber ClientUpdateSubscriber { get; set; }
-
-        public AEClientConfig Config { get; set; }
         #endregion Dependencies
 
         public EncodingJobClientModel(IEncodingJobData encodingJobData)
@@ -41,17 +36,16 @@ namespace AutoEncodeClient.Models
 
         public void Initialize()
         {
-            List<SubscriberTopic> topics = [];
-            topics.Add(new(ClientUpdateType.Status_Update, $"{CommunicationConstants.EncodingJobStatusUpdate}-{Id}"));
-            topics.Add(new(ClientUpdateType.Processing_Data_Update, $"{CommunicationConstants.EncodingJobProcessingDataUpdate}-{Id}"));
-            topics.Add(new(ClientUpdateType.Encoding_Progress_Update, $"{CommunicationConstants.EncodingJobEncodingProgressUpdate}-{Id}"));
+            ClientUpdateSubscriber.SubscribeToEncodingJobStatusUpdate($"{CommunicationConstants.EncodingJobStatusUpdate}-{Id}", UpdateStatus);
+            ClientUpdateSubscriber.SubscribeToEncodingJobProcessingDataUpdate($"{CommunicationConstants.EncodingJobProcessingDataUpdate}-{Id}", UpdateProcessingData);
+            ClientUpdateSubscriber.SubscribeToEncodingJobEncodingProgressUpdate($"{CommunicationConstants.EncodingJobEncodingProgressUpdate}-{Id}", UpdateEncodingProgress);
+        }
 
-            ClientUpdateSubscriber.Initialize(Config.ConnectionSettings.IPAddress, Config.ConnectionSettings.ClientUpdatePort, topics);
-            ClientUpdateSubscriber.StatusUpdateReceived += async (s, d) => await Task.Run(() => UpdateStatus(d));
-            ClientUpdateSubscriber.ProcessingDataUpdateReceived += async (s, d) => await Task.Run(() => UpdateProcessingData(d));
-            ClientUpdateSubscriber.EncodingProgressUpdateReceived += async (s, d) => await Task.Run(() => UpdateEncodingProgress(d));
-
-            ClientUpdateSubscriber.Start();
+        public void Dispose()
+        {
+            ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobStatusUpdate}-{Id}");
+            ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobProcessingDataUpdate}-{Id}");
+            ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobEncodingProgressUpdate}-{Id}");
         }
 
         #region Properties
@@ -281,10 +275,7 @@ namespace AutoEncodeClient.Models
         #endregion Public Methods
 
         #region Private Methods
-        private void UpdateStatus(EncodingJobStatusUpdateData data)
-        {
-            data.CopyProperties(this);
-        }
+        private void UpdateStatus(EncodingJobStatusUpdateData data) => data.CopyProperties(this);
 
         private void UpdateProcessingData(EncodingJobProcessingDataUpdateData data)
         {
@@ -299,10 +290,7 @@ namespace AutoEncodeClient.Models
             }
         }
 
-        private void UpdateEncodingProgress(EncodingJobEncodingProgressUpdateData data)
-        {
-            data.CopyProperties(this);
-        }
+        private void UpdateEncodingProgress(EncodingJobEncodingProgressUpdateData data) => data.CopyProperties(this);
         #endregion Private Methods
     }
 }

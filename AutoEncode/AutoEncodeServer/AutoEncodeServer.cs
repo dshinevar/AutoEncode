@@ -1,6 +1,8 @@
-﻿using AutoEncodeUtilities;
+﻿using AutoEncodeServer.Interfaces;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Logger;
+using Castle.Windsor;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,12 +12,6 @@ using System.Reflection;
 using System.Threading;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-
-using Castle.Windsor;
-using Castle.MicroKernel.Registration;
-using Castle.Facilities.TypedFactory;
-using Castle.Windsor.Installer;
-using AutoEncodeServer.Interfaces;
 
 namespace AutoEncodeServer
 {
@@ -176,7 +172,7 @@ namespace AutoEncodeServer
                 startupLog.Add($"x265: {serverConfig.ServerSettings.X265FullPath}");
                 startupLog.Add($"MKVMERGE: {serverConfig.ServerSettings.MkvMergeFullPath} ({(mkvmergeFound ? "FOUND" : "NOT FOUND")})");
             }
-            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath)) 
+            if (!string.IsNullOrWhiteSpace(serverConfig.ServerSettings.HDR10PlusExtractorFullPath))
                 startupLog.Add($"HDR10PLUS EXTRACTOR: {serverConfig.ServerSettings.HDR10PlusExtractorFullPath} ({(hdr10PlusExtractorFound ? "FOUND" : "NOT FOUND")})");
             startupLog.Add($"FFMPEG DIRECTORY: {serverConfig.ServerSettings.FFmpegDirectory}");
             startupLog.AddRange(ffmpegVersion);
@@ -221,7 +217,7 @@ namespace AutoEncodeServer
                 mainThread.Initialize(serverState, serverConfig, Shutdown);
                 mainThread.Start();
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 logger?.LogException(ex, "Failed to Start AutoEncodeServer", LOG_THREAD_NAME);
 
@@ -248,7 +244,5 @@ namespace AutoEncodeServer
 
             ContainerCleanup(container);
         }
-
-
     }
 }

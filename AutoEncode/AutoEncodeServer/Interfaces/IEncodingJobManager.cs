@@ -1,6 +1,7 @@
 ﻿using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace AutoEncodeServer.Interfaces
@@ -23,6 +24,10 @@ namespace AutoEncodeServer.Interfaces
         /// <summary>Stops and disposes timer and publisher</summary>
         /// <exception cref="Exception">Rethrows exceptions.</exception>
         void Shutdown();
+
+        /// <summary>Gets the current state of the queue</summary>
+        /// <returns>List of <see cref="EncodingJobData"/></returns>
+        IEnumerable<EncodingJobData> GetEncodingJobQueue();
 
         /// <summary>If able, creats and adds encoding job to queue.</summary>
         /// <param name="sourceFileData"><see cref="SourceFileData"/></param>

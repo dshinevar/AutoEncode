@@ -1,8 +1,9 @@
-﻿using System;
+﻿using AutoEncodeUtilities.Interfaces;
+using System;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJobEncodingProgressUpdateData
+    public class EncodingJobEncodingProgressUpdateData : IClientUpdateData
     {
         public byte EncodingProgress { get; set; }
 

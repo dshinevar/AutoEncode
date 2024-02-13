@@ -1,7 +1,5 @@
-﻿using AutoEncodeClient.Data;
-using AutoEncodeUtilities.Data;
+﻿using AutoEncodeUtilities.Data;
 using System;
-using System.Collections.Generic;
 
 namespace AutoEncodeClient.Communication
 {
@@ -13,18 +11,20 @@ namespace AutoEncodeClient.Communication
 
         int Port { get; }
 
-        event EventHandler<EncodingJobStatusUpdateData> StatusUpdateReceived;
-
-        event EventHandler<EncodingJobProcessingDataUpdateData> ProcessingDataUpdateReceived;
-
-        event EventHandler<EncodingJobEncodingProgressUpdateData> EncodingProgressUpdateReceived;
-
-        event EventHandler<IEnumerable<EncodingJobData>> QueueUpdateReceived;
-
-        void Initialize(string ipAddress, int port, IEnumerable<SubscriberTopic> topics);
+        void Initialize(string ipAddress, int port);
 
         void Start();
 
         void Stop();
+
+        bool SubscribeToEncodingJobQueueUpdate(string topic, Action<EncodingJobQueueUpdateData> dataReceivedCallback);
+
+        bool SubscribeToEncodingJobStatusUpdate(string topic, Action<EncodingJobStatusUpdateData> dataReceivedCallback);
+
+        bool SubscribeToEncodingJobProcessingDataUpdate(string topic, Action<EncodingJobProcessingDataUpdateData> dataReceivedCallback);
+
+        bool SubscribeToEncodingJobEncodingProgressUpdate(string topic, Action<EncodingJobEncodingProgressUpdateData> dataReceivedCallback);
+
+        bool Unsubscribe(string topic);
     }
 }

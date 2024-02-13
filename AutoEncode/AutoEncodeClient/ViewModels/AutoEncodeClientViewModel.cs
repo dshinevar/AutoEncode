@@ -1,14 +1,9 @@
 ﻿using AutoEncodeClient.Collections;
 using AutoEncodeClient.Communication;
-using AutoEncodeClient.Config;
-using AutoEncodeClient.Data;
-using AutoEncodeClient.Enums;
-using AutoEncodeClient.Models;
 using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
-using AutoEncodeUtilities.Logger;
 using Castle.Windsor;
 using System;
 using System.Collections.Generic;
@@ -19,8 +14,7 @@ namespace AutoEncodeClient.ViewModels
 {
     public class AutoEncodeClientViewModel :
         ViewModelBase<IAutoEncodeClientModel>,
-        IAutoEncodeClientViewModel,
-        IDisposable
+        IAutoEncodeClientViewModel
     {
         #region Dependencies
         public IWindsorContainer Container { get; set; }
@@ -30,24 +24,25 @@ namespace AutoEncodeClient.ViewModels
         public IClientUpdateSubscriber ClientUpdateSubscriber { get; set; }
 
         public IEncodingJobClientModelFactory EncodingJobFactory { get; set; }
-
-        public AEClientConfig Config { get; set; }
         #endregion Dependencies
 
         /// <summary>Default Constructor </summary>
         public AutoEncodeClientViewModel() { }
 
-        public void Initialize(IAutoEncodeClientModel model)
+        public async void Initialize(IAutoEncodeClientModel model)
         {
             ArgumentNullException.ThrowIfNull(model);
 
             Model = model;
-            ClientUpdateSubscriber.Initialize(Config.ConnectionSettings.IPAddress, Config.ConnectionSettings.ClientUpdatePort, [new SubscriberTopic(ClientUpdateType.Queue_Update, CommunicationConstants.EncodingJobQueueUpdate)]);
-            ClientUpdateSubscriber.QueueUpdateReceived += UpdateQueue;
-            ClientUpdateSubscriber.Start();
-        }
 
-        public void Dispose() => ClientUpdateSubscriber.Stop();
+            // On initial startup, request the queue
+            ICommunicationManager communicationManager = Container.Resolve<ICommunicationManager>();
+            IEnumerable<EncodingJobData> queue = await communicationManager.RequestJobQueue();
+            UpdateQueue(queue);
+
+            // Subscriber handles future queue updates
+            ClientUpdateSubscriber.SubscribeToEncodingJobQueueUpdate(CommunicationConstants.EncodingJobQueueUpdate, (data) => UpdateQueue(data.Queue));
+        }
 
         #region SubViewModels
         public BulkObservableCollection<IEncodingJobViewModel> EncodingJobs { get; } = [];
@@ -60,7 +55,7 @@ namespace AutoEncodeClient.ViewModels
         }
         #endregion SubViewModels
 
-        private void UpdateQueue(object sender, IEnumerable<EncodingJobData> encodingJobQueue)
+        private void UpdateQueue(IEnumerable<EncodingJobData> encodingJobQueue)
         {
             if (encodingJobQueue is not null)
             {
@@ -72,7 +67,7 @@ namespace AutoEncodeClient.ViewModels
                     IEnumerable<IEncodingJobViewModel> queue = EncodingJobs.ToList();
                     Application.Current.Dispatcher.BeginInvoke(EncodingJobs.Clear);
 
-                    foreach (IEncodingJobViewModel viewModel in queue) 
+                    foreach (IEncodingJobViewModel viewModel in queue)
                     {
                         EncodingJobFactory.Release(viewModel.Model);
                     }
@@ -113,7 +108,7 @@ namespace AutoEncodeClient.ViewModels
                     if (oldIndex != newIndex)
                     {
                         Application.Current.Dispatcher.Invoke(() => EncodingJobs.Move(oldIndex, newIndex));
-                    }   
+                    }
                 }
             }
         }

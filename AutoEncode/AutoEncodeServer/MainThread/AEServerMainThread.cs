@@ -189,6 +189,12 @@ namespace AutoEncodeServer.MainThread
                             CommunicationManager.SendMessage(clientAddress, AEMessageFactory.CreateRemoveJobResponse(success));
                             break;
                         }
+                        case AEMessageType.Job_Queue_Request:
+                        {
+                            IEnumerable<EncodingJobData> queue = EncodingJobManager.GetEncodingJobQueue();
+                            CommunicationManager.SendMessage(clientAddress, AEMessageFactory.CreateJobQueueResponse(queue));
+                            break;
+                        }
                         default:
                         {
                             throw new NotImplementedException($"MessageType {message.MessageType} ({message.MessageType.GetDisplayName()}) is not implemented.");

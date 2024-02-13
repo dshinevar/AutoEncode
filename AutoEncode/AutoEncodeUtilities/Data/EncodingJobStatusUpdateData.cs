@@ -1,9 +1,10 @@
 ﻿using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJobStatusUpdateData
+    public class EncodingJobStatusUpdateData : IClientUpdateData
     {
         public EncodingJobStatus Status { get; set; }
 

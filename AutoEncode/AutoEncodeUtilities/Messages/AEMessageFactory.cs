@@ -1,5 +1,6 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
 using System.Collections.Generic;
 
@@ -38,5 +39,9 @@ namespace AutoEncodeUtilities.Messages
         public static AEMessage<ulong> CreateRemoveJobRequest(ulong jobId) => new(AEMessageType.Remove_Job_Request, jobId);
 
         public static AEMessage<bool> CreateRemoveJobResponse(bool success) => new(AEMessageType.Remove_Job_Response, success);
+
+        public static AEMessage CreateJobQueueRequest() => new(AEMessageType.Job_Queue_Request);
+
+        public static AEMessage<IEnumerable<EncodingJobData>> CreateJobQueueResponse(IEnumerable<EncodingJobData> queue) => new(AEMessageType.Job_Queue_Response, queue); 
     }
 }

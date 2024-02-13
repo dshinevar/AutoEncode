@@ -79,6 +79,8 @@ namespace AutoEncodeServer.WorkerThreads
         /// <summary> Builds out SourceFiles from the search directories </summary>
         private void BuildSourceFiles()
         {
+            _buildingSourceFilesEvent.Reset();
+
             // Clear Guid lookup
             SourceFilesByGuid = null;
 
@@ -141,7 +143,6 @@ namespace AutoEncodeServer.WorkerThreads
             SourceFilesByGuid = SourceFiles.SelectMany(kvp => kvp.Value.Files, (kvp, file) => (kvp.Key, file)).ToDictionary(f => f.file.Guid);
 
             _buildingSourceFilesEvent.Set();
-            _buildingSourceFilesEvent.Reset();
         }
 
         private bool CreateEncodingJob(SourceFileData sourceFileData, SearchDirectory searchDirectory)

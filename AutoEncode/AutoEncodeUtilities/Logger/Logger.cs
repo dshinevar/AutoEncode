@@ -78,11 +78,15 @@ namespace AutoEncodeUtilities.Logger
             List<string> messages = [msg];
             if (details is not null)
             {
+                var detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
                 StringBuilder detailsSb = new("Details: ");
-                foreach (var prop in details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                for (int i = 0; i < detailsProperties.Length; i++) 
                 {
-                    detailsSb.Append($"{prop.Name} = {prop.GetValue(details).ToString()} | ");
+                    detailsSb.Append($"{detailsProperties[i].Name} = {detailsProperties[i].GetValue(details).ToString()}");
+                    if ((i == detailsProperties.Length - 1) is false) detailsSb.Append(" | ");  // If not the last property, add delimeter
                 }
+
                 messages.Add(detailsSb.ToString());
             }
 
