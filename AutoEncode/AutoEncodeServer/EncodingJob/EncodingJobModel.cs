@@ -68,12 +68,7 @@ namespace AutoEncodeServer.EncodingJob
 
         public bool ToBePaused { get; set; } = false;
 
-        private bool _paused = false;
-        public bool Paused
-        {
-            get => _paused;
-            set => SetAndNotify(_paused, value, () => _paused = value, CommunicationConstants.EncodingJobStatusUpdate);
-        }
+        public bool Paused { get; set; } = false;
 
         public bool Canceled => TaskCancellationTokenSource?.IsCancellationRequested ?? false;
 
@@ -192,12 +187,16 @@ namespace AutoEncodeServer.EncodingJob
                 ToBePaused = true;
                 Paused = false;
             }
+
+            OnPropertyChanged(CommunicationConstants.EncodingJobStatusUpdate);
         }
 
         public void Resume()
         {
             Paused = false;
             ToBePaused = false;
+
+            OnPropertyChanged(CommunicationConstants.EncodingJobStatusUpdate);
         }
         #endregion Status Methods
 

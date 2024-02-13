@@ -1,10 +1,9 @@
 ﻿using AutoEncodeClient.Collections;
 using AutoEncodeClient.Models.Interfaces;
-using System;
 
 namespace AutoEncodeClient.ViewModels.Interfaces
 {
-    public interface IAutoEncodeClientViewModel : IDisposable
+    public interface IAutoEncodeClientViewModel
     {
         void Initialize(IAutoEncodeClientModel model);
 

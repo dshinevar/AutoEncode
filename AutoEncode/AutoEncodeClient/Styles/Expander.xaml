@@ -340,16 +340,6 @@
 
     <Style x:Key="SourceFilesSideBarExpanderStyle"
            TargetType="Expander">
-        <Style.Triggers>
-            <MultiDataTrigger>
-                <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding Path=MovieSourceFiles.Count}" Value="0"/>
-                    <Condition Binding="{Binding Path=ShowSourceFiles.Count}" Value="0"/>
-                </MultiDataTrigger.Conditions>
-                <Setter Property="IsEnabled"
-                        Value="False"/>
-            </MultiDataTrigger>
-        </Style.Triggers>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
@@ -385,7 +375,7 @@
                                     Value="{Binding Width, ElementName=Content}"/>
                             <Setter TargetName="ContentColumn"
                                     Property="MinWidth"
-                                    Value="120"/>
+                                    Value="0"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

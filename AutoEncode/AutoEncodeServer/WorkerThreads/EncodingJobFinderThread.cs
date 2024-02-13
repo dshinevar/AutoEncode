@@ -88,6 +88,8 @@ namespace AutoEncodeServer.WorkerThreads
         {
             Wake();
 
+            _buildingSourceFilesEvent.Reset();
+
             bool success = _buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30));
 
             if (success)

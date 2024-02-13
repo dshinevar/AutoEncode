@@ -19,8 +19,7 @@ namespace AutoEncodeServer
 
             // Register Container to be accessed later
             container.Register(Component.For<IWindsorContainer>()
-                .ImplementedBy<WindsorContainer>()
-                .LifestyleSingleton());
+                .Instance(container));
 
             // Register Components
             container.Register(Component.For<ILogger>()

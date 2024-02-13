@@ -9,6 +9,7 @@
                            FontWeight="DemiBold"/>
             </Expander.Header>
             <ListView ItemsSource="{Binding Value}"
+                      BorderThickness="0"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ItemTemplate="{StaticResource SourceFileListViewItemTemplate}"
                       ItemContainerStyle="{StaticResource SourceFileListViewItemContainerStyle}"

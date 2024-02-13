@@ -54,5 +54,9 @@ namespace AutoEncodeClient.Communication
         /// <param name="jobId">Id of the job to remove.</param>
         /// <returns>True if successful; False, otherwise.</returns>
         Task<bool> RequestRemoveJob(ulong jobId);
+
+        /// <summary>Requests the current job queue state -- mainly meant for ONLY on startup in order to get current state. </summary>
+        /// <returns>List of <see cref="EncodingJobData"/></returns>
+        Task<IEnumerable<EncodingJobData>> RequestJobQueue();
     }
 }

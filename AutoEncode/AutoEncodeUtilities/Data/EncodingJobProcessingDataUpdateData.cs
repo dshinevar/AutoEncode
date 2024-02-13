@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace AutoEncodeUtilities.Data
 {
-    public class EncodingJobProcessingDataUpdateData
+    public class EncodingJobProcessingDataUpdateData : IClientUpdateData
     {
         public ISourceStreamData SourceStreamData { get; set; }
 

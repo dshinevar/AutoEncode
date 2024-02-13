@@ -47,6 +47,11 @@ namespace AutoEncodeUtilities.Enums
         Remove_Job_Request,
         [Display(Name = "Remove Job Response", ShortName = "Remove Job Response", Description = "Remove Encoding Job Response Message")]
         Remove_Job_Response,
+
+        [Display(Name = "Job Queue Request", ShortName = "Job Queue Request", Description = "Job Queue Request Message")]
+        Job_Queue_Request,
+        [Display(Name = "Job Queue Response", ShortName = "Job Queue Response", Description = "Job Queue Response Message")]
+        Job_Queue_Response
         #endregion Commands
     }
 }

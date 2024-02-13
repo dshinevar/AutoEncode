@@ -123,6 +123,14 @@ namespace AutoEncodeServer.EncodingJob
         #endregion Initialize / Start / Shutdown
 
         #region Queue Methods
+        public IEnumerable<EncodingJobData> GetEncodingJobQueue()
+        {
+            lock (_lock)
+            {
+                return EncodingJobQueue.Select(x => x.ToEncodingJobData()).ToList();
+            }
+        }
+
         public ulong? CreateEncodingJob(SourceFileData sourceFileData, PostProcessingSettings postProcessingSettings)
         {
             ulong? jobId = null;
@@ -242,8 +250,8 @@ namespace AutoEncodeServer.EncodingJob
             {
                 try
                 {
-                    IEnumerable<EncodingJobData> encodingJobsData = GetEncodingJobsData();
-                    ClientUpdatePublisher.SendUpdateToClients(CommunicationConstants.EncodingJobQueueUpdate, encodingJobsData);
+                    IEnumerable<EncodingJobData> queue = GetEncodingJobQueue();
+                    ClientUpdatePublisher.SendUpdateToClients(CommunicationConstants.EncodingJobQueueUpdate, new EncodingJobQueueUpdateData(queue));
                 }
                 catch (Exception ex)
                 {
@@ -291,14 +299,6 @@ namespace AutoEncodeServer.EncodingJob
                         Logger.LogException(ex, "Failed to send encoding job update to clients.", nameof(EncodingJobManager), new { PropertyGroup = args.PropertyName } );
                     }
                 });
-            }
-        }
-
-        private IEnumerable<EncodingJobData> GetEncodingJobsData()
-        {
-            lock (_lock)
-            {
-                return EncodingJobQueue.Select(x => x.ToEncodingJobData()).ToList();
             }
         }
 

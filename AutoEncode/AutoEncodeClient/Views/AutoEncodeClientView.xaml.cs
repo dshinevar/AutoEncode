@@ -26,7 +26,7 @@ namespace AutoEncodeClient.Views
 
         private void Window_Closed(object sender, System.EventArgs e)
         {
-            ((IAutoEncodeClientViewModel)DataContext).Dispose();
+            // Nothing to do here for now
         }
     }
 }

@@ -146,7 +146,7 @@
                                     </Style>
                                 </Border.Style>
                                 <TextBlock Text="Show Libraries"
-                                       Style="{StaticResource LibraryHeaderText}"/>
+                                           Style="{StaticResource LibraryHeaderText}"/>
                             </Border>
 
                             <ItemsControl Grid.Row="3"

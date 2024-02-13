@@ -118,5 +118,21 @@ namespace AutoEncodeClient.Communication
 
             return returnData;
         }
+
+        public async Task<IEnumerable<EncodingJobData>> RequestJobQueue()
+        {
+            IEnumerable<EncodingJobData> returnData = null;
+
+            try
+            {
+                return await SendReceive<IEnumerable<EncodingJobData>>(AEMessageFactory.CreateJobQueueRequest(), AEMessageType.Job_Queue_Response);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Failed to remove job from queue.", nameof(CommunicationManager));
+            }
+
+            return returnData;
+        }
     }
 }
