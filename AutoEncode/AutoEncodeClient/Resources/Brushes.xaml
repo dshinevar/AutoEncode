@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Colors #FFD3D3D3 -->
     <Color x:Key="BackgroundColor">GhostWhite</Color>
+    <Color x:Key="SecondaryBackgroundColor">LightGray</Color>
     <Color x:Key="HighlightColor">LightBlue</Color>
     <Color x:Key="MouseOverColor">LightSkyBlue</Color>
     <Color x:Key="CautionMouseOverColor">IndianRed</Color>
@@ -19,6 +20,7 @@
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource BackgroundColor}"/>
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}"/>
     <SolidColorBrush x:Key="HighlightBrush" Color="{StaticResource HighlightColor}"/>
     <SolidColorBrush x:Key="MouseOverBrush" Color="{StaticResource MouseOverColor}"/>
     <SolidColorBrush x:Key="CautionMouseOverBrush" Color="{StaticResource CautionMouseOverColor}"/>

@@ -21,7 +21,7 @@
                                 HorizontalAlignment="Stretch"
                                 Padding="4,1">
                             <Border.Background>
-                                <SolidColorBrush Color="LightGray" Opacity="0.4"/>
+                                <SolidColorBrush Color="{StaticResource SecondaryBackgroundColor}" Opacity="0.4"/>
                             </Border.Background>
                             <Grid MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Border}}">
                                 <Grid.RowDefinitions>
@@ -164,7 +164,7 @@
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
                                                                       Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)">
                                             <EasingColorKeyFrame KeyTime="0"
-                                                                      Value="{StaticResource MouseOverColor}"/>
+                                                                 Value="{StaticResource MouseOverColor}"/>
                                         </ColorAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>

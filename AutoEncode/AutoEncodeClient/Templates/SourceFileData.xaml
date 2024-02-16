@@ -21,7 +21,7 @@
         <Expander Style="{StaticResource SourceFilesExpanderStyle}">
             <Expander.Header>
                 <TextBlock Text="{Binding Key}"
-                           Style="{StaticResource SourceFileDataExpanderHeaderStyle}"/>
+                           Style="{StaticResource SourceFileExpanderHeaderStyle}"/>
             </Expander.Header>
             <ItemsControl ItemsSource="{Binding Value}">
                 <ItemsControl.ItemTemplate>
@@ -30,7 +30,7 @@
                                   Margin="10,0,0,0">
                             <Expander.Header>
                                 <TextBlock Text="{Binding ShowName}"
-                                           Style="{StaticResource SourceFileDataExpanderHeaderStyle}"/>
+                                           Style="{StaticResource SourceFileExpanderHeaderStyle}"/>
                             </Expander.Header>
                             <ItemsControl ItemsSource="{Binding Seasons}">
                                 <ItemsControl.ItemTemplate>
@@ -39,7 +39,7 @@
                                                   Margin="15,0,0,0">
                                             <Expander.Header>
                                                 <TextBlock Text="{Binding Season}"
-                                                           Style="{StaticResource SourceFileDataExpanderHeaderStyle}"/>
+                                                           Style="{StaticResource SourceFileExpanderHeaderStyle}"/>
                                             </Expander.Header>
                                             <ListView ItemsSource="{Binding Episodes}"
                                                       BorderThickness="0"

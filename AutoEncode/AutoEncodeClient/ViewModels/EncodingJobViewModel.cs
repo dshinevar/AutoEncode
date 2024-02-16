@@ -1,5 +1,6 @@
 ﻿using AutoEncodeClient.Command;
 using AutoEncodeClient.Dialogs;
+using AutoEncodeClient.Enums;
 using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeClient.ViewModels.Interfaces;
@@ -35,6 +36,8 @@ namespace AutoEncodeClient.ViewModels
 
             RemoveCommand = new AECommand(Remove);
 
+            SelectDetailsSectionCommand = new AECommandWithParameter(SelectDetailsSection);
+
             Model.PropertyChanged += ModelPropertyChanged;
         }
 
@@ -66,6 +69,8 @@ namespace AutoEncodeClient.ViewModels
             });
             */
         }
+
+        public IEncodingCommandArguments EncodingCommandArguments => Model.EncodingCommandArguments;
         #endregion Processing Data
 
         #region Status
@@ -154,12 +159,22 @@ namespace AutoEncodeClient.ViewModels
         }
         #endregion Status
 
+        #region Other Properties
+        private EncodingJobDetailsSection _selectedDetailsSection = EncodingJobDetailsSection.None;
+        public EncodingJobDetailsSection SelectedDetailsSection
+        {
+            get => _selectedDetailsSection;
+            set => SetAndNotify(_selectedDetailsSection, value, () => _selectedDetailsSection = value);
+        }
+        #endregion Other Properties
+
         #region Commands
         public ICommand CancelCommand { get; }
         public ICommand PauseCommand { get; }
         public ICommand ResumeCommand { get; }
         public ICommand CancelThenPauseCommand { get; }
         public ICommand RemoveCommand { get; }
+        public ICommand SelectDetailsSectionCommand { get; }
         #endregion Commands
 
         #region Command Methods
@@ -205,6 +220,14 @@ namespace AutoEncodeClient.ViewModels
             if (success is false)
             {
                 AEDialogHandler.ShowError($"Failed to remove job {FileName} from encoding queue.", "Removal Failed");
+            }
+        }
+
+        private void SelectDetailsSection(object obj)
+        {
+            if (obj is EncodingJobDetailsSection encodingJobDetailsSection)
+            {
+                SelectedDetailsSection = encodingJobDetailsSection;
             }
         }
         #endregion Command Methods

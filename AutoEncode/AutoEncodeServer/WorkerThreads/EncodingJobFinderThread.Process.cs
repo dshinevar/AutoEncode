@@ -257,9 +257,14 @@ namespace AutoEncodeServer.WorkerThreads
         {
             bool isShows = sourceFiles.IsShows;
 
+            // Remove source files
             IEnumerable<SourceFileData> sourceFilesToRemove = sourceFiles.Files.Except(newSourceFiles, (s, n) => string.Equals(s.FullPath, n.FullPath, StringComparison.OrdinalIgnoreCase));
             sourceFiles.Files.RemoveRange(sourceFilesToRemove);
 
+            // Update Encoded status of current files
+            sourceFiles.Files.ForEach(file => file.Encoded = newSourceFiles.FirstOrDefault(x => x.FullPath.Equals(file.FullPath, StringComparison.OrdinalIgnoreCase))?.Encoded ?? false);
+
+            // Add new source files
             IEnumerable<SourceFileData> sourceFilesToAdd = newSourceFiles.Except(sourceFiles.Files, (n, s) => string.Equals(n.FullPath, s.FullPath, StringComparison.OrdinalIgnoreCase))
                 .Select(x => isShows is true ? new ShowSourceFileData(x) : new SourceFileData(x));
             sourceFiles.Files.AddRange(sourceFilesToAdd);
