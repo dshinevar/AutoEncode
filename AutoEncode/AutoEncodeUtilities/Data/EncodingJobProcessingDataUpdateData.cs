@@ -19,6 +19,6 @@ namespace AutoEncodeUtilities.Data
 
         [JsonConverter(typeof(EncodingCommandArgumentsConverter<IEncodingCommandArguments>))]
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public IEncodingCommandArguments CommandArguments { get; set; }
+        public IEncodingCommandArguments EncodingCommandArguments { get; set; }
     }
 }

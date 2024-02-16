@@ -1,7 +1,9 @@
-﻿using AutoEncodeClient.Models.Interfaces;
+﻿using AutoEncodeClient.Enums;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using AutoEncodeUtilities.Interfaces;
 using System;
 using System.Windows.Input;
 
@@ -27,6 +29,8 @@ namespace AutoEncodeClient.ViewModels.Interfaces
         SourceStreamDataClientModel SourceStreamData { get; }
 
         PostProcessingSettings PostProcessingSettings { get; }
+
+        IEncodingCommandArguments EncodingCommandArguments { get; }
         #endregion Processing Data
 
         #region Status
@@ -69,6 +73,10 @@ namespace AutoEncodeClient.ViewModels.Interfaces
         ICommand CancelThenPauseCommand { get; }
 
         ICommand RemoveCommand { get; }
+
+        ICommand SelectDetailsSectionCommand { get; }
         #endregion Commands
+
+        EncodingJobDetailsSection SelectedDetailsSection { get; set; }
     }
 }

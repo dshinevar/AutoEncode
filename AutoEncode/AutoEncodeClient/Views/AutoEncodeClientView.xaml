@@ -6,9 +6,9 @@
         xmlns:local="clr-namespace:AutoEncodeClient.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:designData="clr-namespace:AutoEncodeClient.Views.DesignData"
-        xmlns:utilData="clr-namespace:AutoEncodeUtilities.Data;assembly=AutoEncodeUtilities"
+        xmlns:behaviors="clr-namespace:AutoEncodeClient.Behavior"
+        xmlns:enums="clr-namespace:AutoEncodeClient.Enums"
         xmlns:utilEnums="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
-        xmlns:viewModels="clr-namespace:AutoEncodeClient.ViewModels"
         mc:Ignorable="d"
         Icon="../Resources/AutoEncode.ico"
         Height="720" Width="1280"
@@ -246,10 +246,15 @@
                         <!-- Title -->
                         <TextBlock Grid.Column="0"
                                    Text="{Binding Name}"
-                                   FontSize="14"
+                                   Width="300"
+                                   behaviors:NumberOfLinesBehavior.MaxLines="2"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   FontSize="16"
                                    FontWeight="DemiBold"
+                                   TextAlignment="Left"
                                    VerticalAlignment="Center"/>
-                        
+
                         <!-- Button Controls -->
                         <StackPanel Grid.Column="1"
                                     Margin="5,0"
@@ -331,7 +336,7 @@
                                 </Button.Template>
                             </Button>
                         </StackPanel>
-                        
+
                         <!-- Progress Bar -->
                         <Grid Grid.Column="2"
                               VerticalAlignment="Center">
@@ -442,20 +447,20 @@
                                     Orientation="Vertical">
                             <TextBlock TextWrapping="NoWrap">
                                 <TextBlock.Inlines>
-                                    <Run Text="ID:" FontWeight="DemiBold"/>
-                                    <Run Text="{Binding Id, Mode=OneWay}"/>
+                                    <Run Text="ID:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
+                                    <Run Text="{Binding Id, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
                                 </TextBlock.Inlines>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap">
                                 <TextBlock.Inlines>
-                                    <Run Text="Source Full Path:" FontWeight="DemiBold"/>
-                                    <Run Text="{Binding SourceFullPath, Mode=OneWay}"/>
+                                    <Run Text="Source Full Path:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
+                                    <Run Text="{Binding SourceFullPath, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
                                 </TextBlock.Inlines>
                             </TextBlock>
                             <TextBlock TextWrapping="Wrap">
                                 <TextBlock.Inlines>
-                                    <Run Text="Destination Full Path:" FontWeight="DemiBold"/>
-                                    <Run Text="{Binding DestinationFullPath, Mode=OneWay}"/>
+                                    <Run Text="Destination Full Path:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
+                                    <Run Text="{Binding DestinationFullPath, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
                                 </TextBlock.Inlines>
                             </TextBlock>
                         </StackPanel>
@@ -511,390 +516,91 @@
                         </Image>
                     </Grid>
 
-                    <!-- EncodingJob Details -->
-                    <TabControl Grid.Row="2"
-                                Margin="0,5,0,0">
-                        <TabControl.Resources>
-                            <Style x:Key="SourceDataBorder"
-                                   TargetType="Border">
-                                <Setter Property="BorderBrush"
-                                        Value="Black"/>
-                                <Setter Property="BorderThickness"
-                                        Value="1.5"/>
-                            </Style>
-                        </TabControl.Resources>
-                        <!-- Source Data Tab -->
-                        <TabItem Header="Source Data">
-                            <Grid DataContext="{Binding SourceStreamData}"
-                                  Margin="2">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition/>
-                                </Grid.RowDefinitions>
+                    <!--#region EncodingJob Details -->
+                    <Border Grid.Row="2"
+                            BorderThickness="5"
+                            BorderBrush="{StaticResource SecondaryButtonBackgroundBrush}"
+                            Background="{StaticResource SecondaryBackgroundBrush}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Row="0">
-                                    <TextBlock>
-                                        <TextBlock.Inlines>
-                                            <Run Text="Duration:" FontWeight="DemiBold"/>
-                                            <Run>
-                                                <Run.Text>
-                                                    <MultiBinding StringFormat="{}{0} ({1} seconds)">
-                                                        <Binding Path="DurationInSeconds" 
-                                                                 Converter="{StaticResource SecondsToTimestampConverter}" 
-                                                                 TargetNullValue="-" 
-                                                                 FallbackValue="-"/>
-                                                        <Binding Path="DurationInSeconds" 
-                                                                 TargetNullValue="-" 
-                                                                 FallbackValue="-"/>
-                                                    </MultiBinding>
-                                                </Run.Text>
-                                            </Run>
-                                        </TextBlock.Inlines>
-                                    </TextBlock>
-                                    <TextBlock>
-                                        <TextBlock.Inlines>
-                                            <Run Text="Number of Frames:" FontWeight="DemiBold"/>
-                                            <Run Text="{Binding NumberOfFrames, TargetNullValue='-',FallbackValue='-'}"/>
-                                        </TextBlock.Inlines>
-                                    </TextBlock>
-                                </StackPanel>
+                            <Border Grid.Column="0"
+                                    BorderBrush="{StaticResource ButtonBackgroundBrush}"
+                                    Background="{StaticResource ButtonBackgroundBrush}"
+                                    BorderThickness="5,5,0,5">
+                                <Grid VerticalAlignment="Top">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
 
-                                <Grid Grid.Row="1"
-                                      Margin="0,2,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition/>
-                                        <ColumnDefinition/>
-                                        <ColumnDefinition/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Video -->
-                                    <Border Grid.Column="0"
-                                            Style="{StaticResource SourceDataBorder}"
-                                            DataContext="{Binding VideoStream}">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition/>
-                                            </Grid.RowDefinitions>
-
-                                            <Border Grid.Row="0"
-                                                    BorderBrush="Black"
-                                                    BorderThickness="0,0,0,1"
-                                                    Background="LightGray">
-                                                <TextBlock Grid.Row="0"
-                                                           HorizontalAlignment="Center"
-                                                           Text="VIDEO"
-                                                           FontWeight="DemiBold"/>
-                                            </Border>
-                                            <TextBlock Grid.Row="1"
-                                                       Text="No Source Video Data"
-                                                       Foreground="Gray"
-                                                       FontSize="20"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       TextAlignment="Center"
-                                                       TextWrapping="Wrap"
-                                                       FontWeight="DemiBold"
-                                                       Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
-                                            <ScrollViewer Grid.Row="1"
-                                                          VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}"
-                                                            Margin="2,1,2,1">
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Stream Index: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding StreamIndex}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Codec Name: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding CodecName}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Pixel Format: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding PixelFormat}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Resolution: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding Resolution}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Color Space: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding ColorSpace}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Color Primaries: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding ColorPrimaries}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Color Transfer: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding ColorTransfer}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Framerate: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding FrameRate}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Scan Type: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding ScanType, Converter={StaticResource EnumDisplayNameConverter}}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Chroma Location: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding ChromaLocation, Converter={StaticResource EnumDisplayNameConverter}}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Crop: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding Crop, TargetNullValue='-'}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Has HDR: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding HasHDR, Mode=OneWay}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock>
-                                                        <TextBlock.Inlines>
-                                                            <Run Text="Has Dynamic HDR: " FontWeight="DemiBold"/>
-                                                            <Run Text="{Binding HasDynamicHDR, Mode=OneWay}"/>
-                                                        </TextBlock.Inlines>
-                                                    </TextBlock>
-                                                    <TextBlock Text="HDR Data:" FontWeight="DemiBold"
-                                                               Visibility="{Binding HDRData, Converter={StaticResource IsNullVisibilityConverter}}"/>
-                                                    <StackPanel DataContext="{Binding HDRData}"
-                                                                Margin="10,0,0,0"
-                                                                Visibility="{Binding ., Converter={StaticResource IsNullVisibilityConverter}}">
-                                                        <StackPanel.Resources>
-                                                            <Style TargetType="Ellipse">
-                                                                <Setter Property="Stroke"
-                                                                        Value="Black"/>
-                                                                <Setter Property="Fill"
-                                                                        Value="Black"/>
-                                                                <Setter Property="Height"
-                                                                        Value="4"/>
-                                                                <Setter Property="Width"
-                                                                        Value="4"/>
-                                                            </Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="HorizontalAlignment"
-                                                                        Value="Left"/>
-                                                                <Setter Property="Margin"
-                                                                        Value="5,0,0,0"/>
-                                                            </Style>
-                                                        </StackPanel.Resources>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding HDRFlags, Converter={StaticResource FlagToNamesConverter}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Red_X, StringFormat=Red X: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Red_Y, StringFormat=Red Y: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Blue_X, StringFormat=Blue X: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Blue_Y, StringFormat=Blue Y: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Green_X, StringFormat=Green X: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding Green_Y, StringFormat=Green Y: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding WhitePoint_X, StringFormat=Whitepoint X: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding WhitePoint_Y, StringFormat=Whitepoint Y: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding MinLuminance, StringFormat=Min Luminance: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding MaxLuminance, StringFormat=Max Luminance: {0}}"/>
-                                                        </BulletDecorator>
-                                                        <BulletDecorator>
-                                                            <BulletDecorator.Bullet>
-                                                                <Ellipse/>
-                                                            </BulletDecorator.Bullet>
-                                                            <TextBlock Text="{Binding MaxCLL, StringFormat=Max CLL: {0}}"/>
-                                                        </BulletDecorator>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </ScrollViewer>
-                                        </Grid>
-                                    </Border>
-                                    <!-- Audio -->
-                                    <Border Grid.Column="1"
-                                            Style="{StaticResource SourceDataBorder}"
-                                            DataContext="{Binding AudioStreams}">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition/>
-                                            </Grid.RowDefinitions>
-                                            <Border Grid.Row="0"
-                                                    BorderBrush="Black"
-                                                    BorderThickness="0,0,0,1"
-                                                    Background="LightGray">
-                                                <TextBlock Grid.Row="0"
-                                                           HorizontalAlignment="Center"
-                                                           Text="AUDIO"
-                                                           FontWeight="DemiBold"/>
-                                            </Border>
-                                            <TextBlock Grid.Row="1"
-                                                       Text="No Source Audio Data"
-                                                       Foreground="Gray"
-                                                       FontSize="20"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       TextAlignment="Center"
-                                                       TextWrapping="Wrap"
-                                                       FontWeight="DemiBold"
-                                                       Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
-                                            <ScrollViewer Grid.Row="1"
-                                                          VerticalScrollBarVisibility="Auto">
-                                                <ItemsControl ItemsSource="{Binding .}"
-                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                              ItemTemplate="{StaticResource AudioSourceData}"
-                                                              Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}"/>
-                                            </ScrollViewer>
-
-                                        </Grid>
-                                    </Border>
-                                    <!-- Subtitle -->
-                                    <Border Grid.Column="2"
-                                            Style="{StaticResource SourceDataBorder}"
-                                            DataContext="{Binding SubtitleStreams}">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition/>
-                                            </Grid.RowDefinitions>
-                                            <Border Grid.Row="0"
-                                                    BorderBrush="Black"
-                                                    BorderThickness="0,0,0,1"
-                                                    Background="LightGray">
-                                                <TextBlock Grid.Row="0"
-                                                           HorizontalAlignment="Center"
-                                                           Text="SUBTITLES"
-                                                           FontWeight="DemiBold"/>
-                                            </Border>
-
-                                            <TextBlock Grid.Row="1"
-                                                       Text="No Source Subtitle Data"
-                                                       Foreground="Gray"
-                                                       FontSize="20"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       TextAlignment="Center"
-                                                       TextWrapping="Wrap"
-                                                       FontWeight="DemiBold"
-                                                       Visibility="{Binding Converter={StaticResource IsNotNullVisibilityConverter}}"/>
-                                            <ScrollViewer Grid.Row="1"
-                                                          VerticalScrollBarVisibility="Auto">
-                                                <ItemsControl ItemsSource="{Binding .}"
-                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                              ItemTemplate="{StaticResource SubtitleSourceData}"
-                                                              Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}"/>
-                                            </ScrollViewer>
-                                        </Grid>
-                                    </Border>
+                                    <RadioButton Grid.Row="0"
+                                                 Content="Source Data"
+                                                 GroupName="Encoding Job"
+                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Source_Data}}"
+                                                 Command="{Binding SelectDetailsSectionCommand}"
+                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Source_Data}"
+                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
+                                    <RadioButton Grid.Row="1"
+                                                 Content="Command Arguments"
+                                                 GroupName="Encoding Job"
+                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Command_Arguments}}"
+                                                 Command="{Binding SelectDetailsSectionCommand}"
+                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Command_Arguments}"
+                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
+                                    <RadioButton Grid.Row="2"
+                                                 Content="Error"
+                                                 GroupName="Encoding Job"
+                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Error}}"
+                                                 Command="{Binding SelectDetailsSectionCommand}"
+                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Error}"
+                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
                                 </Grid>
-                            </Grid>
-                        </TabItem>
-                        <!-- Error Tab -->
-                        <TabItem>
-                            <TabItem.Style>
-                                <Style TargetType="TabItem">
-                                    <Setter Property="Background"
-                                            Value="Transparent"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasError}"
-                                                     Value="True">
-                                            <Setter Property="Background"
-                                                    Value="{StaticResource ErrorBackgroundBrush}"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TabItem.Style>
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Error"/>
-                                    <Image Source="../Resources/error.png"
-                                           Margin="3,0,0,0"
-                                           Height="16"
-                                           Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                            <StackPanel Orientation="Vertical"
-                                        Margin="2">
-                                <TextBlock Text="{Binding ErrorTime, StringFormat=Error Occurred: {0}}"/>
-                                <TextBlock Text="Last Error Message:"/>
-                                <TextBlock Text="{Binding ErrorMessage}"
-                                           TextWrapping="Wrap"
-                                           Padding="20,0"/>
-                            </StackPanel>
-                        </TabItem>
-                    </TabControl>
+                            </Border>
+
+                            <Border Grid.Column="1"
+                                    Background="{StaticResource BackgroundBrush}"
+                                    BorderBrush="{StaticResource ButtonBackgroundBrush}"
+                                    BorderThickness="5"
+                                    CornerRadius="0,2,2,0">
+                                <ContentControl>
+                                    <ContentControl.Style>
+                                        <Style TargetType="ContentControl">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
+                                                             Value="{x:Static enums:EncodingJobDetailsSection.Source_Data}">
+                                                    <Setter Property="ContentTemplate"
+                                                            Value="{StaticResource EncodingJobSourceDataSectionTemplate}"/>
+                                                    <Setter Property="Content"
+                                                            Value="{Binding }"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
+                                                             Value="{x:Static enums:EncodingJobDetailsSection.Command_Arguments}">
+                                                    <Setter Property="ContentTemplate"
+                                                            Value="{StaticResource EncodingJobCommandArgumentsSectionTemplate}"/>
+                                                    <Setter Property="Content"
+                                                            Value="{Binding }"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
+                                                             Value="{x:Static enums:EncodingJobDetailsSection.Error}">
+                                                    <Setter Property="ContentTemplate"
+                                                            Value="{StaticResource EncodingJobErrorSectionDataTemplate}"/>
+                                                    <Setter Property="Content"
+                                                            Value="{Binding }"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ContentControl.Style>
+                                </ContentControl>
+                            </Border>
+
+                        </Grid>
+                    </Border>
+                    <!--#endregion EncodingJob Details -->
                 </Grid>
             </Border>
             <!--#endregion SELECTED ENCODING JOB-->

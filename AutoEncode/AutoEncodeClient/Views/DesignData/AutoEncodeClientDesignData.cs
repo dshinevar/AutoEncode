@@ -53,7 +53,13 @@ namespace AutoEncodeClient.Views.DesignData
                     Resolution = "3842x2160",
                     Crop = "200:200:200:300",
                     FrameRate = "24000/1001",
+                    
                     HDRData = new HDRData()
+                    {
+                        HDRFlags = HDRFlags.HDR10 | HDRFlags.DOLBY_VISION,
+                        Red_X = "100",
+                        Red_Y = "1000000"
+                    }
                 },
                 new List<AudioStreamData>()
                 {
@@ -93,7 +99,13 @@ namespace AutoEncodeClient.Views.DesignData
                         Language = "eng",
                         Descriptor = "Subtitle Descriptor"
                     }
-                })
+                }),
+                EncodingCommandArguments = new DolbyVisionEncodingCommandArguments()
+                {
+                    VideoEncodingCommandArguments = "Video Encoding Args",
+                    AudioSubsEncodingCommandArguments = "AudioSub Encoding Args",
+                    MergeCommandArguments = "Merge Args"
+                }
             };
             IEncodingJobData encodingJobData4 = new EncodingJobData()
             {
@@ -102,7 +114,9 @@ namespace AutoEncodeClient.Views.DesignData
                 DestinationFullPath = "M:\\Movies (Encoded)\\Halloween - Michael's Birthday Party (2030).mkv",
                 Status = EncodingJobStatus.BUILDING,
                 EncodingProgress = 0,
-                HasError = true
+                HasError = true,
+                ErrorMessage = "ffmpeg has exploded into 13 pieces.",
+                ErrorTime = DateTime.Now
             };
             IEncodingJobData encodingJobData3 = new EncodingJobData()
             {
@@ -119,9 +133,13 @@ namespace AutoEncodeClient.Views.DesignData
             var encodingJobClientModel3 = new EncodingJobClientModel(encodingJobData3);
 
             var encodingJobViewModel1 = new EncodingJobViewModel(encodingJobClientModel1);
-            var encodingJobViewModel2 = new EncodingJobViewModel(encodingJobClientModel2);
+            var encodingJobViewModel2 = new EncodingJobViewModel(encodingJobClientModel2)
+            {
+                SelectedDetailsSection = Enums.EncodingJobDetailsSection.Command_Arguments
+            };
             var encodingJobViewModel4 = new EncodingJobViewModel(encodingJobClientModel4);
             var encodingJobViewModel3 = new EncodingJobViewModel(encodingJobClientModel3);
+
 
             EncodingJobs.Add(encodingJobViewModel1);
             EncodingJobs.Add(encodingJobViewModel2);

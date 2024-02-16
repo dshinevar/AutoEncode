@@ -1,6 +1,5 @@
 ﻿using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
-using AutoEncodeUtilities.Interfaces;
 using AutoEncodeUtilities.Logger;
 using NetMQ;
 using NetMQ.Monitoring;
@@ -9,7 +8,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace AutoEncodeClient.Communication
 {
@@ -98,11 +96,11 @@ namespace AutoEncodeClient.Communication
             {
                 _poller.Stop();
 
-                if (_topicMapper.Count > 0 ) 
+                if (_topicMapper.Count > 0)
                 {
                     IEnumerable<string> topics = [.. _topicMapper.Keys];
 
-                    foreach (string topic in topics) 
+                    foreach (string topic in topics)
                     {
                         Unsubscribe(topic);
                     }
@@ -178,7 +176,7 @@ namespace AutoEncodeClient.Communication
         {
             bool subscribed = false;
 
-            if (_topicMapper.TryAdd(topic, ClientUpdateType.Encoding_Progress_Update) is true && _jobEncodingProgressUpdateCallbacks.TryAdd(topic, dataReceivedCallback) is true) 
+            if (_topicMapper.TryAdd(topic, ClientUpdateType.Encoding_Progress_Update) is true && _jobEncodingProgressUpdateCallbacks.TryAdd(topic, dataReceivedCallback) is true)
             {
                 _subscriberSocket.Subscribe(topic);
                 subscribed = true;
@@ -191,12 +189,12 @@ namespace AutoEncodeClient.Communication
 
             return subscribed;
         }
-            
-        public bool Unsubscribe(string topic) 
+
+        public bool Unsubscribe(string topic)
         {
             bool unsubscribed = false;
 
-            if (_topicMapper.TryGetValue(topic, out ClientUpdateType type) is true) 
+            if (_topicMapper.TryGetValue(topic, out ClientUpdateType type) is true)
             {
                 _subscriberSocket.Unsubscribe(topic);
 

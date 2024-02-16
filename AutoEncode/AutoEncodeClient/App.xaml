@@ -9,12 +9,15 @@
                 <ResourceDictionary Source="/Converters/Converters.xaml"/>
                 <ResourceDictionary Source="/Resources/Brushes.xaml"/>
                 <ResourceDictionary Source="/Resources/Templates.xaml"/>
+                <ResourceDictionary Source="/Styles/TextBlock.xaml"/>
                 <ResourceDictionary Source="/Styles/Border.xaml"/>
                 <ResourceDictionary Source="/Styles/Image.xaml"/>
                 <ResourceDictionary Source="/Styles/ProgressBar.xaml"/>
                 <ResourceDictionary Source="/Styles/ListView.xaml"/>
                 <ResourceDictionary Source="/Styles/Expander.xaml"/>
+                <ResourceDictionary Source="/Styles/RadioButton.xaml"/>
                 <ResourceDictionary Source="/Templates/SourceFileData.xaml"/>
+                <ResourceDictionary Source="/Templates/EncodingJobDetails.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -1,0 +1,803 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:models="clr-namespace:AutoEncodeClient.Models"
+                    xmlns:sdmodels="clr-namespace:AutoEncodeClient.Models.StreamDataModels"
+                    xmlns:controls="clr-namespace:AutoEncodeClient.Controls"
+                    xmlns:vm="clr-namespace:AutoEncodeClient.ViewModels"
+                    xmlns:utilData="clr-namespace:AutoEncodeUtilities.Data;assembly=AutoEncodeUtilities">
+
+    <!-- #region Source Data -->
+    <DataTemplate x:Key="EncodingJobSourceDataSectionEmptyTemplate">
+        <Grid>
+            <TextBlock Text="No Source Data Loaded"
+                       FontSize="16"
+                       FontWeight="DemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"/>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobSourceDataSectionDefaultTemplate"
+                  DataType="sdmodels:SourceStreamDataClientModel">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Duration / Number of Frames -->
+                <Grid Grid.Row="0"
+                      Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left">
+                        <TextBlock Text="Duration: "
+                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                        <TextBlock Style="{StaticResource EncodingJobDataStyle}">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} ({1} seconds)">
+                                    <Binding Path="DurationInSeconds" 
+                                             Converter="{StaticResource SecondsToTimestampConverter}" 
+                                             TargetNullValue="-" 
+                                             FallbackValue="-"/>
+                                    <Binding Path="DurationInSeconds" 
+                                             TargetNullValue="-" 
+                                             FallbackValue="-"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Left">
+                        <TextBlock Text="Number of Frames: "
+                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                        <TextBlock Text="{Binding NumberOfFrames, TargetNullValue='-', FallbackValue='-'}"
+                                   Style="{StaticResource EncodingJobDataStyle}">
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Video Data -->
+                <Expander Grid.Row="1"
+                          Style="{StaticResource SourceDataExpanderStyle}"
+                          DataContext="{Binding VideoStream}">
+                    <Expander.Header>
+                        <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Expander}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="175"/>
+                                <ColumnDefinition Width="175"/>
+                                <ColumnDefinition Width="150"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" 
+                                       Text="Video" 
+                                       Style="{StaticResource SourceDataExpanderHeaderStyle}"/>
+
+                            <TextBlock Grid.Column="1"
+                                       Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                       Text="{Binding StreamIndex, StringFormat={}Stream Index: {0}}"/>
+
+                            <TextBlock Grid.Column="2"
+                                       Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                       Text="{Binding Resolution}"/>
+
+                            <TextBlock Grid.Column="3"
+                                       Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                       Text="{Binding FrameRate, StringFormat={}Framerate: {0}}"/>
+
+                            <TextBlock Grid.Column="4"
+                                       Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                       Text="{Binding ScanType, Converter={StaticResource EnumDisplayNameConverter}, StringFormat={}Scan: {0}}"/>
+
+                            <TextBlock Grid.Column="5"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <Run Text="H" Foreground="Red" FontSize="14" FontWeight="DemiBold"/>
+                                <Run Text="D" Foreground="Green" FontSize="14" FontWeight="DemiBold"/>
+                                <Run Text="R" Foreground="Blue" FontSize="14" FontWeight="DemiBold"/>
+                            </TextBlock>
+                        </Grid>
+                    </Expander.Header>
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="5"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="Stream Index:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                       Text="{Binding StreamIndex}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Text="Resolution:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2"
+                                       Text="{Binding Resolution}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Text="Framerate:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2"
+                                       Text="{Binding FrameRate}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       Text="Scan Type:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Text="{Binding ScanType, Converter={StaticResource EnumDisplayNameConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0"
+                                       Text="Codec Name:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="2"
+                                       Text="{Binding CodecName}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0"
+                                       Text="Pixel Format:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="5" Grid.Column="2"
+                                       Text="{Binding PixelFormat}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+                        </Grid>
+
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="5"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="Crop:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                       Text="{Binding Crop, TargetNullValue='-'}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Text="Color Space:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2"
+                                       Text="{Binding ColorSpace}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Text="Color Primaries:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2"
+                                       Text="{Binding ColorPrimaries}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       Text="Color Transfer:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Text="{Binding ColorTransfer}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0"
+                                       Text="Chroma Location:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="2"
+                                       Text="{Binding ChromaLocation, Converter={StaticResource EnumDisplayNameConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+                        </Grid>
+
+                        <Grid Grid.Column="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="5"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="HDR:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} ({1})">
+                                        <Binding Path="HasHDR"/>
+                                        <Binding Path="HDRData.HDRFlags" Converter="{StaticResource FlagToNamesConverter}"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Text="Red (X,Y):"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}({0},{1})">
+                                        <Binding Path="HDRData.Red_X"/>
+                                        <Binding Path="HDRData.Red_Y"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Text="Blue (X,Y):"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}({0},{1})">
+                                        <Binding Path="HDRData.Blue_X"/>
+                                        <Binding Path="HDRData.Blue_Y"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       Text="Green (X,Y):"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}({0},{1})">
+                                        <Binding Path="HDRData.Green_X"/>
+                                        <Binding Path="HDRData.Green_Y"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0"
+                                       Text="WhitePoint (X,Y):"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="2"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}({0},{1})">
+                                        <Binding Path="HDRData.WhitePoint_X"/>
+                                        <Binding Path="HDRData.WhitePoint_Y"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0"
+                                       Text="Min, Max Luminance:"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="5" Grid.Column="2"
+                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}({0},{1})">
+                                        <Binding Path="HDRData.MinLuminance"/>
+                                        <Binding Path="HDRData.MaxLuminance"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0"
+                                       Text="Max CLL:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="6" Grid.Column="2"
+                                       Text="{Binding HDRData.MaxCLL, Converter={StaticResource EnumDisplayNameConverter}}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+                        </Grid>
+                    </Grid>
+                </Expander>
+
+                <!-- Audio Data -->
+                <ItemsControl Grid.Row="2"
+                              ItemsSource="{Binding AudioStreams}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="utilData:AudioStreamData">
+                            <Expander Style="{StaticResource SourceDataExpanderStyle}">
+                                <Expander.Header>
+                                    <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Expander}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" 
+                                                   Text="{Binding AudioIndex, StringFormat={}Audio {0}}" 
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                                   Text="{Binding StreamIndex, StringFormat={}Stream Index: {0}}"/>
+
+                                        <TextBlock Grid.Column="2"
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} / {1} / {2} layout">
+                                                    <Binding Path="Language"/>
+                                                    <Binding Path="CodecName"/>
+                                                    <Binding Path="ChannelLayout"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </Grid>
+                                </Expander.Header>
+                                <Grid Margin="5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="Stream Index:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                   Text="{Binding StreamIndex}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Text="Audio Index:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2"
+                                                   Text="{Binding AudioIndex}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Text="Language:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2"
+                                                   Text="{Binding Language}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Text="Codec Name:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="2"
+                                                   Text="{Binding CodecName}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Text="Channel Layout:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="2"
+                                                   Style="{StaticResource EncodingJobDataStyle}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} ({1} channels)">
+                                                    <Binding Path="ChannelLayout"/>
+                                                    <Binding Path="Channels"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <Grid Grid.Column="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="Title:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                   Text="{Binding Title, TargetNullValue='-'}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Text="Descriptor:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2"
+                                                   Text="{Binding Descriptor}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Text="Commentary:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2"
+                                                   Text="{Binding Commentary}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+                                    </Grid>
+                                </Grid>
+                            </Expander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Subtitle Data -->
+                <ItemsControl Grid.Row="3"
+                              ItemsSource="{Binding SubtitleStreams}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="utilData:SubtitleStreamData">
+                            <Expander Style="{StaticResource SourceDataExpanderStyle}">
+                                <Expander.Header>
+                                    <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Expander}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="75"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" 
+                                                   Text="{Binding SubtitleIndex, StringFormat={}Subtitle {0}}" 
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                                   Text="{Binding StreamIndex, StringFormat={}Stream Index: {0}}"/>
+
+                                        <TextBlock Grid.Column="2"
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                                   Text="{Binding Language}"/>
+
+                                        <TextBlock Grid.Column="3"
+                                                   Style="{StaticResource SourceDataExpanderHeaderStyle}"
+                                                   Visibility="{Binding Forced, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                   Text="Forced"/>
+                                    </Grid>
+                                </Expander.Header>
+                                <Grid Margin="5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid Grid.Column="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="Stream Index:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                   Text="{Binding StreamIndex}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Text="Subtitle Index:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2"
+                                                   Text="{Binding SubtitleIndex}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Text="Language:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2"
+                                                   Text="{Binding Language}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
+                                                   Text="Title:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="2"
+                                                   Text="{Binding Title}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                                   Text="Descriptor:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="2"
+                                                   Style="{StaticResource EncodingJobDataStyle}"
+                                                   Text="{Binding Descriptor}"/>
+                                    </Grid>
+
+                                    <Grid Grid.Column="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="5"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="Forced:"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                   Text="{Binding Forced}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+                                    </Grid>
+                                </Grid>
+                            </Expander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobSourceDataSectionTemplate"
+                  DataType="vm:EncodingJobViewModel">
+        <ContentControl Content="{Binding SourceStreamData}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate"
+                            Value="{StaticResource EncodingJobSourceDataSectionEmptyTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SourceStreamData, Converter={StaticResource IsNullConverter}}"
+                                     Value="False">
+                            <Setter Property="ContentTemplate"
+                                    Value="{StaticResource EncodingJobSourceDataSectionDefaultTemplate}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+    </DataTemplate>
+    <!-- #endregion Source Data -->
+
+    <!--#region Command Arguments -->
+    <DataTemplate x:Key="EncodingJobCommandArgumentsSectionDefaultTemplate"
+                  DataType="utilData:EncodingCommandArguments">
+        <Border BorderThickness="0"
+                Padding="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                       Text="Encoding Command Arguments"
+                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <controls:SelectableTextBlock Text="{Binding FFmpegEncodingCommandArguments}"
+                                                  Style="{StaticResource EncodingJobDataStyle}"
+                                                  TextWrapping="Wrap"/>
+                </ScrollViewer>
+
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobCommandArgumentsSectionDolbyVisionTemplate"
+                  DataType="utilData:DolbyVisionEncodingCommandArguments">
+        <Border BorderThickness="0"
+                Padding="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Video Encoding Command Arguments"
+                           Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <controls:SelectableTextBlock Text="{Binding VideoEncodingCommandArguments}"
+                                                  Style="{StaticResource EncodingJobDataStyle}"
+                                                  TextWrapping="Wrap"/>
+                </ScrollViewer>
+
+
+                <Separator Grid.Row="2" 
+                           Margin="0,5"
+                           Background="Black"/>
+
+                <TextBlock Grid.Row="3"
+                           Text="Audio and Subtitle Encoding Command Arguments"
+                           Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <ScrollViewer Grid.Row="4"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <controls:SelectableTextBlock Text="{Binding AudioSubsEncodingCommandArguments}"
+                                                  Style="{StaticResource EncodingJobDataStyle}"
+                                                  TextWrapping="Wrap"/>
+                </ScrollViewer>
+
+
+                <Separator Grid.Row="5"
+                           Margin="0,5"
+                           Background="Black"/>
+
+                <TextBlock Grid.Row="6"
+                           Text="Merge Encoding Command Arguments"
+                           Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <ScrollViewer Grid.Row="7"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <controls:SelectableTextBlock Text="{Binding MergeCommandArguments}"
+                                                  Style="{StaticResource EncodingJobDataStyle}"
+                                                  TextWrapping="Wrap"/>
+                </ScrollViewer>
+
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobCommandArgumentsSectionEmptyTemplate">
+        <Grid>
+            <TextBlock Text="Command Arguments Not Built Yet"
+                       FontSize="16"
+                       FontWeight="DemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"/>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobCommandArgumentsSectionTemplate"
+                  DataType="vm:EncodingJobViewModel">
+        <ContentControl Content="{Binding EncodingCommandArguments}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate"
+                            Value="{StaticResource EncodingJobCommandArgumentsSectionDefaultTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding EncodingCommandArguments, Converter={StaticResource DataTypeConverter}}"
+                                     Value="{x:Type utilData:DolbyVisionEncodingCommandArguments}">
+                            <Setter Property="ContentTemplate"
+                                    Value="{StaticResource EncodingJobCommandArgumentsSectionDolbyVisionTemplate}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding EncodingCommandArguments}"
+                                     Value="{x:Null}">
+                            <Setter Property="ContentTemplate"
+                                    Value="{StaticResource EncodingJobCommandArgumentsSectionEmptyTemplate}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+    </DataTemplate>
+    <!--#endregion Command Arguments -->
+
+    <!-- #region Error Data -->
+    <DataTemplate x:Key="EncodingJobErrorSectionNoErrorDataTemplate">
+        <Grid>
+            <TextBlock Text="No Error"
+                       FontSize="16"
+                       FontWeight="DemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"/>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobErrorSectionHasErrorDataTemplate"
+                  DataType="vm:EncodingJobViewModel">
+        <Border BorderThickness="0"
+                Padding="5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="Error Occurred:"
+                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2"
+                       Text="{Binding ErrorTime}"
+                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="Error Message:"
+                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                <TextBlock Grid.Row="1" Grid.Column="2"
+                       Text="{Binding ErrorMessage}"
+                       Style="{StaticResource EncodingJobDataStyle}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EncodingJobErrorSectionDataTemplate"
+                  DataType="vm:EncodingJobViewModel">
+        <ContentControl Content="{Binding}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate"
+                            Value="{StaticResource EncodingJobErrorSectionNoErrorDataTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasError}"
+                                     Value="True">
+                            <Setter Property="ContentTemplate"
+                                    Value="{StaticResource EncodingJobErrorSectionHasErrorDataTemplate}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+    </DataTemplate>
+    <!-- #endregion Error Data -->
+
+
+</ResourceDictionary>
