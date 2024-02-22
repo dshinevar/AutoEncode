@@ -330,6 +330,9 @@ namespace AutoEncodeServer.EncodingJob
             return latestCropLine.TrimEnd(Environment.NewLine.ToCharArray())[latestCropLine.IndexOf("crop=")..].Remove(0, 5);
         }
 
+        [GeneratedRegex(@"\d+")]
+        private static partial Regex VideoScanRegex();
+
         /// <summary> Gets the <see cref="VideoScanType"/> of the file. </summary>
         /// <param name="sourceFullPath">Full path of source file.</param>
         /// <param name="ffmpegDir">Directory FFmpeg is located in</param>
@@ -374,10 +377,10 @@ namespace AutoEncodeServer.EncodingJob
 
             IEnumerable<string> frameDetections = sbScan.ToString().TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
 
-            List<(int tff, int bff, int prog, int undet)> scan = new();
+            List<(int tff, int bff, int prog, int undet)> scan = [];
             foreach (string frame in frameDetections)
             {
-                MatchCollection matches = Regex.Matches(frame.Remove(0, 34), @"\d+");
+                MatchCollection matches = VideoScanRegex().Matches(frame.Remove(0, 34));
                 scan.Add(new(Convert.ToInt32(matches[0].Value), Convert.ToInt32(matches[1].Value), Convert.ToInt32(matches[2].Value), Convert.ToInt32(matches[3].Value)));
             }
 
@@ -417,14 +420,14 @@ namespace AutoEncodeServer.EncodingJob
                 string extractorArgs = hdrFlag.Equals(HDRFlags.HDR10PLUS) ? $"'{extractorFullPath}' extract -o '{metadataOutputFile}' - " :
                                                                         $"'{extractorFullPath}' extract-rpu - -o '{metadataOutputFile}'";
 
-                ffmpegArgs = $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath.Replace("'", "'\\''")}' -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
+                ffmpegArgs = $"-c \"{Path.Combine(ffmpegDir, "ffmpeg")} -nostdin -i '{sourceFullPath.Replace("'", "'\\''")}' -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
             else
             {
                 string extractorArgs = hdrFlag.Equals(HDRFlags.HDR10PLUS) ? $"\"{extractorFullPath}\" extract -o \"{metadataOutputFile}\" - " :
                                                                         $"\"{extractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
 
-                ffmpegArgs = $"/C \"\"{Path.Combine(ffmpegDir, "ffmpeg")}\" -i \"{sourceFullPath}\" -c:v copy -vbsf hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
+                ffmpegArgs = $"/C \"\"{Path.Combine(ffmpegDir, "ffmpeg")}\" -i \"{sourceFullPath}\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
 
             ProcessStartInfo startInfo = new()

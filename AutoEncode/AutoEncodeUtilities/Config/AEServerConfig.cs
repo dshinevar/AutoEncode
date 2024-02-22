@@ -8,7 +8,7 @@ namespace AutoEncodeUtilities.Config
         public ServerSettings ServerSettings { get; set; }
         public ConnectionSettings ConnectionSettings { get; set; }
         public JobFinderSettings JobFinderSettings { get; set; }
-        public GlobalJobSettings GlobalJobSettings { get; set; } = new GlobalJobSettings();
+        public GlobalJobSettings GlobalJobSettings { get; set; } = new();
         public Dictionary<string, SearchDirectory> Directories { get; set; }
     }
 }
