@@ -6,6 +6,13 @@
         <Setter Property="FontSize"
                 Value="14"/>
     </Style>
+
+    <Style x:Key="EncodingJobCommandArgumentsStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource EncodingJobDataStyle}">
+        <Setter Property="Padding"
+                Value="0,0,0,5"/>
+    </Style>
     
     <Style x:Key="EncodingJobDataLabelStyle"
            TargetType="TextBlock"
