@@ -28,14 +28,18 @@ namespace AutoEncodeClient
     {
         private const string LOG_FILENAME = "aeclient.log";
         private ILogger Logger = null;
+        private WindsorContainer _container;
+        private ICommunicationManager _communicatorManager;
+        private IClientUpdateSubscriber _clientUpdateSubscriber;
 
         private void AEClient_Startup(object sender, StartupEventArgs e)
         {
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
             // Container Standup
-            WindsorContainer container = new();
-            RegisterContainerComponents(container);
+            _container = new();
+            RegisterContainerComponents(_container);
 
-            AEClientConfig clientConfig = container.Resolve<AEClientConfig>();
+            AEClientConfig clientConfig = _container.Resolve<AEClientConfig>();
             try
             {
                 using var reader = new StreamReader(Lookups.ConfigFileLocation);
@@ -47,7 +51,7 @@ namespace AutoEncodeClient
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                Environment.Exit(-2);
+                Application.Current.Shutdown(-2);
             }
 
             Debug.WriteLine("Config file loaded.");
@@ -67,7 +71,7 @@ namespace AutoEncodeClient
                     if (backupDirectoryInfo is null)
                     {
                         Debug.WriteLine("Failed to create/find backup log directory. Exiting.");
-                        Environment.Exit(-2);
+                        Application.Current.Shutdown(-2);
                     }
 
                     LogFileLocation = Lookups.LogBackupFileLocation;
@@ -86,7 +90,7 @@ namespace AutoEncodeClient
                     catch (Exception lastChanceEx)
                     {
                         Debug.WriteLine(lastChanceEx.ToString());
-                        Environment.Exit(-2);
+                        Application.Current.Shutdown(-2);
                     }
 
                     LogFileLocation = Lookups.LogBackupFileLocation;
@@ -94,16 +98,16 @@ namespace AutoEncodeClient
                 else
                 {
                     // Exception we don't want to handle, exit.
-                    Environment.Exit(-2);
+                    Application.Current.Shutdown(-2);
                 }
             }
 
-            Logger = container.Resolve<ILogger>();
+            Logger = _container.Resolve<ILogger>();
             Logger.Initialize(LogFileLocation, LOG_FILENAME, clientConfig.LoggerSettings.MaxFileSizeInBytes, clientConfig.LoggerSettings.BackupFileCount);
             if (Logger.CheckAndDoRollover() is false)
             {
                 // If rollover fails, just exit
-                Environment.Exit(-2);
+                Application.Current.Shutdown(-2);
             }
 
             Current.Dispatcher.UnhandledException += Dispatcher_UnhandledException;
@@ -111,32 +115,45 @@ namespace AutoEncodeClient
             // Build and show view
             try
             {
-                ICommunicationManager communicationManager = container.Resolve<ICommunicationManager>();
-                communicationManager.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
+                _communicatorManager = _container.Resolve<ICommunicationManager>();
+                _communicatorManager.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.CommunicationPort);
 
-                IClientUpdateSubscriber clientUpdateSubscriber = container.Resolve<IClientUpdateSubscriber>();
-                clientUpdateSubscriber.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.ClientUpdatePort);
-                clientUpdateSubscriber.Start();
+                _clientUpdateSubscriber = _container.Resolve<IClientUpdateSubscriber>();
+                _clientUpdateSubscriber.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.ClientUpdatePort);
+                _clientUpdateSubscriber.Start();
 
-                IAutoEncodeClientModel clientModel = container.Resolve<IAutoEncodeClientModel>();   // Model currently doesn't do anything
+                IAutoEncodeClientModel clientModel = _container.Resolve<IAutoEncodeClientModel>();   // Model currently doesn't do anything
 
-                IAutoEncodeClientViewModel viewModel = container.Resolve<IAutoEncodeClientViewModel>();
+                IAutoEncodeClientViewModel viewModel = _container.Resolve<IAutoEncodeClientViewModel>();
                 viewModel.Initialize(clientModel);
 
                 AutoEncodeClientView view = new(viewModel)
                 {
                     Title = $"AutoEncodeClient - {Assembly.GetExecutingAssembly().GetName().Version}"
                 };
-                view.ShowDialog();
-
-                clientUpdateSubscriber.Stop();
-
-                container.Release(communicationManager);
-                container.Release(clientUpdateSubscriber);
+                Application.Current.MainWindow = view;
+                view.Show();
             }
             catch (Exception ex)
             {
                 Logger.LogException(ex, "Crash - AutoEncodeClient Shutting Down", Lookups.LoggerThreadName);
+                Application.Current.Shutdown();
+            }    
+        }
+
+        private void AEClient_Exit(object sender, ExitEventArgs e)
+        {
+            try
+            {
+                _clientUpdateSubscriber?.Stop();
+
+                _container.Release(_communicatorManager);
+                _container.Release(_clientUpdateSubscriber);
+            }
+            catch (Exception ex) 
+            {
+                Logger?.LogException(ex, "Error on AutoEncodeClient exit.", Lookups.LoggerThreadName);
+                Environment.Exit(-2);
             }
         }
 
@@ -191,5 +208,6 @@ namespace AutoEncodeClient
 
         private void Dispatcher_UnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
             => Logger?.LogException(e.Exception, "Unhandled Dispatcher Exception");
+
     }
 }

@@ -135,7 +135,7 @@ namespace AutoEncodeClient.Views.DesignData
             var encodingJobViewModel1 = new EncodingJobViewModel(encodingJobClientModel1);
             var encodingJobViewModel2 = new EncodingJobViewModel(encodingJobClientModel2)
             {
-                SelectedDetailsSection = Enums.EncodingJobDetailsSection.Command_Arguments
+                SelectedDetailsSection = Enums.EncodingJobDetailsSection.Source_Data
             };
             var encodingJobViewModel4 = new EncodingJobViewModel(encodingJobClientModel4);
             var encodingJobViewModel3 = new EncodingJobViewModel(encodingJobClientModel3);

@@ -111,7 +111,7 @@
                             </TextBlock>
                         </Grid>
                     </Expander.Header>
-                    <Grid Margin="5">
+                    <Grid Margin="10,5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
@@ -355,7 +355,7 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0" 
-                                                   Text="{Binding AudioIndex, StringFormat={}Audio {0}}" 
+                                                   Text="{Binding AudioIndex, StringFormat={}Audio ({0})}" 
                                                    Style="{StaticResource SourceDataExpanderHeaderStyle}"/>
 
                                         <TextBlock Grid.Column="1"
@@ -374,8 +374,9 @@
                                         </TextBlock>
                                     </Grid>
                                 </Expander.Header>
-                                <Grid Margin="5">
+                                <Grid Margin="10,5">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
                                         <ColumnDefinition/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
@@ -491,7 +492,7 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0" 
-                                                   Text="{Binding SubtitleIndex, StringFormat={}Subtitle {0}}" 
+                                                   Text="{Binding SubtitleIndex, StringFormat={}Subtitle ({0})}" 
                                                    Style="{StaticResource SourceDataExpanderHeaderStyle}"/>
 
                                         <TextBlock Grid.Column="1"
@@ -508,8 +509,9 @@
                                                    Text="Forced"/>
                                     </Grid>
                                 </Expander.Header>
-                                <Grid Margin="5">
+                                <Grid Margin="10,5">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
                                         <ColumnDefinition/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
@@ -638,15 +640,16 @@
 
     <DataTemplate x:Key="EncodingJobCommandArgumentsSectionDolbyVisionTemplate"
                   DataType="utilData:DolbyVisionEncodingCommandArguments">
-        <Border BorderThickness="0"
-                Padding="5">
+        <ScrollViewer Padding="5"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition/>
@@ -655,14 +658,10 @@
                 <TextBlock Grid.Row="0"
                            Text="Video Encoding Command Arguments"
                            Style="{StaticResource EncodingJobDataLabelStyle}"/>
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <controls:SelectableTextBlock Text="{Binding VideoEncodingCommandArguments}"
-                                                  Style="{StaticResource EncodingJobDataStyle}"
-                                                  TextWrapping="Wrap"/>
-                </ScrollViewer>
-
+                <controls:SelectableTextBlock Grid.Row="1"
+                                              Text="{Binding VideoEncodingCommandArguments}"
+                                              Style="{StaticResource EncodingJobCommandArgumentsStyle}"
+                                              TextWrapping="Wrap"/>
 
                 <Separator Grid.Row="2" 
                            Margin="0,5"
@@ -671,14 +670,10 @@
                 <TextBlock Grid.Row="3"
                            Text="Audio and Subtitle Encoding Command Arguments"
                            Style="{StaticResource EncodingJobDataLabelStyle}"/>
-                <ScrollViewer Grid.Row="4"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <controls:SelectableTextBlock Text="{Binding AudioSubsEncodingCommandArguments}"
-                                                  Style="{StaticResource EncodingJobDataStyle}"
-                                                  TextWrapping="Wrap"/>
-                </ScrollViewer>
-
+                <controls:SelectableTextBlock Grid.Row="4"
+                                              Text="{Binding AudioSubsEncodingCommandArguments}"
+                                              Style="{StaticResource EncodingJobCommandArgumentsStyle}"
+                                              TextWrapping="Wrap"/>
 
                 <Separator Grid.Row="5"
                            Margin="0,5"
@@ -687,16 +682,13 @@
                 <TextBlock Grid.Row="6"
                            Text="Merge Encoding Command Arguments"
                            Style="{StaticResource EncodingJobDataLabelStyle}"/>
-                <ScrollViewer Grid.Row="7"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <controls:SelectableTextBlock Text="{Binding MergeCommandArguments}"
-                                                  Style="{StaticResource EncodingJobDataStyle}"
-                                                  TextWrapping="Wrap"/>
-                </ScrollViewer>
+                <controls:SelectableTextBlock Grid.Row="7"
+                                              Text="{Binding MergeCommandArguments}"
+                                              Style="{StaticResource EncodingJobCommandArgumentsStyle}"
+                                              TextWrapping="Wrap"/>
 
             </Grid>
-        </Border>
+        </ScrollViewer>
     </DataTemplate>
 
     <DataTemplate x:Key="EncodingJobCommandArgumentsSectionEmptyTemplate">
