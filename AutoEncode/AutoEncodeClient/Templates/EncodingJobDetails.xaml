@@ -115,7 +115,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
@@ -226,7 +226,8 @@
                                        Style="{StaticResource EncodingJobDataStyle}"/>
                         </Grid>
 
-                        <Grid Grid.Column="2">
+                        <Grid Grid.Column="2"
+                              Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="5"/>
@@ -257,10 +258,8 @@
 
                             <TextBlock Grid.Row="1" Grid.Column="0"
                                        Text="Red (X,Y):"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="1" Grid.Column="2"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}({0},{1})">
@@ -272,10 +271,8 @@
 
                             <TextBlock Grid.Row="2" Grid.Column="0"
                                        Text="Blue (X,Y):"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="2" Grid.Column="2"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}({0},{1})">
@@ -287,10 +284,8 @@
 
                             <TextBlock Grid.Row="3" Grid.Column="0"
                                        Text="Green (X,Y):"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="3" Grid.Column="2"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}({0},{1})">
@@ -302,10 +297,8 @@
 
                             <TextBlock Grid.Row="4" Grid.Column="0"
                                        Text="WhitePoint (X,Y):"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="4" Grid.Column="2"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}({0},{1})">
@@ -317,10 +310,8 @@
 
                             <TextBlock Grid.Row="5" Grid.Column="0"
                                        Text="Min, Max Luminance:"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="5" Grid.Column="2"
-                                       Visibility="{Binding HasHDR, Converter={StaticResource BoolToVisibilityConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}({0},{1})">
