@@ -47,13 +47,15 @@ namespace AutoEncodeUtilities.Logger
         /// <summary> Log an Error Message </summary>
         /// <param name="msg">Message to log</param>
         /// <param name="threadName">Thread calling log</param>
+        /// <param name="details">Additional details to log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        string LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "");
+        string LogError(string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "");
         /// <summary>Log a list of Error messages.</summary>
         /// <param name="messages">Messages to log</param>
         /// <param name="threadName">Thread calling log</param>
+        /// <param name="details">Additional details to log</param>
         /// <param name="callingMemberName">Calling function.</param>
-        string LogError(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "");
+        string LogError(IList<string> messages, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "");
 
         /// <summary> Log a Fatal Message </summary>
         /// <param name="msg">Message to log</param>

@@ -106,6 +106,13 @@ namespace AutoEncodeClient.Models.StreamDataModels
             set => SetAndNotify(_framerate, value, () => _framerate = value);
         }
 
+        private double _calculatedFrameRate;
+        public double CalculatedFrameRate
+        {
+            get => _calculatedFrameRate;
+            set => SetAndNotify(_calculatedFrameRate, value, () => _calculatedFrameRate = value);
+        }
+
         private bool _animated = false;
         public bool Animated
         {
@@ -143,6 +150,7 @@ namespace AutoEncodeClient.Models.StreamDataModels
             ColorPrimaries = data.ColorPrimaries;
             ColorTransfer = data.ColorTransfer;
             FrameRate = data.FrameRate;
+            CalculatedFrameRate = data.CalculatedFrameRate;
             Animated = data.Animated;
             ScanType = data.ScanType;
             ChromaLocation = data.ChromaLocation;

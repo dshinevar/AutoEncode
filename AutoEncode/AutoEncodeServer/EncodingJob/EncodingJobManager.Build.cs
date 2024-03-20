@@ -19,6 +19,8 @@ namespace AutoEncodeServer.EncodingJob
 {
     public partial class EncodingJobManager : IEncodingJobManager
     {
+        private const string BuildingThreadName = "Building Thread";
+
         private void Build(IEncodingJobModel job, string ffmpegDir, string hdr10plusExtractorPath, string dolbyVisionExtractorPath,
                     string x265Path, bool dolbyVisionEnabled, CancellationToken cancellationToken)
         {
@@ -28,7 +30,7 @@ namespace AutoEncodeServer.EncodingJob
             // Verify source file is still here
             if (File.Exists(job.SourceFullPath) is false)
             {
-                job.SetError(Logger.LogError($"Source file no longer found for {job}"));
+                job.SetError(Logger.LogError($"Source file no longer found for {job}", BuildingThreadName, new { job.SourceFullPath }));
                 return;
             }
 
@@ -49,13 +51,13 @@ namespace AutoEncodeServer.EncodingJob
                     else
                     {
                         // Set error and end
-                        job.SetError(Logger.LogError($"Failed to get probe data for {job.FileName}"));
+                        job.SetError(Logger.LogError($"Failed to get probe data for {job.FileName}", BuildingThreadName, new { job.SourceFullPath }));
                         return;
                     }
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(Logger.LogException(ex, $"Error getting probe or source file data for {job}", details: new { job.SourceFullPath, ffmpegDir }));
+                    job.SetError(Logger.LogException(ex, $"Error getting probe or source file data for {job}", details: new { job.SourceFullPath, ffmpegDir }), ex);
                     return;
                 }
 
@@ -69,7 +71,7 @@ namespace AutoEncodeServer.EncodingJob
 
                     if (scanType.Equals(VideoScanType.UNDETERMINED))
                     {
-                        job.SetError(Logger.LogError($"Failed to determine VideoScanType for {job}."));
+                        job.SetError(Logger.LogError($"Failed to determine VideoScanType for {job}.", BuildingThreadName, new { job.SourceFullPath, ffmpegDir }));
                         return;
                     }
                     else
@@ -83,7 +85,7 @@ namespace AutoEncodeServer.EncodingJob
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(Logger.LogException(ex, $"Error determining VideoScanType for {job}", details: new { job.SourceFullPath, ffmpegDir }));
+                    job.SetError(Logger.LogException(ex, $"Error determining VideoScanType for {job}", details: new { job.SourceFullPath, ffmpegDir }), ex);
                     return;
                 }
 
@@ -97,7 +99,7 @@ namespace AutoEncodeServer.EncodingJob
 
                     if (string.IsNullOrWhiteSpace(crop))
                     {
-                        job.SetError(Logger.LogError($"Failed to determine crop for {job}"));
+                        job.SetError(Logger.LogError($"Failed to determine crop for {job}", BuildingThreadName, new { job.SourceFullPath, ffmpegDir }));
                     }
                     else
                     {
@@ -110,7 +112,7 @@ namespace AutoEncodeServer.EncodingJob
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(Logger.LogException(ex, $"Error determining crop for {job}", details: new { job.SourceFullPath, ffmpegDir }));
+                    job.SetError(Logger.LogException(ex, $"Error determining crop for {job}", details: new { job.SourceFullPath, ffmpegDir }), ex);
                     return;
                 }
 
@@ -137,7 +139,7 @@ namespace AutoEncodeServer.EncodingJob
                             }
                             else
                             {
-                                Logger.LogWarning($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.");
+                                Logger.LogWarning($"No HDR10+ Metadata Extractor given for {job.Name}. Will not use HDR10+.", BuildingThreadName);
                             }
                         }
 
@@ -154,7 +156,7 @@ namespace AutoEncodeServer.EncodingJob
                             }
                             else
                             {
-                                Logger.LogWarning($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.");
+                                Logger.LogWarning($"No DolbyVision Metadata Extractor given for {job.Name}. Will not use DolbyVision.", BuildingThreadName);
                             }
                         }
                     }
@@ -166,7 +168,7 @@ namespace AutoEncodeServer.EncodingJob
                 catch (Exception ex)
                 {
                     job.SetError(Logger.LogException(ex, $"Error creating HDR metadata file for {job}",
-                        details: new { job.Id, job.Name, DynamicHDR = job.SourceStreamData.VideoStream.HasDynamicHDR, dolbyVisionEnabled, dolbyVisionExtractorPath, hdr10plusExtractorPath }));
+                        details: new { job.Id, job.Name, DynamicHDR = job.SourceStreamData.VideoStream.HasDynamicHDR, dolbyVisionEnabled, dolbyVisionExtractorPath, hdr10plusExtractorPath }), ex);
                     return;
                 }
 
@@ -182,7 +184,7 @@ namespace AutoEncodeServer.EncodingJob
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(Logger.LogException(ex, $"Error building encoding instructions for {job}", details: new { job.Id, job.Name }));
+                    job.SetError(Logger.LogException(ex, $"Error building encoding instructions for {job}", details: new { job.Id, job.Name }), ex);
                     return;
                 }
 
@@ -229,19 +231,19 @@ namespace AutoEncodeServer.EncodingJob
                 }
                 catch (Exception ex)
                 {
-                    job.SetError(Logger.LogException(ex, $"Error building FFmpeg command for {job}", details: new { job.Id, job.Name }));
+                    job.SetError(Logger.LogException(ex, $"Error building FFmpeg command for {job}", details: new { job.Id, job.Name }), ex);
                     return;
                 }
 
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning($"Build was cancelled for {job} - Build Step: {job.BuildingStatus.GetDescription()}");
+                Logger.LogWarning($"Build was cancelled for {job} - Build Step: {job.BuildingStatus.GetDescription()}", BuildingThreadName);
                 return;
             }
             catch (Exception ex)
             {
-                job.SetError(Logger.LogException(ex, $"Error building encoding job for {job}", details: new { job.Id, job.Name, job.BuildingStatus }));
+                job.SetError(Logger.LogException(ex, $"Error building encoding job for {job}", details: new { job.Id, job.Name, job.BuildingStatus }), ex);
                 return;
             }
 

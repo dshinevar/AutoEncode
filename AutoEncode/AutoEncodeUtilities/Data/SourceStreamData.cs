@@ -37,6 +37,7 @@ namespace AutoEncodeUtilities.Data
         public string ColorPrimaries { get; set; }
         public string ColorTransfer { get; set; }
         public string FrameRate { get; set; }
+        public double CalculatedFrameRate { get; set; }
         public bool Animated { get; set; } = false;
         public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
         public ChromaLocation? ChromaLocation { get; set; } = null;
