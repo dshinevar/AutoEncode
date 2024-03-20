@@ -8,6 +8,7 @@ using AutoEncodeUtilities.Json;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace AutoEncodeServer.EncodingJob
@@ -148,12 +149,26 @@ namespace AutoEncodeServer.EncodingJob
 
         public void SetBuildingStatus(EncodingJobBuildingStatus buildingStatus) => BuildingStatus = buildingStatus;
 
-        public void SetError(string errorMessage)
+        public void SetError(string errorMessage, Exception ex = null)
         {
             HasError = true;
-            ErrorMessage = errorMessage;
             ErrorTime = DateTime.Now;
 
+            StringBuilder sb = new(errorMessage);
+            if (ex is not null)
+            {
+                sb.AppendLine(ex.Message);
+
+                Exception innerEx = ex.InnerException;
+                while (innerEx is not null)
+                {
+                    sb.AppendLine(innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
+            }
+
+            ErrorMessage = sb.ToString();
+            
             ResetStatus();
         }
 

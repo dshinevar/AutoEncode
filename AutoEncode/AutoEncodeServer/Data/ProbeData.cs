@@ -51,6 +51,7 @@ namespace AutoEncodeServer.Data
             public short index;
             public string codec_type;
             public string codec_name;
+            public string codec_long_name;
             public string profile;
             public int width;
             public int height;
@@ -90,7 +91,7 @@ namespace AutoEncodeServer.Data
 
         private static ChromaLocation? ConvertStringToChromaLocation(string chromaLocationString)
         {
-            switch (chromaLocationString)
+            switch (chromaLocationString.Trim())
             {
                 case "topleft":
                 {
@@ -123,6 +124,17 @@ namespace AutoEncodeServer.Data
             }
         }
 
+        private static string ConvertNumberOfChannelsToLayout(short channels)
+        {
+            return channels switch
+            {
+                0 => throw new Exception("Can't have 0 audio channels."),
+                1 => "Mono",
+                2 => "Stereo",
+                _ => $"{channels}-channels"
+            };
+        }
+
         /// <summary> Converts to a <see cref="SourceStreamData"/> object</summary>
         /// <returns><see cref="SourceStreamData"/></returns>
         /// <exception cref="Exception">Throws if hdr data is supposedly found but is null or empty</exception>
@@ -139,7 +151,7 @@ namespace AutoEncodeServer.Data
             {
                 if (stream.codec_type.Equals("video", StringComparison.OrdinalIgnoreCase) && videoStreamData is null)
                 {
-                    videoStreamData = new VideoStreamData()
+                    videoStreamData = new()
                     {
                         StreamIndex = stream.index,
                         Resolution = $"{stream.width}x{stream.height}",
@@ -163,6 +175,8 @@ namespace AutoEncodeServer.Data
                         {
                             double frameRate = frameRateNumerator / frameRateDenominator;
                             int frames = (int)(frameRate * format.duration);
+
+                            videoStreamData.CalculatedFrameRate = Math.Round(frameRate, 3);
                             numberOfFrames = frames;
                         }
                     }
@@ -175,7 +189,7 @@ namespace AutoEncodeServer.Data
                         AudioIndex = audioIndex,
                         Channels = stream.channels,
                         Language = stream.tags.language,
-                        Descriptor = stream.codec_name,
+                        Descriptor = string.IsNullOrWhiteSpace(stream.profile) ? stream.codec_long_name : stream.profile,
                         Title = stream.tags.title
                     };
 
@@ -183,13 +197,9 @@ namespace AutoEncodeServer.Data
                     {
                         audioStream.ChannelLayout = stream.channel_layout;
                     }
-                    else if (string.IsNullOrWhiteSpace(stream.tags.title) is false)
-                    {
-                        audioStream.ChannelLayout = stream.tags.title;
-                    }
                     else
                     {
-                        audioStream.ChannelLayout = $"{stream.channels}-channel(s)";
+                        audioStream.ChannelLayout = ConvertNumberOfChannelsToLayout(stream.channels);
                     }
 
                     if (string.IsNullOrWhiteSpace(stream.codec_name) is false)

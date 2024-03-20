@@ -8,6 +8,8 @@ namespace AutoEncodeServer.EncodingJob
 {
     public partial class EncodingJobManager : IEncodingJobManager
     {
+        private const string PostProcessThreadName = "Post-Process Thread";
+
         /// <summary> Runs post-processing tasks marked for the encoding job. </summary>
         /// <param name="job">The <see cref="IEncodingJobModel"/> to be post-processed.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
@@ -41,7 +43,7 @@ namespace AutoEncodeServer.EncodingJob
                     catch (Exception ex)
                     {
                         job.SetError(Logger.LogException(ex, $"Error copying output file to other locations for {job}",
-                            details: new { job.Id, job.Name, job.PostProcessingSettings.CopyFilePaths, job.DestinationFullPath }));
+                           PostProcessThreadName, new { job.Id, job.Name, job.PostProcessingSettings.CopyFilePaths, job.DestinationFullPath }), ex);
                         return;
                     }
                 }
@@ -57,25 +59,25 @@ namespace AutoEncodeServer.EncodingJob
                     }
                     catch (Exception ex)
                     {
-                        job.SetError(Logger.LogException(ex, $"Error deleting source file for {job}", details: new { job.Id, job.Name, job.SourceFullPath }));
+                        job.SetError(Logger.LogException(ex, $"Error deleting source file for {job}", PostProcessThreadName, new { job.Id, job.Name, job.SourceFullPath }), ex);
                         return;
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning($"Post-Process was cancelled for {job}");
+                Logger.LogWarning($"Post-Process was cancelled for {job}", PostProcessThreadName);
                 //job.ResetStatus();
                 return;
             }
             catch (Exception ex)
             {
-                job.SetError(Logger.LogException(ex, $"Error post-processing {job}", details: new { job.Id, job.Name, job.Status }));
+                job.SetError(Logger.LogException(ex, $"Error post-processing {job}", PostProcessThreadName, new { job.Id, job.Name, job.Status }), ex);
                 return;
             }
 
             job.CompletePostProcessing();
-            Logger.LogInfo($"Successfully post-processed {job} encoding job.");
+            Logger.LogInfo($"Successfully post-processed {job} encoding job.", PostProcessThreadName);
         }
     }
 }

@@ -34,54 +34,48 @@ namespace AutoEncodeUtilities.Logger
         }
 
         #region Log Functions
-        /// <summary> Log an Info Message </summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
         public string LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogInfo(new string[] { msg }, threadName, callingMemberName);
-        /// <summary>Log a list of info messages.</summary>
-        /// <param name="messages">Messages to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
         public string LogInfo(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, threadName, callingMemberName);
-        /// <summary> Log a Warning Message </summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
+
         public string LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogWarning(new string[] { msg }, threadName, callingMemberName);
-        /// <summary>Log a list of warning messages.</summary>
-        /// <param name="messages">Messages to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
         public string LogWarning(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, messages, threadName, callingMemberName);
-        /// <summary> Log an Error Message </summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
-        public string LogError(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogError(new string[] { msg }, threadName, callingMemberName);
-        /// <summary>Log a list of Error messages.</summary>
-        /// <param name="messages">Messages to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
-        public string LogError(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, callingMemberName);
-        /// <summary> Log a Fatal Message </summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
+
+        public string LogError(string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => LogError(new string[] { msg }, threadName, callingMemberName);
+        public string LogError(IList<string> messages, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, callingMemberName);
+
         public string LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, new string[] { msg }, threadName, callingMemberName);
-        /// <summary> Log an <see cref="Exception"/>. Will log the message, Exception message, and stack trace. </summary>
-        /// <param name="msg">Message to log</param>
-        /// <param name="threadName">Thread calling log</param>
-        /// <param name="callingMemberName">Calling function.</param>
+
         public string LogException(Exception ex, string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "")
         {
             List<string> messages = [msg];
+            messages.Add($"Exception: {ex.Message}");
+
+            Exception innerEx = ex.InnerException;
+            while (innerEx is not null)
+            {
+                messages.Add(innerEx.Message);
+                innerEx = innerEx.InnerException;
+            }
+
+            messages.AddRange(ex.StackTrace.Split(Environment.NewLine));
+            return Log(Severity.ERROR, messages, threadName, details, callingMemberName);
+        }
+
+        /// <summary>Base log method that handles additional details; Returns first string from list for usage elsewhere if needed. </summary>
+        /// <param name="severity"><see cref="Severity"/></param>
+        /// <param name="messages">List of messages to log</param>
+        /// <param name="threadName">Thread calling log</param>
+        /// <param name="details">Additional details to log</param>
+        /// <param name="callingMemberName">Calling function</param>
+        /// <returns>Returns first string from list for usage elsewhere if needed.</returns>
+        private string Log(Severity severity, IList<string> messages, string threadName = "", object details = null, string callingMemberName = "")
+        {
             if (details is not null)
             {
                 var detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
                 StringBuilder detailsSb = new("Details: ");
-                for (int i = 0; i < detailsProperties.Length; i++) 
+                for (int i = 0; i < detailsProperties.Length; i++)
                 {
                     detailsSb.Append($"{detailsProperties[i].Name} = {detailsProperties[i].GetValue(details).ToString()}");
                     if ((i == detailsProperties.Length - 1) is false) detailsSb.Append(" | ");  // If not the last property, add delimeter
@@ -90,18 +84,15 @@ namespace AutoEncodeUtilities.Logger
                 messages.Add(detailsSb.ToString());
             }
 
-            messages.Add($"Exception: {ex.Message}");
-            messages.AddRange(ex.StackTrace.Split(Environment.NewLine));
-            return LogError(messages, threadName, callingMemberName);
+            return Log(severity, messages, threadName, callingMemberName);
         }
 
-
-        /// <summary>Base log function; Returns first string from list for usage elsewhere if needed. </summary>
+        /// <summary>Base log method; Returns first string from list for usage elsewhere if needed. </summary>
         /// <param name="severity"><see cref="Severity"/></param>
         /// <param name="messages">List of messages to log</param>
         /// <param name="threadName">Thread calling log</param>
         /// <param name="callingMemberName">Calling function</param>
-        /// <returns></returns>
+        /// <returns>Returns first string from list for usage elsewhere if needed.</returns>
         private string Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
         {
             if (_initialized is false) throw new Exception("Logger not initialized");
@@ -114,7 +105,7 @@ namespace AutoEncodeUtilities.Logger
 
             string threadAndCallingMemberName = HelperMethods.JoinFilterWrap(string.Empty, "[", "]", threadName, callingMemberName);
 
-            if (string.IsNullOrEmpty(threadAndCallingMemberName) is false)
+            if (string.IsNullOrWhiteSpace(threadAndCallingMemberName) is false)
             {
                 sbLogMsg.Append(threadAndCallingMemberName);
             }

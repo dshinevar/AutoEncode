@@ -73,12 +73,12 @@
                           Style="{StaticResource SourceDataExpanderStyle}"
                           DataContext="{Binding VideoStream}">
                     <Expander.Header>
-                        <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Expander}}">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="175"/>
+                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="175"/>
                                 <ColumnDefinition Width="150"/>
                             </Grid.ColumnDefinitions>
@@ -97,7 +97,7 @@
 
                             <TextBlock Grid.Column="3"
                                        Style="{StaticResource SourceDataExpanderHeaderStyle}"
-                                       Text="{Binding FrameRate, StringFormat={}Framerate: {0}}"/>
+                                       Text="{Binding CalculatedFrameRate, StringFormat={}{0} fps}"/>
 
                             <TextBlock Grid.Column="4"
                                        Style="{StaticResource SourceDataExpanderHeaderStyle}"
@@ -151,8 +151,14 @@
                                        Text="Framerate:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="2" Grid.Column="2"
-                                       Text="{Binding FrameRate}"
-                                       Style="{StaticResource EncodingJobDataStyle}"/>
+                                       Style="{StaticResource EncodingJobDataStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} ({1} fps)">
+                                        <Binding Path="FrameRate"/>
+                                        <Binding Path="CalculatedFrameRate"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
 
                             <TextBlock Grid.Row="3" Grid.Column="0"
                                        Text="Scan Type:"
@@ -356,7 +362,7 @@
                                         <TextBlock Grid.Column="2"
                                                    Style="{StaticResource SourceDataExpanderHeaderStyle}">
                                             <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} / {1} / {2} layout">
+                                                <MultiBinding StringFormat="{}{0} / {1} / {2}">
                                                     <Binding Path="Language"/>
                                                     <Binding Path="CodecName"/>
                                                     <Binding Path="ChannelLayout"/>
@@ -420,7 +426,7 @@
                                         <TextBlock Grid.Row="4" Grid.Column="2"
                                                    Style="{StaticResource EncodingJobDataStyle}">
                                             <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} ({1} channels)">
+                                                <MultiBinding StringFormat="{}{0} | {1} channel(s)">
                                                     <Binding Path="ChannelLayout"/>
                                                     <Binding Path="Channels"/>
                                                 </MultiBinding>

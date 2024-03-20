@@ -114,8 +114,9 @@ namespace AutoEncodeServer.Interfaces
         void SetBuildingStatus(EncodingJobBuildingStatus buildingStatus);
 
         /// <summary>Marks the job in error and saves the given error message; Resets Status </summary>
-        /// <param name="errorMsg"></param>
-        void SetError(string errorMessage);
+        /// <param name="errorMessage">The main error message.</param>
+        /// <param name="ex"><see cref="Exception"/> that can optionally be passed in.</param>
+        void SetError(string errorMessage, Exception exception = null);
 
         /// <summary>If able, calls Cancel on job's cancellation token. </summary>
         void Cancel();

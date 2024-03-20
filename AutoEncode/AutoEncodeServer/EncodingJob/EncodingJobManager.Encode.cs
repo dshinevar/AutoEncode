@@ -13,6 +13,8 @@ namespace AutoEncodeServer.EncodingJob
 {
     public partial class EncodingJobManager : IEncodingJobManager
     {
+        private const string EncodingThreadName = "Encoding Thread";
+
         /// <summary> Calls ffmpeg to do encoding; Handles output from ffmpeg </summary>
         /// <param name="job">The <see cref="EncodingJob"/> to be encoded.</param>
         /// <param name="ffmpegDir">The directory ffmpeg/ffprobe is located in.</param>
@@ -89,7 +91,7 @@ namespace AutoEncodeServer.EncodingJob
             }
             catch (Exception ex)
             {
-                job.SetError(Logger.LogException(ex, $"Error encoding {job}.", details: new { job.Id, job.Name, ffmpegDir }));
+                job.SetError(Logger.LogException(ex, $"Error encoding {job}.", details: new { job.Id, job.Name, ffmpegDir }), ex);
             }
 
             stopwatch.Stop();
@@ -104,26 +106,26 @@ namespace AutoEncodeServer.EncodingJob
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     //job.ResetEncoding();
-                    Logger.LogWarning($"Encoding of {job} was cancelled.");
+                    Logger.LogWarning($"Encoding of {job} was cancelled.", EncodingThreadName);
                 }
                 // NON-ZERO EXIT CODE
                 else if (exitCode is not null && exitCode != 0)
                 {
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"{job} encoding job failed. Exit Code: {exitCode}"));
+                    job.SetError(Logger.LogError($"{job} encoding job failed. Exit Code: {exitCode}", EncodingThreadName, new { exitCode }));
                 }
                 // FILE NOT CREATED / EMPTY FILE
                 else if (nonEmptyFileExists is false)
                 {
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"{job} either did not create an output or created an empty file"));
+                    job.SetError(Logger.LogError($"{job} either did not create an output or created an empty file", EncodingThreadName));
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.HasError is false && job.EncodingProgress < 95)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely."));
+                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely.", EncodingThreadName, new { job.HasError, job.EncodingProgress }));
                 }
                 // JOB ERRORED
                 else if (job.HasError is true)
@@ -142,7 +144,7 @@ namespace AutoEncodeServer.EncodingJob
                         // Delete all possible HDRMetadata files
                         job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(File.Delete);
                     }
-                    Logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
+                    Logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}", EncodingThreadName);
                 }
             }
             catch (Exception ex)
@@ -267,7 +269,7 @@ namespace AutoEncodeServer.EncodingJob
                     if (videoEncodeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        job.SetError(Logger.LogError($"Video encoding failed to start for {job}"));
+                        job.SetError(Logger.LogError($"Video encoding failed to start for {job}", EncodingThreadName));
                         return;
                     }
 
@@ -296,7 +298,7 @@ namespace AutoEncodeServer.EncodingJob
                     if (audioSubEncodeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        job.SetError(Logger.LogError($"Audio/Sub encoding failed to start for {job}"));
+                        job.SetError(Logger.LogError($"Audio/Sub encoding failed to start for {job}", EncodingThreadName));
                         encodingTokenSource.Cancel();
                     }
 
@@ -309,7 +311,7 @@ namespace AutoEncodeServer.EncodingJob
             catch (Exception ex)
             {
                 job.SetError(Logger.LogException(ex, $"Error encoding {job}.",
-                    details: new { job.Id, job.Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName }));
+                    details: new { job.Id, job.Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName }), ex);
                 videoEncodeProcess?.Kill(true);
                 audioSubEncodeProcess?.Kill(true);
             }
@@ -326,8 +328,7 @@ namespace AutoEncodeServer.EncodingJob
                 {
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    //job.ResetEncoding();
-                    Logger.LogWarning($"{job} encoding was cancelled.");
+                    Logger.LogWarning($"{job} encoding was cancelled.", EncodingThreadName);
                     return;
                 }
                 // Most likely, one of the processes failed
@@ -335,9 +336,9 @@ namespace AutoEncodeServer.EncodingJob
                 {
                     // Ensure these files are deleted (should've deleted on exit)
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    string[] messages = { $"One of the encoding (video/audio-sub) processes errored for {job}.",
-                                     $"Video Encode Exit Code: {videoEncodeExitCode} | Audio/Sub Encode Exit Code: {audioSubEncodeExitCode}"};
-                    job.SetError(Logger.LogError(messages));
+                    string[] messages = [ $"One of the encoding (video/audio-sub) processes errored for {job}.",
+                                     $"Video Encode Exit Code: {videoEncodeExitCode} | Audio/Sub Encode Exit Code: {audioSubEncodeExitCode}"];
+                    job.SetError(Logger.LogError(messages, EncodingThreadName, new { videoEncodeExitCode, audioSubEncodeExitCode }));
                     return;
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
@@ -345,7 +346,7 @@ namespace AutoEncodeServer.EncodingJob
                 {
                     // Ensure these files are deleted
                     DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely."));
+                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely.", EncodingThreadName, new { job.HasError, job.EncodingProgress }));
                     return;
                 }
                 // JOB ERRORED
@@ -412,7 +413,7 @@ namespace AutoEncodeServer.EncodingJob
                             mergeExitCode = proc?.ExitCode;
                             if (mergeExitCode != 0)
                             {
-                                job.SetError(Logger.LogError($"Merge process for {job} ended unsuccessfully. ExitCode: {mergeExitCode}"));
+                                job.SetError(Logger.LogError($"Merge process for {job} ended unsuccessfully. ExitCode: {mergeExitCode}", EncodingThreadName, new { mergeExitCode }));
                             }
                         }
                     };
@@ -420,7 +421,7 @@ namespace AutoEncodeServer.EncodingJob
                     if (mergeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        job.SetError(Logger.LogError($"Mkvmerge failed to start for {job}"));
+                        job.SetError(Logger.LogError($"Mkvmerge failed to start for {job}", EncodingThreadName));
                         // Delete previous encoding files
                         DeleteFiles(job.EncodingInstructions.EncodedVideoFullPath, job.EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                         return;
@@ -433,7 +434,7 @@ namespace AutoEncodeServer.EncodingJob
             }
             catch (Exception ex)
             {
-                job.SetError(Logger.LogException(ex, $"Error merging {job}.", details: new { job.Id, job.Name, mkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }));
+                job.SetError(Logger.LogException(ex, $"Error merging {job}.", details: new { job.Id, job.Name, mkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }), ex);
                 mergeProcess?.Kill(true);
             }
 
@@ -448,7 +449,7 @@ namespace AutoEncodeServer.EncodingJob
                     // Ensure these files are deleted
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     //job.ResetEncoding();
-                    Logger.LogWarning($"{job} encoding was cancelled.");
+                    Logger.LogWarning($"{job} encoding was cancelled.", EncodingThreadName);
                 }
                 // SUCCESS
                 else if (job.EncodingProgress >= 90 && job.HasError is false && nonEmptyFileExists)
@@ -460,14 +461,14 @@ namespace AutoEncodeServer.EncodingJob
                         // Delete all possible HDRMetadata files
                         job.SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(y => File.Delete(y));
                     }
-                    Logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
+                    Logger.LogInfo($"Successfully encoded {job}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}", EncodingThreadName);
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
                 else if (job.HasError is false && job.EncodingProgress < 90)
                 {
                     // Ensure these files are deleted
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely."));
+                    job.SetError(Logger.LogError($"{job} encoding job ended prematurely.", EncodingThreadName, new { job.HasError, job.EncodingProgress }));
                 }
                 // JOB ERRORED
                 else if (job.HasError is true)
@@ -479,7 +480,7 @@ namespace AutoEncodeServer.EncodingJob
                 else if (nonEmptyFileExists is false)
                 {
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    job.SetError(Logger.LogError($"Output file not created for {job}"));
+                    job.SetError(Logger.LogError($"Output file not created for {job}", EncodingThreadName));
                 }
             }
             catch (Exception ex)
@@ -539,7 +540,7 @@ namespace AutoEncodeServer.EncodingJob
                 // Verify source file is still here
                 if (File.Exists(job.SourceFullPath) is false)
                 {
-                    job.SetError(Logger.LogError($"Source file no longer found for {job}"));
+                    job.SetError(Logger.LogError($"Source file no longer found for {job}", EncodingThreadName, new { job.SourceFullPath }));
                     return;
                 }
 
@@ -553,7 +554,7 @@ namespace AutoEncodeServer.EncodingJob
             }
             catch (Exception ex)
             {
-                job.SetError(Logger.LogException(ex, $"Failed PreEncodeVerification for {job}.", details: new { job.Id, job.Name, job.SourceFullPath, job.DestinationFullPath }));
+                job.SetError(Logger.LogException(ex, $"Failed PreEncodeVerification for {job}.", details: new { job.Id, job.Name, job.SourceFullPath, job.DestinationFullPath }), ex);
                 return;
             }
         }
