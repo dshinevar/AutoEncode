@@ -233,7 +233,7 @@ namespace AutoEncodeServer.EncodingJob
                         {
                             (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) progress = (null, null, null);
 
-                            if (count >= 50)
+                            if (count >= 10)
                             {
                                 if (string.IsNullOrWhiteSpace(e.Data) is false)
                                 {
