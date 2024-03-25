@@ -146,7 +146,7 @@ namespace AutoEncodeClient.Views.DesignData
             EncodingJobs.Add(encodingJobViewModel4);
             EncodingJobs.Add(encodingJobViewModel3);
 
-            SelectedEncodingJobViewModel = encodingJobViewModel2;
+            SelectedEncodingJobViewModel = encodingJobViewModel1;
 
             MovieSourceFiles = new ObservableDictionary<string, BulkObservableCollection<SourceFileData>>()
             {

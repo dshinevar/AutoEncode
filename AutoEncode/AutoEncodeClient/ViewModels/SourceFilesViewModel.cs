@@ -26,7 +26,7 @@ namespace AutoEncodeClient.ViewModels
             RefreshSourceFilesCommand = refreshSourceFilesCommand;
             AddCommand(refreshSourceFilesCommand, nameof(CanRefreshSourceFiles));
 
-            AECommandWithParameter requestEncodeCommand = new(() => CanRequestEncode, RequestEncode);
+            AECommand requestEncodeCommand = new(() => CanRequestEncode, RequestEncode);
             RequestEncodeCommand = requestEncodeCommand;
             AddCommand(requestEncodeCommand, nameof(CanRequestEncode));
         }

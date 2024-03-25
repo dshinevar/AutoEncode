@@ -30,7 +30,7 @@ namespace AutoEncodeClient.Models
             encodingJobData.CopyProperties(this);
             if (encodingJobData.SourceStreamData is not null)
             {
-                SourceStreamData = new(encodingJobData.SourceStreamData);
+                SourceStreamData = new SourceStreamDataClientModel(encodingJobData.SourceStreamData);
             }
         }
 
@@ -162,6 +162,20 @@ namespace AutoEncodeClient.Models
             set => SetAndNotify(_encodingProgress, value, () => _encodingProgress = value);
         }
 
+        private double? _currentFramesPerSecond = null;
+        public double? CurrentFramesPerSecond
+        {
+            get => _currentFramesPerSecond;
+            set => SetAndNotify(_currentFramesPerSecond, value, () => _currentFramesPerSecond = value);
+        }
+
+        private TimeSpan? _estimatedEncodingTimeRemaining = null;
+        public TimeSpan? EstimatedEncodingTimeRemaining
+        {
+            get => _estimatedEncodingTimeRemaining;
+            set => SetAndNotify(_estimatedEncodingTimeRemaining, value, () => _estimatedEncodingTimeRemaining = value);
+        }
+
         private TimeSpan _elapsedEncodingTime = TimeSpan.Zero;
         public TimeSpan ElapsedEncodingTime
         {
@@ -192,8 +206,8 @@ namespace AutoEncodeClient.Models
         #endregion Status
 
         #region Processing Data        
-        private SourceStreamDataClientModel _sourceStreamDataClientModel;
-        public SourceStreamDataClientModel SourceStreamData
+        private ISourceStreamDataClientModel _sourceStreamDataClientModel;
+        public ISourceStreamDataClientModel SourceStreamData
         {
             get => _sourceStreamDataClientModel;
             set => SetAndNotify(_sourceStreamDataClientModel, value, () => _sourceStreamDataClientModel = value);
@@ -243,7 +257,7 @@ namespace AutoEncodeClient.Models
 
             if (encodingJobData.SourceStreamData is not null)
             {
-                if (SourceStreamData is null) SourceStreamData = new(encodingJobData.SourceStreamData);
+                if (SourceStreamData is null) SourceStreamData = new SourceStreamDataClientModel(encodingJobData.SourceStreamData);
                 else SourceStreamData.Update(encodingJobData.SourceStreamData);
 
                 OnPropertyChanged(nameof(SourceStreamData));
@@ -283,10 +297,15 @@ namespace AutoEncodeClient.Models
 
             if (data.SourceStreamData is not null)
             {
-                if (SourceStreamData is null) SourceStreamData = new(data.SourceStreamData);
-                else SourceStreamData.Update(data.SourceStreamData);
-
-                OnPropertyChanged(nameof(SourceStreamData));
+                if (SourceStreamData is null)
+                {
+                    SourceStreamData = new SourceStreamDataClientModel(data.SourceStreamData);
+                }
+                else
+                {
+                    SourceStreamData.Update(data.SourceStreamData);
+                    OnPropertyChanged(nameof(SourceStreamData));
+                }   
             }
         }
 

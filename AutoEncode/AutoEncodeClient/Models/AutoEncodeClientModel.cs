@@ -1,10 +1,11 @@
 ﻿using AutoEncodeClient.Config;
 using AutoEncodeClient.Models.Interfaces;
+using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Logger;
 
 namespace AutoEncodeClient.Models
 {
-    public class AutoEncodeClientModel : IAutoEncodeClientModel
+    public class AutoEncodeClientModel : ModelBase, IAutoEncodeClientModel
     {
         #region Dependencies
         private ILogger Logger { get; set; }

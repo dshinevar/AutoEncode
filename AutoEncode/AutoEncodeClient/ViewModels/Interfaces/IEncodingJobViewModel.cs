@@ -26,7 +26,7 @@ namespace AutoEncodeClient.ViewModels.Interfaces
         string DestinationFullPath { get; }
 
         #region Processing Data
-        SourceStreamDataClientModel SourceStreamData { get; }
+        SourceStreamDataViewModel SourceStreamData { get; }
 
         PostProcessingSettings PostProcessingSettings { get; }
 
@@ -53,6 +53,10 @@ namespace AutoEncodeClient.ViewModels.Interfaces
         string ErrorMessage { get; }
 
         DateTime? ErrorTime { get; }
+
+        double? CurrentFramesPerSecond { get; }
+
+        TimeSpan? EstimatedEncodingTimeRemaining { get; }
 
         TimeSpan ElapsedEncodingTime { get; }
 

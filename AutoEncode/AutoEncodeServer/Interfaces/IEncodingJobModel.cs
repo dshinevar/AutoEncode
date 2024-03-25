@@ -74,6 +74,12 @@ namespace AutoEncodeServer.Interfaces
         /// <summary>Encoding progress percentage</summary>
         byte EncodingProgress { get; }
 
+        /// <summary>The current fps of the encode </summary>
+        double? CurrentFramesPerSecond { get; }
+
+        /// <summary>The estimated encoding time remaining</summary>
+        TimeSpan? EstimatedEncodingTimeRemaining { get; }
+
         /// <summary>Amount of time spent encoding.</summary>
         TimeSpan ElapsedEncodingTime { get; }
 
@@ -156,9 +162,11 @@ namespace AutoEncodeServer.Interfaces
         void SetEncodingCommandArguments(IEncodingCommandArguments encodingCommandArguments);
 
         /// <summary>Updates the encoding progress percentage and time elapsed</summary>
-        /// <param name="progress">Encoding Progress Percentage</param>
+        /// <param name="encodingProgress">Encoding Progress Percentage</param>
+        /// <param name="estimatedSecondsRemaining">Estimated amount of seconds remaining in the encode.</param>
+        /// <param name="currentFps">The current frames per second reported by ffmpeg</param>
         /// <param name="timeElapsed">Encoding Time Elapsed.</param>
-        void UpdateEncodingProgress(byte? progress, TimeSpan? timeElapsed);
+        void UpdateEncodingProgress(byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps, TimeSpan? timeElapsed);
 
         /// <summary>Marks the job as completed encoding </summary>
         /// <param name="timeElapsed"></param>

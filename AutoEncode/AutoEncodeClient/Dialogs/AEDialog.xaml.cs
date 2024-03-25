@@ -29,7 +29,7 @@ namespace AutoEncodeClient.Dialogs
             Severity = severity;
             Buttons = buttons;
 
-            ButtonResultCommand = new AECommandWithParameter(ButtonResult);
+            ButtonResultCommand = new AECommand(ButtonResult);
         }
 
         private void ButtonResult(object obj)
