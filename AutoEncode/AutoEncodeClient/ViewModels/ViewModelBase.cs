@@ -51,7 +51,7 @@ namespace AutoEncodeClient.ViewModels
 
     /// <summary>ViewModelBase for when a backing model is used.</summary>
     /// <typeparam name="T">Model Type</typeparam>
-    public abstract class ViewModelBase<T> : ViewModelBase
+    public abstract class ViewModelBase<T> : ViewModelBase where T : INotifyPropertyChanged
     {
         public T Model { get; protected set; }
 
@@ -60,8 +60,9 @@ namespace AutoEncodeClient.ViewModels
         protected ViewModelBase(T model)
         {
             Model = model;
+            Model.PropertyChanged += ModelPropertyChanged;
         }
 
-        protected void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) => Application.Current.Dispatcher.Invoke(() => OnPropertyChanged(e.PropertyName));
+        protected virtual void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) => Application.Current.Dispatcher.Invoke(() => OnPropertyChanged(e.PropertyName));
     }
 }

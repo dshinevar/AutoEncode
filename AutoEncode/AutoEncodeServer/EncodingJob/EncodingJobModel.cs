@@ -83,6 +83,10 @@ namespace AutoEncodeServer.EncodingJob
         #region Encoding Progress Properties
         public byte EncodingProgress { get; set; }
 
+        public double? CurrentFramesPerSecond { get; set; }
+
+        public TimeSpan? EstimatedEncodingTimeRemaining { get; set; } = null;
+
         public TimeSpan ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
 
         public DateTime? CompletedEncodingDateTime { get; set; } = null;
@@ -260,14 +264,32 @@ namespace AutoEncodeServer.EncodingJob
         #endregion Processing Data Methods
 
         #region Encoding Progress Methods
-        public void UpdateEncodingProgress(byte? progress, TimeSpan? timeElapsed)
+        public void ResetEncodingProgress()
+        {
+            EncodingProgress = 0;
+            EstimatedEncodingTimeRemaining = null;
+            CurrentFramesPerSecond = null;
+            ElapsedEncodingTime = TimeSpan.Zero;
+        }
+
+        public void UpdateEncodingProgress(byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps, TimeSpan? timeElapsed)
         {
             // If progress is null, just don't update it
-            if (progress is byte progressByte)
+            if (encodingProgress is byte progressByte)
             {
                 if (progressByte > 100) EncodingProgress = 100;
                 else if (progressByte < 0) EncodingProgress = 0;
                 else EncodingProgress = progressByte;
+            }
+
+            if (estimatedSecondsRemaining is int estimatedSecondsRemainingInt)
+            {
+                EstimatedEncodingTimeRemaining = TimeSpan.FromSeconds(estimatedSecondsRemainingInt);
+            }
+
+            if (currentFps is double currentFpsDouble) 
+            {
+                CurrentFramesPerSecond = currentFpsDouble;
             }
 
             if (timeElapsed is TimeSpan actualTimeElapsed)
@@ -281,7 +303,7 @@ namespace AutoEncodeServer.EncodingJob
         public void CompleteEncoding(TimeSpan timeElapsed)
         {
             CompletedEncodingDateTime = DateTime.Now;
-            UpdateEncodingProgress(100, timeElapsed);
+            UpdateEncodingProgress(100, 0, 0, timeElapsed);
             SetStatus(EncodingJobStatus.ENCODED);
         }
 
@@ -333,7 +355,7 @@ namespace AutoEncodeServer.EncodingJob
                 if (Status.Equals(EncodingJobStatus.ENCODING))
                 {
                     CompletedEncodingDateTime = null;
-                    UpdateEncodingProgress(0, TimeSpan.Zero);
+                    ResetEncodingProgress();
                 }
 
                 SetStatus(Status -= 1);

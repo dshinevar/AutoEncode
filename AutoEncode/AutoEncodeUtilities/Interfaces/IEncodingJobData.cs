@@ -24,7 +24,6 @@ namespace AutoEncodeUtilities.Interfaces
 
         #region Status
         EncodingJobStatus Status { get; }
-
         EncodingJobBuildingStatus BuildingStatus { get; }
         /// <summary>Flag showing if a job is in error </summary>
         bool HasError { get; }
@@ -40,6 +39,10 @@ namespace AutoEncodeUtilities.Interfaces
         bool CanCancel { get; }
         /// <summary>Encoding Progress Percentage </summary>
         byte EncodingProgress { get; }
+        /// <summary>The current fps of the encode </summary>
+        double? CurrentFramesPerSecond { get; }
+        /// <summary>The estimated encoding time remaining</summary>
+        TimeSpan? EstimatedEncodingTimeRemaining { get; }
         /// <summary>Amount of time spent encoding. </summary>
         TimeSpan ElapsedEncodingTime { get; }
         /// <summary> DateTime when encoding was completed </summary>

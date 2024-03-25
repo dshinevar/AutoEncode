@@ -43,6 +43,10 @@ namespace AutoEncodeUtilities.Data
         public bool CanCancel { get; set; } = false;
         /// <summary>Encoding Progress Percentage </summary>
         public byte EncodingProgress { get; set; }
+        /// <summary>The current fps of the encode.</summary>
+        public double? CurrentFramesPerSecond { get; set; }
+        /// <summary>The estimated encoding time remaining</summary>
+        public TimeSpan? EstimatedEncodingTimeRemaining { get; set; }
         /// <summary>Amount of time spent encoding. </summary>
         public TimeSpan ElapsedEncodingTime { get; set; } = TimeSpan.Zero;
         /// <summary> DateTime when encoding was completed </summary>

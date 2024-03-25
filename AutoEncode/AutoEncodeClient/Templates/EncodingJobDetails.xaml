@@ -148,9 +148,16 @@
                                        Style="{StaticResource EncodingJobDataStyle}"/>
 
                             <TextBlock Grid.Row="2" Grid.Column="0"
-                                       Text="Framerate:"
+                                       Text="Crop:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="2" Grid.Column="2"
+                                       Text="{Binding Crop, TargetNullValue='-'}"
+                                       Style="{StaticResource EncodingJobDataStyle}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0"
+                                       Text="Framerate:"
+                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2"
                                        Style="{StaticResource EncodingJobDataStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}{0} ({1} fps)">
@@ -160,25 +167,18 @@
                                 </TextBlock.Text>
                             </TextBlock>
 
-                            <TextBlock Grid.Row="3" Grid.Column="0"
+                            <TextBlock Grid.Row="4" Grid.Column="0"
                                        Text="Scan Type:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="2"
+                            <TextBlock Grid.Row="4" Grid.Column="2"
                                        Text="{Binding ScanType, Converter={StaticResource EnumDisplayNameConverter}}"
                                        Style="{StaticResource EncodingJobDataStyle}"/>
 
-                            <TextBlock Grid.Row="4" Grid.Column="0"
+                            <TextBlock Grid.Row="5" Grid.Column="0"
                                        Text="Codec Name:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
-                            <TextBlock Grid.Row="4" Grid.Column="2"
-                                       Text="{Binding CodecName}"
-                                       Style="{StaticResource EncodingJobDataStyle}"/>
-
-                            <TextBlock Grid.Row="5" Grid.Column="0"
-                                       Text="Pixel Format:"
-                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="5" Grid.Column="2"
-                                       Text="{Binding PixelFormat}"
+                                       Text="{Binding CodecName}"
                                        Style="{StaticResource EncodingJobDataStyle}"/>
                         </Grid>
 
@@ -197,10 +197,10 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0"
-                                       Text="Crop:"
+                                       Text="Pixel Format:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="0" Grid.Column="2"
-                                       Text="{Binding Crop, TargetNullValue='-'}"
+                                       Text="{Binding PixelFormat}"
                                        Style="{StaticResource EncodingJobDataStyle}"/>
 
                             <TextBlock Grid.Row="1" Grid.Column="0"
@@ -253,14 +253,9 @@
                                        Text="HDR:"
                                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
                             <TextBlock Grid.Row="0" Grid.Column="2"
-                                       Style="{StaticResource EncodingJobDataStyle}">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0} ({1})">
-                                        <Binding Path="HasHDR"/>
-                                        <Binding Path="HDRData.HDRFlags" Converter="{StaticResource FlagToNamesConverter}"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                                       Style="{StaticResource EncodingJobDataStyle}"
+                                       Text="{Binding HDRData.HDRFlags, Converter={StaticResource FlagToNamesConverter}}"
+                                       TextTrimming="CharacterEllipsis"/>
 
                             <TextBlock Grid.Row="1" Grid.Column="0"
                                        Text="Red (X,Y):"

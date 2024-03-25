@@ -1,6 +1,8 @@
-﻿namespace AutoEncodeClient.Models.Interfaces
+﻿using System.ComponentModel;
+
+namespace AutoEncodeClient.Models.Interfaces
 {
-    public interface IAutoEncodeClientModel
+    public interface IAutoEncodeClientModel : INotifyPropertyChanged
     {
     }
 }

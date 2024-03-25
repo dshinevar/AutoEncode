@@ -227,7 +227,7 @@
                     Padding="5,3"
                     Background="{StaticResource BackgroundBrush}"
                     DataContext="{Binding SelectedEncodingJobViewModel}"
-                    Visibility="{Binding DataContext, RelativeSource={RelativeSource Mode=Self}, Converter={StaticResource IsNullVisibilityConverter}}">
+                    Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -390,8 +390,14 @@
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Path=Status}"
                                                          Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                                <Setter Property="Text"
-                                                        Value="{Binding Path=ElapsedEncodingTime, Converter={StaticResource FormatTimeSpanConverter}, StringFormat={}Time Elapsed: {0}}">
+                                                <Setter Property="Text">
+                                                    <Setter.Value>
+                                                        <MultiBinding StringFormat="{}Time Elapsed: {0} | Estimated Time Remaining: {1} | FPS: {2:N2}">
+                                                            <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
+                                                            <Binding Path="EstimatedEncodingTimeRemaining" Converter="{StaticResource FormatTimeSpanConverter}" TargetNullValue="-"/>
+                                                            <Binding Path="CurrentFramesPerSecond" TargetNullValue="-"/>
+                                                        </MultiBinding>
+                                                    </Setter.Value>
                                                 </Setter>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding Path=Status}"

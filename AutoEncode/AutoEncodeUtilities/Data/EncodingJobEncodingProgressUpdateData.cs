@@ -7,6 +7,10 @@ namespace AutoEncodeUtilities.Data
     {
         public byte EncodingProgress { get; set; }
 
+        public double? CurrentFramesPerSecond { get; set; }
+
+        public TimeSpan? EstimatedEncodingTimeRemaining { get; set; }
+
         public TimeSpan ElapsedEncodingTime { get; set; }
 
         public DateTime? CompletedEncodingDateTime { get; set; }

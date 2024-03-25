@@ -2,12 +2,12 @@
 using AutoEncodeClient.Dialogs;
 using AutoEncodeClient.Enums;
 using AutoEncodeClient.Models.Interfaces;
-using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeClient.ViewModels.Interfaces;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using System;
+using System.ComponentModel;
 using System.Windows.Input;
 
 namespace AutoEncodeClient.ViewModels
@@ -36,9 +36,22 @@ namespace AutoEncodeClient.ViewModels
 
             RemoveCommand = new AECommand(Remove);
 
-            SelectDetailsSectionCommand = new AECommandWithParameter(SelectDetailsSection);
+            SelectDetailsSectionCommand = new AECommand(SelectDetailsSection);
 
-            Model.PropertyChanged += ModelPropertyChanged;
+            if (model.SourceStreamData is not null)
+            {
+                SourceStreamData = new(model.SourceStreamData);
+            }
+        }
+
+        protected override void ModelPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SourceStreamData) && SourceStreamData is null) 
+            {
+                SourceStreamData = new(Model.SourceStreamData);
+            }
+
+            base.ModelPropertyChanged(sender, e);
         }
 
         public ulong Id => Model.Id;
@@ -54,109 +67,45 @@ namespace AutoEncodeClient.ViewModels
         public string DestinationFullPath => Model.DestinationFullPath;
 
         #region Processing Data
-        public SourceStreamDataClientModel SourceStreamData
-        {
-            get => Model.SourceStreamData;
-            //set => SetAndNotify(Model.SourceStreamData, value, () => Model.SourceStreamData = value);
-        }
-        public PostProcessingSettings PostProcessingSettings
-        {
-            get => Model.PostProcessingSettings;
-            /*set => SetAndNotify(Model.PostProcessingSettings, value, () =>
-            {
-                if (Model.PostProcessingSettings is null) Model.PostProcessingSettings = value;
-                else Model.PostProcessingSettings.Update(value);
-            });
-            */
-        }
+        public SourceStreamDataViewModel SourceStreamData { get; private set; }
+
+        public PostProcessingSettings PostProcessingSettings => Model.PostProcessingSettings;
 
         public IEncodingCommandArguments EncodingCommandArguments => Model.EncodingCommandArguments;
         #endregion Processing Data
 
         #region Status
-        public EncodingJobStatus Status
-        {
-            get => Model.Status;
-            //set => SetAndNotify(Model.Status, value, () => Model.Status = value);
-        }
+        public EncodingJobStatus Status => Model.Status;
 
-        public EncodingJobBuildingStatus BuildingStatus
-        {
-            get => Model.BuildingStatus;
-            //set => SetAndNotify(Model.BuildingStatus, value, () => Model.BuildingStatus = value);
-        }
+        public EncodingJobBuildingStatus BuildingStatus => Model.BuildingStatus;
 
-        public byte EncodingProgress
-        {
-            get => Model.EncodingProgress;
-            //set => SetAndNotify(Model.EncodingProgress, value, () => Model.EncodingProgress = value);
-        }
+        public byte EncodingProgress => Model.EncodingProgress;
 
-        public bool HasError
-        {
-            get => Model.HasError;
-            //set => SetAndNotify(Model.HasError, value, () => Model.HasError = value);
-        }
+        public bool HasError => Model.HasError;
 
-        public bool ToBePaused
-        {
-            get => Model.ToBePaused;
-            //set => SetAndNotify(Model.ToBePaused, value, () => Model.ToBePaused = value);
-        }
+        public bool ToBePaused => Model.ToBePaused;
 
-        public bool Paused
-        {
-            get => Model.Paused;
-            //set => SetAndNotify(Model.Paused, value, () => Model.Paused = value);
-        }
+        public bool Paused => Model.Paused;
 
-        public bool Canceled
-        {
-            get => Model.Canceled;
-            //set => SetAndNotify(Model.Cancelled, value, () => Model.Cancelled = value);
-        }
+        public bool Canceled => Model.Canceled;
 
-        public bool CanCancel
-        {
-            get => Model.CanCancel;
-            //set => SetAndNotify(Model.CanCancel, value, () => Model.CanCancel = value);
-        }
+        public bool CanCancel => Model.CanCancel;
 
-        public string ErrorMessage
-        {
-            get => Model.ErrorMessage;
-            //set => SetAndNotify(Model.ErrorMessage, value, () => Model.ErrorMessage = value);
-        }
+        public string ErrorMessage => Model.ErrorMessage;
 
-        public DateTime? ErrorTime
-        {
-            get => Model.ErrorTime;
-            //set => SetAndNotify(Model.ErrorTime, value, () => Model.ErrorTime = value);
-        }
+        public DateTime? ErrorTime => Model.ErrorTime;
 
-        public TimeSpan ElapsedEncodingTime
-        {
-            get => Model.ElapsedEncodingTime;
-            //set => SetAndNotify(Model.ElapsedEncodingTime, value, () => Model.ElapsedEncodingTime = value);
-        }
+        public double? CurrentFramesPerSecond => Model.CurrentFramesPerSecond;
 
-        public DateTime? CompletedEncodingDateTime
-        {
-            get => Model.CompletedEncodingDateTime;
-            //set => SetAndNotify(Model.CompletedEncodingDateTime, value, () => Model.CompletedEncodingDateTime = value);
-        }
+        public TimeSpan? EstimatedEncodingTimeRemaining => Model.EstimatedEncodingTimeRemaining;
 
-        public DateTime? CompletedPostProcessingTime
-        {
-            get => Model.CompletedPostProcessingTime;
-            //set => SetAndNotify(Model.CompletedPostProcessingTime, value, () => Model.CompletedPostProcessingTime = value);
-        }
+        public TimeSpan ElapsedEncodingTime => Model.ElapsedEncodingTime;
 
-        public bool Complete
-        {
-            get => Model.Complete;
-            //set => SetAndNotify(Model.Complete, value, () => Model.Complete = value);
-        }
+        public DateTime? CompletedEncodingDateTime => Model.CompletedEncodingDateTime;
+
+        public DateTime? CompletedPostProcessingTime => Model.CompletedPostProcessingTime;
+
+        public bool Complete => Model.Complete;
         #endregion Status
 
         #region Other Properties

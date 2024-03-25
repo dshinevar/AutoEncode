@@ -135,25 +135,6 @@ namespace AutoEncodeClient.Models.StreamDataModels
 
         #endregion Properties
 
-        public void Update(VideoStreamData data)
-        {
-            base.Update(data);
-            HDRData = data.HDRData;
-            HasHDR = data.HasHDR;
-            HasDynamicHDR = data.HasDynamicHDR;
-            CodecName = data.CodecName;
-            PixelFormat = data.PixelFormat;
-            Crop = data.Crop;
-            Resolution = data.Resolution;
-            ResoultionInt = data.ResoultionInt;
-            ColorSpace = data.ColorSpace;
-            ColorPrimaries = data.ColorPrimaries;
-            ColorTransfer = data.ColorTransfer;
-            FrameRate = data.FrameRate;
-            CalculatedFrameRate = data.CalculatedFrameRate;
-            Animated = data.Animated;
-            ScanType = data.ScanType;
-            ChromaLocation = data.ChromaLocation;
-        }
+        public void Update(VideoStreamData data) => base.Update(data);
     }
 }

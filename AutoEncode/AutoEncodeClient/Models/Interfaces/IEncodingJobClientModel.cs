@@ -1,5 +1,4 @@
-﻿using AutoEncodeClient.Models.StreamDataModels;
-using AutoEncodeUtilities.Data;
+﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Interfaces;
 using System;
@@ -8,10 +7,8 @@ using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models.Interfaces
 {
-    public interface IEncodingJobClientModel
+    public interface IEncodingJobClientModel : INotifyPropertyChanged
     {
-        event PropertyChangedEventHandler PropertyChanged;
-
         /// <summary>Initializes model </summary>
         void Initialize();
 
@@ -64,6 +61,12 @@ namespace AutoEncodeClient.Models.Interfaces
         /// <summary>Encoding Progress Percentage </summary>
         byte EncodingProgress { get; }
 
+        /// <summary>Current frames per second of the encode. </summary>
+        double? CurrentFramesPerSecond { get; }
+
+        /// <summary>Estimated time remaining from encoding. </summary>
+        TimeSpan? EstimatedEncodingTimeRemaining { get; }
+
         /// <summary>Amount of time spent encoding. </summary>
         TimeSpan ElapsedEncodingTime { get; }
 
@@ -79,7 +82,7 @@ namespace AutoEncodeClient.Models.Interfaces
 
         #region Processing Data
         /// <summary>The raw stream (video, audio subtitle) data </summary>
-        SourceStreamDataClientModel SourceStreamData { get; }
+        ISourceStreamDataClientModel SourceStreamData { get; }
 
         /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
         EncodingInstructions EncodingInstructions { get; }

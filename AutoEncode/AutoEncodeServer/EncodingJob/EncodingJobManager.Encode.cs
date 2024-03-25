@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AutoEncodeServer.EncodingJob
 {
@@ -57,13 +58,13 @@ namespace AutoEncodeServer.EncodingJob
                     encodingProcess.EnableRaisingEvents = true;
                     encodingProcess.ErrorDataReceived += (sender, e) =>
                     {
-                        byte? progress = null;
+                        (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) progress = (null, null, null);
 
-                        if (count >= 50)
+                        if (count >= 10)
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
-                                progress = HandleEncodingOutput(e.Data, job.SourceStreamData.DurationInSeconds);
+                                progress = HandleEncodingOutput(e.Data, job.SourceStreamData.NumberOfFrames);
                             }
                             count = 0;
                         }
@@ -72,7 +73,7 @@ namespace AutoEncodeServer.EncodingJob
                             count++;
                         }
 
-                        job.UpdateEncodingProgress(progress, stopwatch.Elapsed);
+                        job.UpdateEncodingProgress(progress.encodingProgress, progress.estimatedSecondsRemaining, progress.currentFps, stopwatch.Elapsed);
                     };
                     encodingProcess.Exited += (sender, e) =>
                     {
@@ -169,6 +170,8 @@ namespace AutoEncodeServer.EncodingJob
 
             if (job.HasError is true) return;
 
+            bool videoEncodeExited = false;
+            bool audioSubEncodeExited = false;
             Process videoEncodeProcess = null;
             Process audioSubEncodeProcess = null;
             Process mergeProcess = null;
@@ -181,14 +184,14 @@ namespace AutoEncodeServer.EncodingJob
 
             CancellationTokenRegistration tokenRegistration = taskCancellationToken.Register(() =>
             {
-                videoEncodeProcess?.Kill(true);
-                audioSubEncodeProcess?.Kill(true);
+                if (videoEncodeExited is false) videoEncodeProcess?.Kill(true);
+                if (audioSubEncodeExited is false) audioSubEncodeProcess?.Kill(true);
             });
 
             CancellationTokenRegistration innerTokenRegistration = encodingToken.Register(() =>
             {
-                videoEncodeProcess?.Kill(true);
-                audioSubEncodeProcess?.Kill(true);
+                if (videoEncodeExited is false) videoEncodeProcess?.Kill(true);
+                if (audioSubEncodeExited is false) audioSubEncodeProcess?.Kill(true);
             });
 
 
@@ -228,7 +231,7 @@ namespace AutoEncodeServer.EncodingJob
                     {
                         try
                         {
-                            byte? progress = null;
+                            (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) progress = (null, null, null);
 
                             if (count >= 50)
                             {
@@ -243,7 +246,7 @@ namespace AutoEncodeServer.EncodingJob
                                 count++;
                             }
 
-                            job.UpdateEncodingProgress(progress, stopwatch.Elapsed);
+                            job.UpdateEncodingProgress(progress.encodingProgress, progress.estimatedSecondsRemaining, progress.currentFps, stopwatch.Elapsed);
                         }
                         catch (Exception ex)
                         {
@@ -254,6 +257,7 @@ namespace AutoEncodeServer.EncodingJob
                     };
                     videoEncodeProcess.Exited += (sender, e) =>
                     {
+                        videoEncodeExited = true;
                         if (sender is Process proc)
                         {
                             videoEncodeExitCode = proc.ExitCode;
@@ -281,6 +285,7 @@ namespace AutoEncodeServer.EncodingJob
                     audioSubEncodeProcess.EnableRaisingEvents = true;
                     audioSubEncodeProcess.Exited += (sender, e) =>
                     {
+                        audioSubEncodeExited = true;
                         if (sender is Process proc)
                         {
                             audioSubEncodeExitCode = proc?.ExitCode;
@@ -312,8 +317,8 @@ namespace AutoEncodeServer.EncodingJob
             {
                 job.SetError(Logger.LogException(ex, $"Error encoding {job}.",
                     details: new { job.Id, job.Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName }), ex);
-                videoEncodeProcess?.Kill(true);
-                audioSubEncodeProcess?.Kill(true);
+                if (videoEncodeExited is false) videoEncodeProcess?.Kill(true);
+                if (audioSubEncodeExited is false) audioSubEncodeProcess?.Kill(true);
             }
 
             tokenRegistration.Unregister();
@@ -359,7 +364,7 @@ namespace AutoEncodeServer.EncodingJob
                 // SUCCESS
                 else
                 {
-                    job.UpdateEncodingProgress(90, null); // Hard set progress to 90%
+                    job.UpdateEncodingProgress(90, null, null, null); // Hard set progress to 90%
                 }
             }
             catch (Exception ex)
@@ -397,7 +402,7 @@ namespace AutoEncodeServer.EncodingJob
                     {
                         try
                         {
-                            job.UpdateEncodingProgress(null, stopwatch.Elapsed);
+                            job.UpdateEncodingProgress(null, null, null, stopwatch.Elapsed);
                         }
 
                         catch (Exception ex)
@@ -496,21 +501,36 @@ namespace AutoEncodeServer.EncodingJob
 
         /// <summary>Handles the output from ffmpeg encoding process </summary>
         /// <param name="data">Raw string output</param>
-        /// <param name="sourceDurationInSeconds">Source file duration in seconds</param>
+        /// <param name="numberOfFrames">Number of frames source file contains.</param>
         /// <param name="adjustment">Adjusts encoding progress output if needed; 1 by default.</param>
         /// <returns>Encoding Progress</returns>
-        private static byte? HandleEncodingOutput(string data, int sourceDurationInSeconds, double adjustment = 1.0)
+        private static (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) HandleEncodingOutput(string data, int numberOfFrames, double adjustment = 1.0)
         {
             byte? encodingProgress = null;
-            if (data.Contains("time=") && sourceDurationInSeconds > 0)
+            int? estimatedSecondsRemaining = null;
+            double? currentFps = null;
+
+            int? framesRemaining = null;
+            if (data.Contains("frame=") && numberOfFrames > 0)
             {
-                string line = data;
-                string time = line.Substring(line.IndexOf("time="), 13);
-                double seconds = HelperMethods.ConvertTimestampToSeconds(time.Split('=')[1]);
-                encodingProgress = (byte)((((double)seconds / (double)sourceDurationInSeconds) * 100) * adjustment); // Update percent complete
-                Debug.WriteLine(encodingProgress);
+                string frameString = data.Substring(data.IndexOf("frame="), 11);
+                if (int.TryParse(frameString.Split('=')[1].Trim(), out int currentFrame))
+                {
+                    encodingProgress = (byte)((double)currentFrame / (double)numberOfFrames * 100 * adjustment);
+                    framesRemaining = numberOfFrames - currentFrame;
+                }
             }
-            return encodingProgress;
+
+            if (framesRemaining is not null && data.Contains("fps=") && numberOfFrames > 0)
+            {
+                string fpsString = data.Substring(data.IndexOf("fps="), 7);
+                if (double.TryParse(fpsString.Split("=")[1].Trim(), out double fps) is true)
+                {
+                    currentFps = fps;
+                    estimatedSecondsRemaining = (int)(framesRemaining / currentFps);
+                }          
+            }
+            return (encodingProgress, estimatedSecondsRemaining, currentFps);
         }
 
         /// <summary>Handles the output from ffmpeg/x265 dolby vision encoding process</summary>
@@ -518,19 +538,35 @@ namespace AutoEncodeServer.EncodingJob
         /// <param name="sourceNumFrames">Source file number of frames from video</param>
         /// <param name="adjustment">Adjusts encoding progress output if needed; 1 by default.</param>
         /// <returns>Encoding Progress</returns>
-        private static byte? HandleDolbyVisionEncodingOutput(string data, int sourceNumFrames, double adjustment = 1.0)
+        private static (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) HandleDolbyVisionEncodingOutput(string data, int numberOfFrames, double adjustment = 1.0)
         {
             byte? encodingProgress = null;
-            if (data.Contains("frames:") && sourceNumFrames > 0)
+            int? estimatedSecondsRemaining = null;
+            double? currentFps = null;
+            int? framesRemaining = null;
+
+            if (data.Contains("frames:") && numberOfFrames > 0)
             {
-                string line = data;
-                string framesString = line[..line.IndexOf("frames:")].Trim();
-                if (int.TryParse(framesString, out int frames))
+                string framesString = data[..data.IndexOf("frames:")].Trim();
+                if (int.TryParse(framesString, out int currentFrame) is true)
                 {
-                    encodingProgress = (byte)((((double)frames / (double)sourceNumFrames) * 100) * adjustment);
+                    encodingProgress = (byte)((((double)currentFrame / (double)numberOfFrames) * 100) * adjustment);
+                    framesRemaining = numberOfFrames - currentFrame;
                 }
             }
-            return encodingProgress;
+
+            if (framesRemaining is not null && data.Contains("fps") && numberOfFrames > 0)
+            {
+                int length = data.IndexOf("fps") - (data.IndexOf("frames:") + 7);
+                string fpsString = data.Substring(data.IndexOf("frames:") + 7, length).Trim();
+                if (double.TryParse(fpsString, out double fps) is true)
+                {
+                    currentFps = fps;
+                    estimatedSecondsRemaining = (int)(framesRemaining / currentFps);
+                }
+            }
+
+            return (encodingProgress, estimatedSecondsRemaining, currentFps);
         }
 
         private void PreEncodeVerification(IEncodingJobModel job)

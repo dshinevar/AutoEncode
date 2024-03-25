@@ -1,4 +1,5 @@
 ﻿using AutoEncodeClient.Collections;
+using AutoEncodeClient.Models.Interfaces;
 using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Interfaces;
@@ -7,7 +8,7 @@ namespace AutoEncodeClient.Models.StreamDataModels
 {
     public class SourceStreamDataClientModel :
         ModelBase,
-        IUpdateable<ISourceStreamData>
+        ISourceStreamDataClientModel
     {
         public SourceStreamDataClientModel(ISourceStreamData sourceStreamData)
         {
