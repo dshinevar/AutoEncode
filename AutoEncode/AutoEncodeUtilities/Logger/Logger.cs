@@ -40,8 +40,8 @@ namespace AutoEncodeUtilities.Logger
         public string LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogWarning(new string[] { msg }, threadName, callingMemberName);
         public string LogWarning(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, messages, threadName, callingMemberName);
 
-        public string LogError(string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => LogError(new string[] { msg }, threadName, callingMemberName);
-        public string LogError(IList<string> messages, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, callingMemberName);
+        public string LogError(string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => LogError(new string[] { msg }, threadName, details, callingMemberName);
+        public string LogError(IList<string> messages, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, details, callingMemberName);
 
         public string LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, new string[] { msg }, threadName, callingMemberName);
 
