@@ -524,7 +524,7 @@ namespace AutoEncodeServer.EncodingJob
             videoStreamEncodingInstructions.CRF = videoStreamEncodingInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265) ? 20 : 16;
             instructions.VideoStreamEncodingInstructions = videoStreamEncodingInstructions;
 
-            List<AudioStreamEncodingInstructions> audioInstructions = new();
+            List<AudioStreamEncodingInstructions> audioInstructions = [];
 
             IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
             foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
@@ -582,7 +582,7 @@ namespace AutoEncodeServer.EncodingJob
                 .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY)) // Put COPY before anything else
                 .ToList();
 
-            List<SubtitleStreamEncodingInstructions> subtitleInstructions = new();
+            List<SubtitleStreamEncodingInstructions> subtitleInstructions = [];
             if (streamData.SubtitleStreams?.Any() ?? false)
             {
                 foreach (SubtitleStreamData stream in streamData.SubtitleStreams)

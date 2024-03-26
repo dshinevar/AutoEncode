@@ -122,7 +122,7 @@ namespace AutoEncodeServer.EncodingJob
                     job.SetError(Logger.LogError($"{job} either did not create an output or created an empty file", EncodingThreadName));
                 }
                 // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (job.HasError is false && job.EncodingProgress < 95)
+                else if (job.HasError is false && job.EncodingProgress < 90)
                 {
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     DeleteFiles(job.DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
@@ -136,7 +136,7 @@ namespace AutoEncodeServer.EncodingJob
                     // Log occurred in catch
                 }
                 // SUCCESS
-                else if (job.EncodingProgress >= 75 && job.HasError is false)
+                else if (job.EncodingProgress >= 90 && job.HasError is false)
                 {
                     job.CompleteEncoding(stopwatch.Elapsed);
                     DeleteFiles(Lookups.PreviouslyEncodingTempFile);
