@@ -513,7 +513,8 @@ namespace AutoEncodeServer.EncodingJob
             int? framesRemaining = null;
             if (data.Contains("frame=") && numberOfFrames > 0)
             {
-                string frameString = data.Substring(data.IndexOf("frame="), 11);
+                int length = data.IndexOf("fps=") - data.IndexOf("frame=");
+                string frameString = data.Substring(data.IndexOf("frame="), length);
                 if (int.TryParse(frameString.Split('=')[1].Trim(), out int currentFrame))
                 {
                     encodingProgress = (byte)((double)currentFrame / (double)numberOfFrames * 100 * adjustment);
@@ -523,7 +524,8 @@ namespace AutoEncodeServer.EncodingJob
 
             if (framesRemaining is not null && data.Contains("fps=") && numberOfFrames > 0)
             {
-                string fpsString = data.Substring(data.IndexOf("fps="), 7);
+                int length = data.IndexOf("q=") - data.IndexOf("fps=");
+                string fpsString = data.Substring(data.IndexOf("fps="), length);
                 if (double.TryParse(fpsString.Split("=")[1].Trim(), out double fps) is true)
                 {
                     currentFps = fps;
