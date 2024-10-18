@@ -8,6 +8,7 @@
     <Description>Client for connecting/interacting with AutoEncode Server.</Description>
     <PackageIcon>AutoEncode.png</PackageIcon>
     <ApplicationIcon>Resources\AutoEncode.ico</ApplicationIcon>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +26,7 @@
     <PackageReference Include="Castle.Windsor" Version="6.0.0" />
     <PackageReference Include="NetMQ" Version="4.0.1.13" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="YamlDotNet" Version="15.1.2" />
+    <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,10 +1,9 @@
 ﻿using AutoEncodeUtilities.Data;
 using System.Collections.Generic;
 
-namespace AutoEncodeUtilities.Messages
+namespace AutoEncodeUtilities.Messages;
+
+public class SourceFilesResponse
 {
-    public class SourceFilesResponse
-    {
-        public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> SourceFiles { get; set; }
-    }
+    public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> SourceFiles { get; set; }
 }

@@ -122,10 +122,8 @@ namespace AutoEncodeClient
                 _clientUpdateSubscriber.Initialize(clientConfig.ConnectionSettings.IPAddress, clientConfig.ConnectionSettings.ClientUpdatePort);
                 _clientUpdateSubscriber.Start();
 
-                IAutoEncodeClientModel clientModel = _container.Resolve<IAutoEncodeClientModel>();   // Model currently doesn't do anything
-
                 IAutoEncodeClientViewModel viewModel = _container.Resolve<IAutoEncodeClientViewModel>();
-                viewModel.Initialize(clientModel);
+                viewModel.Initialize();
 
                 AutoEncodeClientView view = new(viewModel)
                 {
@@ -191,10 +189,6 @@ namespace AutoEncodeClient
                 .ImplementedBy<SourceFilesViewModel>()
                 .LifestyleSingleton()
                 .OnCreate(instance => instance.RefreshSourceFiles()));
-
-            container.Register(Component.For<IAutoEncodeClientModel>()
-                .ImplementedBy<AutoEncodeClientModel>()
-                .LifestyleSingleton());
 
             container.Register(Component.For<IAutoEncodeClientViewModel>()
                 .ImplementedBy<AutoEncodeClientViewModel>()

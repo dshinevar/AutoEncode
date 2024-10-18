@@ -9,95 +9,94 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AutoEncodeClient.Communication
+namespace AutoEncodeClient.Communication;
+
+public partial class CommunicationManager : ICommunicationManager
 {
-    public partial class CommunicationManager : ICommunicationManager
+    #region Dependencies
+    public ILogger Logger { get; set; }
+    #endregion Dependencies
+
+    #region Public Properties
+    public string ConnectionString => $"tcp://{IpAddress}:{Port}";
+    public string IpAddress { get; set; }
+    public int Port { get; set; }
+    #endregion Public Properties
+
+    /// <summary>Default Constructor</summary>
+    public CommunicationManager() { }
+
+    public void Initialize(string ipAddress, int port)
     {
-        #region Dependencies
-        public ILogger Logger { get; set; }
-        #endregion Dependencies
+        IpAddress = ipAddress;
+        Port = port;
+    }
 
-        #region Public Properties
-        public string ConnectionString => $"tcp://{IpAddress}:{Port}";
-        public string IpAddress { get; set; }
-        public int Port { get; set; }
-        #endregion Public Properties
+    #region Private Functions
+    private async Task<T> SendReceive<T>(AEMessage message, AEMessageType expectedResponseType)
+    {
+        var response = await SendReceiveAsync<T>(message);
+        return HandleResponseMessage(response, expectedResponseType);
+    }
 
-        /// <summary>Default Constructor</summary>
-        public CommunicationManager() { }
-
-        public void Initialize(string ipAddress, int port) 
+    private async Task<AEMessage<T>> SendReceiveAsync<T>(AEMessage request)
+    {
+        return await Task.Factory.StartNew(() =>
         {
-            IpAddress = ipAddress;
-            Port = port;
-        }
+            AEMessage<T> messageResponse = null;
 
-        #region Private Functions
-        private async Task<T> SendReceive<T>(AEMessage message, AEMessageType expectedResponseType)
-        {
-            var response = await SendReceiveAsync<T>(message);
-            return HandleResponseMessage(response, expectedResponseType);
-        }
-
-        private async Task<AEMessage<T>> SendReceiveAsync<T>(AEMessage request)
-        {
-            return await Task.Factory.StartNew(() =>
+            using (DealerSocket client = new(ConnectionString))
             {
-                AEMessage<T> messageResponse = null;
+                client.Options.Identity = Encoding.ASCII.GetBytes(Guid.NewGuid().ToString());
 
-                using (DealerSocket client = new(ConnectionString))
+                string serializedRequest = JsonConvert.SerializeObject(request, CommunicationConstants.SerializerSettings);
+
+                if (string.IsNullOrWhiteSpace(serializedRequest) is false)
                 {
-                    client.Options.Identity = Encoding.ASCII.GetBytes(Guid.NewGuid().ToString());
+                    NetMQMessage netMqMessage = new();
+                    netMqMessage.AppendEmptyFrame();
+                    netMqMessage.Append(serializedRequest);
 
-                    string serializedRequest = JsonConvert.SerializeObject(request, CommunicationConstants.SerializerSettings);
+                    client.SendMultipartMessage(netMqMessage);
 
-                    if (string.IsNullOrWhiteSpace(serializedRequest) is false)
+                    NetMQMessage response = client.ReceiveMultipartMessage();
+
+                    if (response.FrameCount == 2)
                     {
-                        NetMQMessage netMqMessage = new();
-                        netMqMessage.AppendEmptyFrame();
-                        netMqMessage.Append(serializedRequest);
+                        string responseString = response[1].ConvertToString();
 
-                        client.SendMultipartMessage(netMqMessage);
-
-                        NetMQMessage response = client.ReceiveMultipartMessage();
-
-                        if (response.FrameCount == 2)
+                        if (string.IsNullOrWhiteSpace(responseString) is false && responseString.IsValidJson())
                         {
-                            string responseString = response[1].ConvertToString();
-
-                            if (string.IsNullOrWhiteSpace(responseString) is false && responseString.IsValidJson())
-                            {
-                                messageResponse = JsonConvert.DeserializeObject<AEMessage<T>>(responseString, CommunicationConstants.SerializerSettings);
-                            }
+                            messageResponse = JsonConvert.DeserializeObject<AEMessage<T>>(responseString, CommunicationConstants.SerializerSettings);
                         }
                     }
                 }
-
-                return messageResponse ?? new AEMessage<T>(AEMessageType.Error, default);
-
-            }, TaskCreationOptions.LongRunning);
-        }
-
-        private T HandleResponseMessage<T>(AEMessage<T> message, AEMessageType expectedMessageType)
-        {
-            if (message is null)
-            {
-                throw new Exception("Null response message received.");
             }
 
-            if (message.MessageType.Equals(AEMessageType.Error))
-            {
-                throw new Exception("Error occurred with response message.");
-            }
+            return messageResponse ?? new AEMessage<T>(AEMessageType.Error, default);
 
-            if (!message.MessageType.Equals(expectedMessageType))
-            {
-                throw new Exception($"Response message has unexpected message type (Expected: {expectedMessageType} | Received {message.MessageType})");
-            }
-
-            return message.Data;
-        }
-
-        #endregion Private Functions
+        }, TaskCreationOptions.LongRunning);
     }
+
+    private T HandleResponseMessage<T>(AEMessage<T> message, AEMessageType expectedMessageType)
+    {
+        if (message is null)
+        {
+            throw new Exception("Null response message received.");
+        }
+
+        if (message.MessageType.Equals(AEMessageType.Error))
+        {
+            throw new Exception("Error occurred with response message.");
+        }
+
+        if (!message.MessageType.Equals(expectedMessageType))
+        {
+            throw new Exception($"Response message has unexpected message type (Expected: {expectedMessageType} | Received {message.MessageType})");
+        }
+
+        return message.Data;
+    }
+
+    #endregion Private Functions
 }

@@ -24,7 +24,7 @@ namespace AutoEncodeServer.WorkerThreads
         private AEServerConfig State { get; set; }
 
         private Thread WorkerThread { get; set; }
-        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromMinutes(2);
+        private TimeSpan ThreadSleep { get; set; } = TimeSpan.FromSeconds(45);
         private string ThreadName => WorkerThread?.Name ?? nameof(EncodingJobFinderThread);
         #endregion Private Properties / Fields
 
@@ -86,10 +86,6 @@ namespace AutoEncodeServer.WorkerThreads
 
         public IDictionary<string, (bool IsShows, IEnumerable<SourceFileData> Files)> RequestSourceFiles()
         {
-            Wake();
-
-            _buildingSourceFilesEvent.Reset();
-
             bool success = _buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(30));
 
             if (success)

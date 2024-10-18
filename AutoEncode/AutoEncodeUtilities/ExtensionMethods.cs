@@ -7,114 +7,113 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-namespace AutoEncodeUtilities
+namespace AutoEncodeUtilities;
+
+public static class ExtensionMethods
 {
-    public static class ExtensionMethods
+    public static bool IsNullOrDefault<T>(this T obj)
     {
-        public static bool IsNullOrDefault<T>(this T obj)
+        // Typical checks
+        if (obj is null) return true;
+        if (Equals(obj, default)) return true;
+
+        // Non-null nullables
+        Type methodType = typeof(T);
+        if (Nullable.GetUnderlyingType(methodType) != null) return false;
+
+        // Boxed values
+        Type objType = obj.GetType();
+        if (objType.IsValueType && objType != methodType)
         {
-            // Typical checks
-            if (obj is null) return true;
-            if (Equals(obj, default)) return true;
-
-            // Non-null nullables
-            Type methodType = typeof(T);
-            if (Nullable.GetUnderlyingType(methodType) != null) return false;
-
-            // Boxed values
-            Type objType = obj.GetType();
-            if (objType.IsValueType && objType != methodType)
-            {
-                object testObj = Activator.CreateInstance(objType);
-                return testObj.Equals(obj);
-            }
-
-            return false;
+            object testObj = Activator.CreateInstance(objType);
+            return testObj.Equals(obj);
         }
 
-        public static T DeepClone<T>(this T source)
-        {
-            // Don't serialize a null object, simply return the default for that object
-            if (source is null)
-            {
-                return default;
-            }
+        return false;
+    }
 
-            var deserializeSettings = new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace };
-            var serializeSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
-            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source, serializeSettings), deserializeSettings);
+    public static T DeepClone<T>(this T source)
+    {
+        // Don't serialize a null object, simply return the default for that object
+        if (source is null)
+        {
+            return default;
         }
 
-        public static void CopyProperties(this object source, object target)
+        var deserializeSettings = new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace };
+        var serializeSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
+        return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source, serializeSettings), deserializeSettings);
+    }
+
+    public static void CopyProperties(this object source, object target)
+    {
+        if (source is null || target is null)
         {
-            if (source is null || target is null)
-            {
-                throw new Exception("Source/Target Object is null.");
-            }
-
-            Type sourceType = source.GetType();
-            Type targetType = target.GetType();
-
-            PropertyInfo[] srcProps = sourceType.GetProperties();
-            foreach(PropertyInfo srcProp in srcProps) 
-            {
-                if (srcProp.CanRead is false) continue;
-
-                PropertyInfo targetProp = targetType.GetProperty(srcProp.Name);
-                if (targetProp is null) continue;
-                if (targetProp.CanWrite is false) continue;
-
-                MethodInfo targetPropSetMethodNonPublic = targetProp.GetSetMethod(true);
-                if (targetPropSetMethodNonPublic is not null && targetPropSetMethodNonPublic.IsPrivate is true) continue;
-                if ((targetProp.GetSetMethod().Attributes & MethodAttributes.Static) != 0) continue;
-
-                if (targetProp.PropertyType.IsAssignableFrom(srcProp.PropertyType) is false) continue;
-
-                targetProp.SetValue(target, srcProp.GetValue(source));
-            }
+            throw new Exception("Source/Target Object is null.");
         }
 
-        public static bool IsValidJson(this string s)
+        Type sourceType = source.GetType();
+        Type targetType = target.GetType();
+
+        PropertyInfo[] srcProps = sourceType.GetProperties();
+        foreach (PropertyInfo srcProp in srcProps)
         {
-            if (string.IsNullOrWhiteSpace(s)) return false; 
-            if ((s.StartsWith('{') && s.EndsWith('}')) || (s.StartsWith('[') && s.EndsWith(']')))
+            if (srcProp.CanRead is false) continue;
+
+            PropertyInfo targetProp = targetType.GetProperty(srcProp.Name);
+            if (targetProp is null) continue;
+            if (targetProp.CanWrite is false) continue;
+
+            MethodInfo targetPropSetMethodNonPublic = targetProp.GetSetMethod(true);
+            if (targetPropSetMethodNonPublic is not null && targetPropSetMethodNonPublic.IsPrivate is true) continue;
+            if ((targetProp.GetSetMethod().Attributes & MethodAttributes.Static) != 0) continue;
+
+            if (targetProp.PropertyType.IsAssignableFrom(srcProp.PropertyType) is false) continue;
+
+            targetProp.SetValue(target, srcProp.GetValue(source));
+        }
+    }
+
+    public static bool IsValidJson(this string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        if ((s.StartsWith('{') && s.EndsWith('}')) || (s.StartsWith('[') && s.EndsWith(']')))
+        {
+            try
             {
-                try
-                {
-                    var obj = JToken.Parse(s);
-                    return true;
-                }
-                catch (JsonReaderException ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    return false;
-                }
+                var obj = JToken.Parse(s);
+                return true;
             }
-            else
+            catch (JsonReaderException ex)
             {
+                Debug.WriteLine(ex.Message);
                 return false;
             }
         }
-
-        /// <summary>Get all flags from enum (excluding flag 0 if exists). Assumes enum is backed by an int.</summary>
-        /// <param name="e">Flag enum</param>
-        /// <returns>IEnumerable of Enums of all the flags</returns>
-        public static IEnumerable<Enum> GetFlags(this Enum e) => Enum.GetValues(e.GetType()).Cast<Enum>().Where(x => !Equals((int)(object)x, 0) && e.HasFlag(x));
-        public static string GetDisplayName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetName();
-        public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
-        public static string GetShortName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetShortName();
-
-        #region IEnumerable Extensions
-        public static void RemoveRange<T>(this List<T> list, IEnumerable<T> remove)
+        else
         {
-            foreach (T item in remove.ToList())
-            {
-                list.Remove(item);
-            }
+            return false;
         }
-
-        public static IEnumerable<T> Except<T, V>(this IEnumerable<T> first, IEnumerable<V> second, Func<T, V, bool> comparer)
-            => first.Where(f => second.Any(s => comparer(f, s)) is false);
-        #endregion IEnumerable Extension
     }
+
+    /// <summary>Get all flags from enum (excluding flag 0 if exists). Assumes enum is backed by an int.</summary>
+    /// <param name="e">Flag enum</param>
+    /// <returns>IEnumerable of Enums of all the flags</returns>
+    public static IEnumerable<Enum> GetFlags(this Enum e) => Enum.GetValues(e.GetType()).Cast<Enum>().Where(x => !Equals((int)(object)x, 0) && e.HasFlag(x));
+    public static string GetDisplayName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetName();
+    public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
+    public static string GetShortName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetShortName();
+
+    #region IEnumerable Extensions
+    public static void RemoveRange<T>(this List<T> list, IEnumerable<T> remove)
+    {
+        foreach (T item in remove.ToList())
+        {
+            list.Remove(item);
+        }
+    }
+
+    public static IEnumerable<T> Except<T, V>(this IEnumerable<T> first, IEnumerable<V> second, Func<T, V, bool> comparer)
+        => first.Where(f => second.Any(s => comparer(f, s)) is false);
+    #endregion IEnumerable Extension
 }

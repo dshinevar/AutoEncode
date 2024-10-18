@@ -42,6 +42,7 @@
                                                            Style="{StaticResource SourceFileExpanderHeaderStyle}"/>
                                             </Expander.Header>
                                             <ListView ItemsSource="{Binding Episodes}"
+                                                      SelectionMode="Single"
                                                       BorderThickness="0"
                                                       Margin="30,0,0,0"
                                                       Background="Transparent"

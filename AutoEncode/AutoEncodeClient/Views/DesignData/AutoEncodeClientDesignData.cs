@@ -215,12 +215,9 @@ namespace AutoEncodeClient.Views.DesignData
 
         public bool ConnectedToServer { get; set; } = true;
 
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() => throw new NotImplementedException();
 
-        public void Initialize(IAutoEncodeClientModel model) => throw new NotImplementedException();
+        public void Initialize() => throw new NotImplementedException();
         #endregion Properties
     }
 }

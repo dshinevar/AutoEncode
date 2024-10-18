@@ -1,11 +1,10 @@
 ﻿using AutoEncodeUtilities.Config;
 
-namespace AutoEncodeClient.Config
-{
-    public class AEClientConfig
-    {
-        public ConnectionSettings ConnectionSettings { get; set; }
+namespace AutoEncodeClient.Config;
 
-        public LoggerSettings LoggerSettings { get; set; }
-    }
+public class AEClientConfig
+{
+    public ConnectionSettings ConnectionSettings { get; set; }
+
+    public LoggerSettings LoggerSettings { get; set; }
 }

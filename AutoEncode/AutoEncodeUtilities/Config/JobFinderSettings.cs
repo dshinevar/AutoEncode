@@ -1,15 +1,14 @@
 ﻿using System;
 
-namespace AutoEncodeUtilities.Config
+namespace AutoEncodeUtilities.Config;
+
+public class JobFinderSettings
 {
-    public class JobFinderSettings
-    {
-        public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v", ".avi" };
+    public string[] VideoFileExtensions { get; set; } = new[] { ".mkv", ".m4v", ".avi" };
 
-        public string SecondarySkipExtension { get; set; } = "skip";
+    public string SecondarySkipExtension { get; set; } = "skip";
 
-        public double ThreadSleepInMinutes { get; set; } = 5;
+    public double ThreadSleepInMinutes { get; set; } = 5;
 
-        public TimeSpan ThreadSleep => TimeSpan.FromMinutes(ThreadSleepInMinutes);
-    }
+    public TimeSpan ThreadSleep => TimeSpan.FromMinutes(ThreadSleepInMinutes);
 }

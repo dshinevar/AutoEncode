@@ -1,6 +1,5 @@
-﻿namespace AutoEncodeUtilities.Interfaces
+﻿namespace AutoEncodeUtilities.Interfaces;
+
+public interface IClientUpdateData
 {
-    public interface IClientUpdateData
-    {
-    }
 }

@@ -1,11 +1,10 @@
 ﻿using AutoEncodeUtilities.Interfaces;
 
-namespace AutoEncodeClient.Models.Interfaces
-{
-    public interface IEncodingJobClientModelFactory
-    {
-        IEncodingJobClientModel Create(IEncodingJobData encodingJobData);
+namespace AutoEncodeClient.Models.Interfaces;
 
-        void Release(IEncodingJobClientModel model);
-    }
+public interface IEncodingJobClientModelFactory
+{
+    IEncodingJobClientModel Create(IEncodingJobData encodingJobData);
+
+    void Release(IEncodingJobClientModel model);
 }
