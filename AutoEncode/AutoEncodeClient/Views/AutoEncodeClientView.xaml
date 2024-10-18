@@ -340,81 +340,84 @@
                         <!-- Progress Bar -->
                         <Grid Grid.Column="2"
                               VerticalAlignment="Center">
-                            <TextBlock FontSize="12"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Center"
-                                       Margin="10,0"
-                                       Panel.ZIndex="1">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text"
+                            <DockPanel Panel.ZIndex="1">
+                                <TextBlock DockPanel.Dock="Left"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text"
                                                 Value="{Binding Status, Converter={StaticResource EnumDisplayShortNameConverter}}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Path=Status}"
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Path=Status}"
                                                          Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
-                                                <Setter Property="Text">
-                                                    <Setter.Value>
-                                                        <MultiBinding StringFormat="{}{0} ({1})">
-                                                            <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                            <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                    <Setter Property="Text">
+                                                        <Setter.Value>
+                                                            <MultiBinding StringFormat="{}{0} ({1})">
+                                                                <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
+                                                                <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Path=Status}"
                                                          Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                                <Setter Property="Text">
-                                                    <Setter.Value>
-                                                        <MultiBinding StringFormat="{}{0} ({1}%)">
-                                                            <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                            <Binding Path="EncodingProgress" Mode="OneWay"/>
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <TextBlock FontSize="12"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"
-                                       Margin="10,0"
-                                       Panel.ZIndex="1">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text"
+                                                    <Setter Property="Text">
+                                                        <Setter.Value>
+                                                            <MultiBinding StringFormat="{}{0} ({1}%)">
+                                                                <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
+                                                                <Binding Path="EncodingProgress" Mode="OneWay"/>
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock DockPanel.Dock="Right"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           TextTrimming="CharacterEllipsis"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text"
                                                 Value="{x:Static sys:String.Empty}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Path=Status}"
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Path=Status}"
                                                          Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                                <Setter Property="Text">
-                                                    <Setter.Value>
-                                                        <MultiBinding StringFormat="{}Time Elapsed: {0} | Estimated Time Remaining: {1} | FPS: {2:N2}">
-                                                            <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
-                                                            <Binding Path="EstimatedEncodingTimeRemaining" Converter="{StaticResource FormatTimeSpanConverter}" TargetNullValue="-"/>
-                                                            <Binding Path="CurrentFramesPerSecond" TargetNullValue="-"/>
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Path=Status}"
+                                                    <Setter Property="Text">
+                                                        <Setter.Value>
+                                                            <MultiBinding StringFormat="{}Time Elapsed: {0} | Estimated Time Remaining: {1} | FPS: {2:N2}">
+                                                                <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
+                                                                <Binding Path="EstimatedEncodingTimeRemaining" Converter="{StaticResource FormatTimeSpanConverter}" TargetNullValue="-"/>
+                                                                <Binding Path="CurrentFramesPerSecond" TargetNullValue="-"/>
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Path=Status}"
                                                          Value="{x:Static utilEnums:EncodingJobStatus.ENCODED}">
-                                                <Setter Property="Text">
-                                                    <Setter.Value>
-                                                        <MultiBinding StringFormat="{}Encoding Completed: {0} (Time Elapsed: {1})">
-                                                            <Binding Path="CompletedEncodingDateTime"/>
-                                                            <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                                                    <Setter Property="Text">
+                                                        <Setter.Value>
+                                                            <MultiBinding StringFormat="{}Encoding Completed: {0} (Time Elapsed: {1})">
+                                                                <Binding Path="CompletedEncodingDateTime"/>
+                                                                <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
+                                                            </MultiBinding>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
                             <ProgressBar Value="{Binding EncodingProgress, Mode=OneWay}"
                                          Margin="0,5"
                                          BorderThickness="1.5">

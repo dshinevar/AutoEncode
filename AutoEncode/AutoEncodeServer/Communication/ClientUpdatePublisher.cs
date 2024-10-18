@@ -6,92 +6,91 @@ using NetMQ.Sockets;
 using Newtonsoft.Json;
 using System;
 
-namespace AutoEncodeServer.Communication
+namespace AutoEncodeServer.Communication;
+
+public class ClientUpdatePublisher : IClientUpdatePublisher
 {
-    public class ClientUpdatePublisher : IClientUpdatePublisher
+    #region Dependencies
+    public ILogger Logger { get; set; }
+    #endregion Dependencies
+
+    #region Private Properties
+    private readonly object _lock = new();
+    private bool _initialized = false;
+    private readonly PublisherSocket _publisherSocket = null;
+    #endregion Private Properties
+
+    #region Properties
+    public string ConnectionString => $"tcp://*:{Port}";
+    public int Port { get; set; }
+    #endregion Properties
+
+    /// <summary>Default Constructor</summary>
+    public ClientUpdatePublisher()
     {
-        #region Dependencies
-        public ILogger Logger { get; set; }
-        #endregion Dependencies
+        _publisherSocket = new PublisherSocket();
+    }
 
-        #region Private Properties
-        private readonly object _lock = new();
-        private bool _initialized = false;
-        private readonly PublisherSocket _publisherSocket = null;
-        #endregion Private Properties
-
-        #region Properties
-        public string ConnectionString => $"tcp://*:{Port}";
-        public int Port { get; set; }
-        #endregion Properties
-
-        /// <summary>Default Constructor</summary>
-        public ClientUpdatePublisher()
+    public void Initialize(int port)
+    {
+        if (_initialized is false)
         {
-            _publisherSocket = new PublisherSocket();
+            Port = port;
+
+            _initialized = true;
         }
+    }
 
-        public void Initialize(int port)
+    public void Start()
+    {
+        if (_initialized is false) throw new Exception($"{nameof(ClientUpdatePublisher)} is not initialized.");
+
+        try
         {
-            if (_initialized is false)
-            {
-                Port = port;
-
-                _initialized = true;
-            }
+            _publisherSocket.Bind(ConnectionString);
+            Logger.LogInfo($"Binding to {ConnectionString}.", nameof(ClientUpdatePublisher));
         }
-
-        public void Start()
+        catch (Exception ex)
         {
-            if (_initialized is false) throw new Exception($"{nameof(ClientUpdatePublisher)} is not initialized.");
-
-            try
-            {
-                _publisherSocket.Bind(ConnectionString);
-                Logger.LogInfo($"Binding to {ConnectionString}.", nameof(ClientUpdatePublisher));
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, $"Error Starting {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher), new { Port });
-                throw;
-            }
+            Logger.LogException(ex, $"Error Starting {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher), new { Port });
+            throw;
         }
+    }
 
-        public void Shutdown()
+    public void Shutdown()
+    {
+        try
         {
-            try
-            {
-                _publisherSocket?.Unbind(ConnectionString);
-                _publisherSocket?.Close();
-                _publisherSocket?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, $"Error Shutting Down {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher));
-                throw;
-            }
+            _publisherSocket?.Unbind(ConnectionString);
+            _publisherSocket?.Close();
+            _publisherSocket?.Dispose();
         }
-
-        public void SendUpdateToClients(string topic, object data)
+        catch (Exception ex)
         {
-            if (_publisherSocket.IsDisposed is true) return;
+            Logger.LogException(ex, $"Error Shutting Down {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher));
+            throw;
+        }
+    }
 
-            try
+    public void SendUpdateToClients(string topic, object data)
+    {
+        if (_publisherSocket.IsDisposed is true) return;
+
+        try
+        {
+            string serializedData = JsonConvert.SerializeObject(data, CommunicationConstants.SerializerSettings);
+
+            if (string.IsNullOrWhiteSpace(serializedData) is false)
             {
-                string serializedData = JsonConvert.SerializeObject(data, CommunicationConstants.SerializerSettings);
-
-                if (string.IsNullOrWhiteSpace(serializedData) is false)
+                lock (_lock)
                 {
-                    lock (_lock)
-                    {
-                        _publisherSocket.SendMoreFrame(topic).SendFrame(serializedData);
-                    }
+                    _publisherSocket.SendMoreFrame(topic).SendFrame(serializedData);
                 }
             }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, "Error Sending Update To Clients", nameof(ClientUpdatePublisher), new { Port, topic });
-            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, "Error Sending Update To Clients", nameof(ClientUpdatePublisher), new { Port, topic });
         }
     }
 }

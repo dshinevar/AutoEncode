@@ -1,10 +1,9 @@
-﻿namespace AutoEncodeClient.Enums
+﻿namespace AutoEncodeClient.Enums;
+
+public enum EncodingJobDetailsSection
 {
-    public enum EncodingJobDetailsSection
-    {
-        None = 0,
-        Source_Data = 1,
-        Command_Arguments,
-        Error
-    }
+    None = 0,
+    Source_Data = 1,
+    Command_Arguments,
+    Error
 }

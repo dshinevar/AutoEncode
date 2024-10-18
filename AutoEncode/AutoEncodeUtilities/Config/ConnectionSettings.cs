@@ -1,9 +1,8 @@
-﻿namespace AutoEncodeUtilities.Config
+﻿namespace AutoEncodeUtilities.Config;
+
+public class ConnectionSettings
 {
-    public class ConnectionSettings
-    {
-        public string IPAddress { get; set; }
-        public int ClientUpdatePort { get; set; }
-        public int CommunicationPort { get; set; }
-    }
+    public string IPAddress { get; set; }
+    public int ClientUpdatePort { get; set; }
+    public int CommunicationPort { get; set; }
 }

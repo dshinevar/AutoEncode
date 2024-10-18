@@ -229,7 +229,7 @@
                     VerticalAlignment="Center"
                     Command="{Binding DataContext.RequestEncodeCommand, ElementName=SourceFilesRoot}"
                     CommandParameter="{Binding .}"
-                    Visibility="{Binding Path=IsFocused, RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Visibility="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource BoolToVisibilityConverter}}"
                     ToolTip="Request Encode">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">

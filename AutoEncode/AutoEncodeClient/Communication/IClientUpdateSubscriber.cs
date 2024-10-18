@@ -1,30 +1,29 @@
 ﻿using AutoEncodeUtilities.Data;
 using System;
 
-namespace AutoEncodeClient.Communication
+namespace AutoEncodeClient.Communication;
+
+public interface IClientUpdateSubscriber
 {
-    public interface IClientUpdateSubscriber
-    {
-        string ConnectionString { get; }
+    string ConnectionString { get; }
 
-        string IpAddress { get; }
+    string IpAddress { get; }
 
-        int Port { get; }
+    int Port { get; }
 
-        void Initialize(string ipAddress, int port);
+    void Initialize(string ipAddress, int port);
 
-        void Start();
+    void Start();
 
-        void Stop();
+    void Stop();
 
-        bool SubscribeToEncodingJobQueueUpdate(string topic, Action<EncodingJobQueueUpdateData> dataReceivedCallback);
+    bool SubscribeToEncodingJobQueueUpdate(string topic, Action<EncodingJobQueueUpdateData> dataReceivedCallback);
 
-        bool SubscribeToEncodingJobStatusUpdate(string topic, Action<EncodingJobStatusUpdateData> dataReceivedCallback);
+    bool SubscribeToEncodingJobStatusUpdate(string topic, Action<EncodingJobStatusUpdateData> dataReceivedCallback);
 
-        bool SubscribeToEncodingJobProcessingDataUpdate(string topic, Action<EncodingJobProcessingDataUpdateData> dataReceivedCallback);
+    bool SubscribeToEncodingJobProcessingDataUpdate(string topic, Action<EncodingJobProcessingDataUpdateData> dataReceivedCallback);
 
-        bool SubscribeToEncodingJobEncodingProgressUpdate(string topic, Action<EncodingJobEncodingProgressUpdateData> dataReceivedCallback);
+    bool SubscribeToEncodingJobEncodingProgressUpdate(string topic, Action<EncodingJobEncodingProgressUpdateData> dataReceivedCallback);
 
-        bool Unsubscribe(string topic);
-    }
+    bool Unsubscribe(string topic);
 }

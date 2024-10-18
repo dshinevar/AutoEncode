@@ -13,7 +13,7 @@ using System.Windows;
 namespace AutoEncodeClient.ViewModels
 {
     public class AutoEncodeClientViewModel :
-        ViewModelBase<IAutoEncodeClientModel>,
+        ViewModelBase,
         IAutoEncodeClientViewModel
     {
         #region Dependencies
@@ -29,12 +29,8 @@ namespace AutoEncodeClient.ViewModels
         /// <summary>Default Constructor </summary>
         public AutoEncodeClientViewModel() { }
 
-        public async void Initialize(IAutoEncodeClientModel model)
+        public async void Initialize()
         {
-            ArgumentNullException.ThrowIfNull(model);
-
-            Model = model;
-
             // On initial startup, request the queue
             ICommunicationManager communicationManager = Container.Resolve<ICommunicationManager>();
             IEnumerable<EncodingJobData> queue = await communicationManager.RequestJobQueue();

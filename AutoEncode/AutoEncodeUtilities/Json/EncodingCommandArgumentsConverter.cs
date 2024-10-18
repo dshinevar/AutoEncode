@@ -3,42 +3,41 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 
-namespace AutoEncodeUtilities.Json
+namespace AutoEncodeUtilities.Json;
+
+public class EncodingCommandArgumentsConverter<T> : JsonConverter where T : IEncodingCommandArguments
 {
-    public class EncodingCommandArgumentsConverter<T> : JsonConverter where T : IEncodingCommandArguments
+    public override bool CanConvert(Type objectType) => true;
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
-        public override bool CanConvert(Type objectType) => true;
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        if (objectType.IsInterface && reader.TokenType != JsonToken.Null)
         {
-            if (objectType.IsInterface && reader.TokenType != JsonToken.Null)
+            try
             {
-                try
-                {
-                    JObject jsonObject = JObject.Load(reader);
-                    string type = jsonObject["$type"].ToString();
-                    var typesAsArray = type.Split(',');
-                    var wrappedTarget = Activator.CreateInstance(typesAsArray[1], typesAsArray[0]);
-                    var realTarget = wrappedTarget.Unwrap() as IEncodingCommandArguments;
-                    serializer.Populate(jsonObject.CreateReader(), realTarget);
-                    return realTarget;
-                }
-                catch (JsonReaderException) 
-                {
-                    // Fallback
-                    return serializer.Deserialize<T>(reader);
-                }
+                JObject jsonObject = JObject.Load(reader);
+                string type = jsonObject["$type"].ToString();
+                var typesAsArray = type.Split(',');
+                var wrappedTarget = Activator.CreateInstance(typesAsArray[1], typesAsArray[0]);
+                var realTarget = wrappedTarget.Unwrap() as IEncodingCommandArguments;
+                serializer.Populate(jsonObject.CreateReader(), realTarget);
+                return realTarget;
             }
-
-            return serializer.Deserialize<T>(reader);
+            catch (JsonReaderException)
+            {
+                // Fallback
+                return serializer.Deserialize<T>(reader);
+            }
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        return serializer.Deserialize<T>(reader);
+    }
+
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        if (serializer.NullValueHandling != NullValueHandling.Ignore)
         {
-            if (serializer.NullValueHandling != NullValueHandling.Ignore)
-            {
-                serializer.Serialize(writer, value, value.GetType());
-            }
+            serializer.Serialize(writer, value, value.GetType());
         }
     }
 }

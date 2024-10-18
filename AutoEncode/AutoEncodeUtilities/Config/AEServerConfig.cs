@@ -1,14 +1,13 @@
 ﻿using AutoEncodeUtilities.Data;
 using System.Collections.Generic;
 
-namespace AutoEncodeUtilities.Config
+namespace AutoEncodeUtilities.Config;
+
+public class AEServerConfig
 {
-    public class AEServerConfig
-    {
-        public ServerSettings ServerSettings { get; set; }
-        public ConnectionSettings ConnectionSettings { get; set; }
-        public JobFinderSettings JobFinderSettings { get; set; }
-        public GlobalJobSettings GlobalJobSettings { get; set; } = new();
-        public Dictionary<string, SearchDirectory> Directories { get; set; }
-    }
+    public ServerSettings ServerSettings { get; set; }
+    public ConnectionSettings ConnectionSettings { get; set; }
+    public JobFinderSettings JobFinderSettings { get; set; }
+    public GlobalJobSettings GlobalJobSettings { get; set; } = new();
+    public Dictionary<string, SearchDirectory> Directories { get; set; }
 }

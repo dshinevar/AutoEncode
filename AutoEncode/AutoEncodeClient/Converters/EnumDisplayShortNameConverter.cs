@@ -3,20 +3,19 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace AutoEncodeClient.Converters
-{
-    public class EnumDisplayShortNameConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is Enum enumeration)
-            {
-                return enumeration.GetShortName();
-            }
+namespace AutoEncodeClient.Converters;
 
-            return value;
+public class EnumDisplayShortNameConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is Enum enumeration)
+        {
+            return enumeration.GetShortName();
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        return value;
     }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 }

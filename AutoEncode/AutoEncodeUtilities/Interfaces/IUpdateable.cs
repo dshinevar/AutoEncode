@@ -1,7 +1,6 @@
-﻿namespace AutoEncodeUtilities.Interfaces
+﻿namespace AutoEncodeUtilities.Interfaces;
+
+public interface IUpdateable<T>
 {
-    public interface IUpdateable<T>
-    {
-        void Update(T updateWith);
-    }
+    void Update(T updateWith);
 }

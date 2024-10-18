@@ -2,31 +2,30 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace AutoEncodeClient.Views
+namespace AutoEncodeClient.Views;
+
+/// <summary>
+/// Interaction logic for AutoEncodeClient.xaml
+/// </summary>
+public partial class AutoEncodeClientView : Window
 {
-    /// <summary>
-    /// Interaction logic for AutoEncodeClient.xaml
-    /// </summary>
-    public partial class AutoEncodeClientView : Window
+    public AutoEncodeClientView(IAutoEncodeClientViewModel viewModel)
     {
-        public AutoEncodeClientView(IAutoEncodeClientViewModel viewModel)
-        {
-            InitializeComponent();
-            DataContext = viewModel;
-        }
+        InitializeComponent();
+        DataContext = viewModel;
+    }
 
-        private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (sender is ScrollViewer scrollViewer)
         {
-            if (sender is ScrollViewer scrollViewer)
-            {
-                scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
-                e.Handled = true;
-            }
+            scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - e.Delta);
+            e.Handled = true;
         }
+    }
 
-        private void Window_Closed(object sender, System.EventArgs e)
-        {
-            // Nothing to do here for now
-        }
+    private void Window_Closed(object sender, System.EventArgs e)
+    {
+        // Nothing to do here for now
     }
 }

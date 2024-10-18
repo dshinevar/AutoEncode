@@ -1,7 +1,6 @@
-﻿namespace AutoEncodeUtilities.Interfaces
+﻿namespace AutoEncodeUtilities.Interfaces;
+
+/// <summary> Used for identifying the EncodingCommandArguments object in EncodingJob; Currently Empty </summary>
+public interface IEncodingCommandArguments
 {
-    /// <summary> Used for identifying the EncodingCommandArguments object in EncodingJob; Currently Empty </summary>
-    public interface IEncodingCommandArguments
-    {
-    }
 }

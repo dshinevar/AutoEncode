@@ -1,14 +1,13 @@
-﻿namespace AutoEncodeUtilities.Interfaces
+﻿namespace AutoEncodeUtilities.Interfaces;
+
+/// <summary>Defines common source file data </summary>
+public interface ISourceFileData
 {
-    /// <summary>Defines common source file data </summary>
-    public interface ISourceFileData
-    {
-        string FileName { get; }
+    string FileName { get; }
 
-        string FullPath { get; }
+    string FullPath { get; }
 
-        string DestinationFullPath { get; }
+    string DestinationFullPath { get; }
 
-        bool Encoded { get; }
-    }
+    bool Encoded { get; }
 }
