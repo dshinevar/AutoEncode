@@ -720,7 +720,7 @@
                        Style="{StaticResource EncodingJobDataLabelStyle}"/>
             <controls:SelectableTextBlock Grid.Row="1"
                                           Text="{Binding CommandArguments[0]}"
-                                          Style="{StaticResource EncodingJobDataStyle}"
+                                          Style="{StaticResource EncodingJobCommandArgumentsStyle}"
                                           TextWrapping="Wrap"/>
 
         </Grid>

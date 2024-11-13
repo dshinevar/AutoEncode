@@ -122,7 +122,12 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
             _encodingJobManager?.Stop();
 
             // Wait for threads to stop
-            _messageProcessingTask.Wait();
+            try
+            {
+                _messageProcessingTask?.Wait();
+            }
+            catch (OperationCanceledException) { }
+            
             _clientUpdatePublisherShutdown.WaitOne();
             _communicationMessageHandlerShutdown.WaitOne();
             _encodingJobManagerShutdown.WaitOne();
@@ -135,7 +140,6 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
         {
             Logger.LogException(ex, $"Failed to shutdown {nameof(AutoEncodeServerManager)}", nameof(AutoEncodeServerManager));
         }
-
     }
     #endregion Init / Start / Shutdown
 }

@@ -15,8 +15,6 @@ public partial class EncodingJobModel :
 {
     public void PostProcess(CancellationTokenSource cancellationTokenSource)
     {
-        const string loggerThreadName = $"{nameof(EncodingJobModel)}_PostProcess";
-
         // Double-check to ensure we don't post-process a job that shouldn't be
         if (PostProcessingFlags.Equals(PostProcessingFlags.None))
             return;
@@ -51,7 +49,7 @@ public partial class EncodingJobModel :
                 catch (Exception ex)
                 {
                     SetError(Logger.LogException(ex, $"Error copying output file to other locations for {this}",
-                       loggerThreadName, new { Id, Name, PostProcessingSettings.CopyFilePaths, DestinationFullPath }), ex);
+                       nameof(EncodingJobModel), new { Id, Name, PostProcessingSettings.CopyFilePaths, DestinationFullPath }), ex);
                     return;
                 }
             }
@@ -67,23 +65,23 @@ public partial class EncodingJobModel :
                 }
                 catch (Exception ex)
                 {
-                    SetError(Logger.LogException(ex, $"Error deleting source file for {this}", loggerThreadName, new { Id, Name, SourceFullPath }), ex);
+                    SetError(Logger.LogException(ex, $"Error deleting source file for {this}", nameof(EncodingJobModel), new { Id, Name, SourceFullPath }), ex);
                     return;
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            Logger.LogWarning($"Post-Process was cancelled for {this}", loggerThreadName);
+            Logger.LogWarning($"Post-Process was cancelled for {this}", nameof(EncodingJobModel));
             return;
         }
         catch (Exception ex)
         {
-            SetError(Logger.LogException(ex, $"Error post-processing {this}", loggerThreadName, new { Id, Name, Status }), ex);
+            SetError(Logger.LogException(ex, $"Error post-processing {this}", nameof(EncodingJobModel), new { Id, Name, Status }), ex);
             return;
         }
 
         CompletePostProcessing();
-        Logger.LogInfo($"Successfully post-processed {this} encoding job.", loggerThreadName);
+        Logger.LogInfo($"Successfully post-processed {this} encoding job.", nameof(EncodingJobModel));
     }
 }
