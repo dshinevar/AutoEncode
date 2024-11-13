@@ -1,6 +1,5 @@
 ﻿using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeUtilities.Interfaces;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -82,7 +81,7 @@ public interface IEncodingJobClientModel : INotifyPropertyChanged
 
     #region Processing Data
     /// <summary>The raw stream (video, audio subtitle) data </summary>
-    ISourceStreamDataClientModel SourceStreamData { get; }
+    SourceStreamData SourceStreamData { get; }
 
     /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
     EncodingInstructions EncodingInstructions { get; }
@@ -97,7 +96,7 @@ public interface IEncodingJobClientModel : INotifyPropertyChanged
     PostProcessingSettings PostProcessingSettings { get; }
 
     /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
-    IEncodingCommandArguments EncodingCommandArguments { get; }
+    EncodingCommandArguments EncodingCommandArguments { get; }
     #endregion Processing Data
 
     /// <summary>Requests a cancel of the current job's operation.</summary>

@@ -1,19 +1,12 @@
 ﻿using AutoEncodeClient.Collections;
-using AutoEncodeUtilities.Data;
-using System.Collections.Generic;
-using System.Windows.Input;
+using AutoEncodeClient.ViewModels.SourceFile.Interfaces;
 
 namespace AutoEncodeClient.ViewModels.Interfaces;
 
-public interface ISourceFilesViewModel
+public interface ISourceFilesViewModel : IViewModel
 {
-    ObservableDictionary<string, IEnumerable<SourceFileData>> MovieSourceFiles { get; }
+    /// <summary>Requests initial source file load. </summary>
+    void Initialize();
 
-    ObservableDictionary<string, IEnumerable<ShowSourceFileViewModel>> ShowSourceFiles { get; }
-
-    ICommand RefreshSourceFilesCommand { get; }
-
-    ICommand RequestEncodeCommand { get; }
-
-    void RefreshSourceFiles();
+    ObservableDictionary<string, ISourceFilesDirectoryViewModel> SourceFiles { get; }
 }

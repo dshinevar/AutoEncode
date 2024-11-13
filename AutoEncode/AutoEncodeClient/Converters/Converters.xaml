@@ -20,5 +20,6 @@
     <converters:IsNullConverter x:Key="IsNullConverter"/>
     <converters:IsEqualToConverter x:Key="IsEqualToConverter"/>
     <converters:DataTypeConverter x:Key="DataTypeConverter"/>
+    <converters:SourceFileEncodingStatusToBrushConverter x:Key="SourceFileEncodingStatusToBrushConverter"/>
 
 </ResourceDictionary>

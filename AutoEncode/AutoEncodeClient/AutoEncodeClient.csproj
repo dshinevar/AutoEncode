@@ -7,50 +7,24 @@
     <Authors>Daniel Shinevar</Authors>
     <Description>Client for connecting/interacting with AutoEncode Server.</Description>
     <PackageIcon>AutoEncode.png</PackageIcon>
-    <ApplicationIcon>Resources\AutoEncode.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\AE.ico</ApplicationIcon>
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\**" />
-    <EmbeddedResource Remove="Data\**" />
-    <None Remove="Data\**" />
-    <Page Remove="Data\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Resources\AutoEncode.ico" />
+    <Resource Include="Resources\AE.ico" />
+    <Resource Include="Resources\AE.png" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Castle.Windsor" Version="6.0.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.MaterialDesign" Version="5.1.0" />
     <PackageReference Include="NetMQ" Version="4.0.1.13" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="YamlDotNet" Version="16.1.3" />
+    <PackageReference Include="YamlDotNet" Version="16.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AutoEncodeUtilities\AutoEncodeUtilities.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Resources\AutoEncode.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </Resource>
-    <Resource Include="Resources\cancel.png" />
-    <Resource Include="Resources\debug.png" />
-    <Resource Include="Resources\delete.png" />
-    <Resource Include="Resources\error.png" />
-    <Resource Include="Resources\gear.png" />
-    <Resource Include="Resources\info.png" />
-    <Resource Include="Resources\pause.png" />
-    <Resource Include="Resources\play.png" />
-    <Resource Include="Resources\plus_sign.png" />
-    <Resource Include="Resources\refresh.png" />
-    <Resource Include="Resources\skull.png" />
-    <Resource Include="Resources\success.png" />
-    <Resource Include="Resources\warning.png" />
   </ItemGroup>
 
 </Project>

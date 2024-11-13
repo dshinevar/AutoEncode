@@ -1,0 +1,109 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:icon="http://metro.mahapps.com/winfx/xaml/iconpacks">
+
+    <Style x:Key="DefaultButtonStyle"
+           TargetType="{x:Type Button}">
+        <Setter Property="Foreground"
+                Value="{StaticResource DefaultButtonBrush}"/>
+        <Setter Property="Template"
+                Value="{StaticResource DefaultButtonTemplate}"/>
+        <Style.Triggers>
+            <Trigger Property="IsPressed"
+                     Value="True">
+                <Setter Property="Foreground"
+                        Value="{StaticResource DefaultButtonPressedBrush}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled"
+                     Value="False">
+                <Setter Property="Foreground"
+                        Value="{StaticResource DefaultButtonDisabledBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="EncodingJobPauseResumeButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="HorizontalAlignment"
+                Value="Center"/>
+        <Setter Property="Command"
+                Value="{Binding PauseCommand}"/>
+        <Setter Property="ToolTip"
+                Value="Pause"/>
+        <Setter Property="Content">
+            <Setter.Value>
+                <icon:MaterialDesign Kind="PauseRound"
+                                     Height="35"/>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Paused}"
+                         Value="True">
+                <Setter Property="Command"
+                        Value="{Binding ResumeCommand}"/>
+                <Setter Property="ToolTip"
+                        Value="Resume"/>
+                <Setter Property="Content">
+                    <Setter.Value>
+                        <icon:PackIconMaterialDesign Kind="PlayArrowRound"
+                                                     Height="25"/>
+                    </Setter.Value>
+                </Setter>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="EncodingJobCancelButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="HorizontalAlignment"
+                Value="Center"/>
+        <Setter Property="Command"
+                Value="{Binding CancelCommand}"/>
+        <Setter Property="ToolTip"
+                Value="Cancel"/>
+        <Setter Property="Content">
+            <Setter.Value>
+                <icon:PackIconMaterialDesign Kind="Cancel"
+                                             Height="20"
+                                             Width="25"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ContextMenu">
+            <Setter.Value>
+                <ContextMenu>
+                    <MenuItem Header="Cancel Then Pause"
+                              Command="{Binding CancelThenPauseCommand}"
+                              ToolTip="Cancels Then Immediately Pauses The Job"/>
+                </ContextMenu>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="EncodingJobRemoveButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="HorizontalAlignment"
+                Value="Center"/>
+        <Setter Property="Command"
+                Value="{Binding RemoveCommand}"/>
+        <Setter Property="ToolTip"
+                Value="Remove / Delete"/>
+        <Setter Property="Content">
+            <Setter.Value>
+                <icon:PackIconMaterialDesign Kind="Delete"
+                                             Height="20"
+                                             Width="25"
+                                             Foreground="{StaticResource DeleteButtonBrush}"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

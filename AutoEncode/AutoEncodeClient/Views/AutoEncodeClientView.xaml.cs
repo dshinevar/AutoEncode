@@ -1,4 +1,5 @@
-﻿using AutoEncodeClient.ViewModels.Interfaces;
+﻿using AutoEncodeClient.Dialogs;
+using AutoEncodeClient.ViewModels.Interfaces;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -13,6 +14,13 @@ public partial class AutoEncodeClientView : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+
+        viewModel.UserMessageDialogRequested += ViewModel_UserMessageDialogRequested;
+    }
+
+    private void ViewModel_UserMessageDialogRequested(object sender, UserMessageDialogRequestedEventArgs e)
+    {
+        e.Result = UserMessageDialogHandler.ShowDialog(e.UserMessage, e.Title, e.Buttons, e.Severity, this);
     }
 
     private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)

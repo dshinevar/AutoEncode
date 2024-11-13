@@ -1,11 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace AutoEncodeUtilities;
 
 public static class HelperMethods
 {
+    /// <summary>DEBUG ONLY: Writes message to debug output.</summary>
+    /// <param name="message"></param>
+    [Conditional("DEBUG")]
+    public static void DebugLog(string message, string module, [CallerMemberName] string callerMemberName = "")
+    {
+        Debug.WriteLine($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [DEBUG][{module}][{callerMemberName}]: {message}");
+    }
+
     public static string ConvertSecondsToTimestamp(int seconds) => TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
 
     public static double ConvertTimestampToSeconds(string timestamp) => TimeSpan.TryParse(timestamp, out TimeSpan ts) ? ts.TotalSeconds : -1.0;
@@ -53,4 +65,37 @@ public static class HelperMethods
     }
 
     public static string FormatEncodingTime(TimeSpan ts) => (ts.Days > 0) ? $"{ts:d\\d\\ hh\\:mm\\:ss}" : $"{ts:hh\\:mm\\:ss}";
+
+    /// <summary>Deletes all given files. (UNSAFE)</summary>
+    /// <param name="files">Files to be deleted.</param>
+    public static void DeleteFiles(params string[] files)
+    {
+        foreach (string file in files)
+        {
+            File.Delete(file);
+        }
+    }
+
+    /// <summary>Check if file size is changing.</summary>
+    /// <param name="filePath"></param>
+    /// <returns>True if file is ready; False, otherwise</returns>
+    public static bool IsFileSizeChanging(string filePath)
+    {
+        List<long> fileSizes = [];
+        FileInfo fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        Thread.Sleep(TimeSpan.FromSeconds(4));
+
+        // If still able to access, check to see if file size is changing
+        fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        Thread.Sleep(TimeSpan.FromSeconds(4));
+
+        fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        return fileSizes.All(x => x.Equals(fileSizes.First()));
+    }
 }

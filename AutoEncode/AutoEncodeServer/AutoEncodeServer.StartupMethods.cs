@@ -3,146 +3,120 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
-namespace AutoEncodeServer
+namespace AutoEncodeServer;
+
+internal partial class AutoEncodeServer
 {
-    internal partial class AutoEncodeServer
+    /// <summary>Gets FFmpeg version/Checks to make sure FFmpeg is accessible </summary>
+    /// <param name="ffmpegDirectory">FFmpeg directory from config</param>
+    /// <returns>List of strings from version output (for logging)</returns>
+    static List<string> GetFFmpegVersion(string ffmpegDirectory)
     {
-        static void CreateLogFileDirectory(string logFileLocation)
+        try
         {
-            try
-            {
-                DirectoryInfo directoryInfo = Directory.CreateDirectory(logFileLocation);
+            List<string> ffmpegVersionLines = [];
 
-                if (directoryInfo is null)
+            ProcessStartInfo startInfo = new()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = Path.Combine(ffmpegDirectory, "ffmpeg"),
+                Arguments = "-version",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+
+            using (Process ffprobeProcess = new())
+            {
+                ffprobeProcess.StartInfo = startInfo;
+                ffprobeProcess.OutputDataReceived += (sender, e) =>
                 {
-                    Debug.WriteLine("Failed to create/find log directory. Checking backup.");
-
-                    DirectoryInfo backupDirectoryInfo = Directory.CreateDirectory(Lookups.LogBackupFileLocation);
-
-                    if (backupDirectoryInfo is null)
-                    {
-                        Debug.WriteLine("Failed to create/find backup log directory. Exiting.");
-                        Environment.Exit(-2);
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        /// <summary>Gets FFmpeg version/Checks to make sure FFmpeg is accessible </summary>
-        /// <param name="ffmpegDirectory">FFmpeg directory from config</param>
-        /// <returns>List of strings from version output (for logging)</returns>
-        static List<string> GetFFmpegVersion(string ffmpegDirectory)
-        {
-            try
-            {
-                List<string> ffmpegVersionLines = [];
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = Path.Combine(ffmpegDirectory, "ffmpeg"),
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
+                    if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
                 };
-
-                using (Process ffprobeProcess = new())
-                {
-                    ffprobeProcess.StartInfo = startInfo;
-                    ffprobeProcess.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) ffmpegVersionLines.Add(e.Data);
-                    };
-                    ffprobeProcess.Start();
-                    ffprobeProcess.BeginOutputReadLine();
-                    ffprobeProcess.WaitForExit();
-                }
-
-                return ffmpegVersionLines;
+                ffprobeProcess.Start();
+                ffprobeProcess.BeginOutputReadLine();
+                ffprobeProcess.WaitForExit();
             }
-            catch (Exception)
-            {
-                throw;
-            }
+
+            return ffmpegVersionLines;
         }
-
-        /// <summary>Gets mkvmerge version </summary>
-        /// <returns>mkvmerge version string</returns>
-        static string GetMKVMergeVersion(string mkvMergeFullPath)
+        catch (Exception)
         {
-            try
-            {
-                string mkvMergeVersion = string.Empty;
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = string.IsNullOrWhiteSpace(mkvMergeFullPath) ? "mkvmerge" : mkvMergeFullPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                };
-
-                using (Process mkvMergeProcess = new())
-                {
-                    mkvMergeProcess.StartInfo = startInfo;
-                    mkvMergeProcess.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) mkvMergeVersion = e.Data; // Only expecting one line
-                    };
-                    mkvMergeProcess.Start();
-                    mkvMergeProcess.BeginOutputReadLine();
-                    mkvMergeProcess.WaitForExit();
-                }
-
-                return mkvMergeVersion;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            throw;
         }
+    }
 
-        static List<string> Getx265Version(string x265FullPath)
+    /// <summary>Gets mkvmerge version </summary>
+    /// <returns>mkvmerge version string</returns>
+    static string GetMKVMergeVersion(string mkvMergeFullPath)
+    {
+        try
         {
-            try
-            {
-                List<string> x265Version = [];
+            string mkvMergeVersion = string.Empty;
 
-                ProcessStartInfo startInfo = new()
+            ProcessStartInfo startInfo = new()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = string.IsNullOrWhiteSpace(mkvMergeFullPath) ? "mkvmerge" : mkvMergeFullPath,
+                Arguments = "--version",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+
+            using (Process mkvMergeProcess = new())
+            {
+                mkvMergeProcess.StartInfo = startInfo;
+                mkvMergeProcess.OutputDataReceived += (sender, e) =>
                 {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = x265FullPath,
-                    Arguments = "--version",
-                    UseShellExecute = false,
-                    RedirectStandardError = true
+                    if (!string.IsNullOrWhiteSpace(e.Data)) mkvMergeVersion = e.Data; // Only expecting one line
                 };
-
-                using (Process x265Process = new())
-                {
-                    x265Process.StartInfo = startInfo;
-                    x265Process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
-                    };
-                    x265Process.Start();
-                    x265Process.BeginErrorReadLine();
-                    x265Process.WaitForExit();
-                }
-
-                return x265Version;
+                mkvMergeProcess.Start();
+                mkvMergeProcess.BeginOutputReadLine();
+                mkvMergeProcess.WaitForExit();
             }
-            catch (Exception)
+
+            return mkvMergeVersion;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    static List<string> Getx265Version(string x265FullPath)
+    {
+        try
+        {
+            List<string> x265Version = [];
+
+            ProcessStartInfo startInfo = new()
             {
-                throw;
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                FileName = x265FullPath,
+                Arguments = "--version",
+                UseShellExecute = false,
+                RedirectStandardError = true
+            };
+
+            using (Process x265Process = new())
+            {
+                x265Process.StartInfo = startInfo;
+                x265Process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data)) x265Version.Add(e.Data.Replace("x265 [info]: ", string.Empty)); // Only expecting one line
+                };
+                x265Process.Start();
+                x265Process.BeginErrorReadLine();
+                x265Process.WaitForExit();
             }
+
+            return x265Version;
+        }
+        catch (Exception)
+        {
+            throw;
         }
     }
 }

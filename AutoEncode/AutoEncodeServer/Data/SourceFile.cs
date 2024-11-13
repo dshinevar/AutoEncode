@@ -1,15 +1,16 @@
-﻿using AutoEncodeUtilities.Data;
-using AutoEncodeUtilities.Interfaces;
+﻿using AutoEncodeUtilities.Enums;
 using System.IO;
 
-namespace AutoEncodeServer.Data
+namespace AutoEncodeServer.Data;
+
+/// <summary>Most base source file data.</summary>
+public class SourceFile
 {
-    /// <summary>Most base source file data -- used to create <see cref="SourceFileData"/> which has a GUID </summary>
-    internal class SourceFile : ISourceFileData
-    {
-        public string FileName => Path.GetFileName(FullPath);
-        public string FullPath { get; set; }
-        public string DestinationFullPath { get; set; }
-        public bool Encoded { get; set; }
-    }
+    public string Filename => Path.GetFileName(FullPath);
+    public string FullPath { get; set; }
+    public string DestinationFullPath { get; set; }
+    public SourceFileEncodingStatus EncodingStatus { get; set; }
+    public string SearchDirectoryName { get; set; }
+    public string SourceDirectory { get; set; }
+    public bool IsEpisode { get; set; }
 }

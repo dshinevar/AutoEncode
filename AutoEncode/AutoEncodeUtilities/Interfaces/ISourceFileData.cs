@@ -1,4 +1,6 @@
-﻿namespace AutoEncodeUtilities.Interfaces;
+﻿using AutoEncodeUtilities.Enums;
+
+namespace AutoEncodeUtilities.Interfaces;
 
 /// <summary>Defines common source file data </summary>
 public interface ISourceFileData
@@ -9,5 +11,5 @@ public interface ISourceFileData
 
     string DestinationFullPath { get; }
 
-    bool Encoded { get; }
+    SourceFileEncodingStatus EncodingStatus { get; }
 }

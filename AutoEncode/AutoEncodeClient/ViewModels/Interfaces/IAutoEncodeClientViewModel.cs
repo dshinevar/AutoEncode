@@ -1,14 +1,6 @@
-﻿using AutoEncodeClient.Collections;
+﻿namespace AutoEncodeClient.ViewModels.Interfaces;
 
-namespace AutoEncodeClient.ViewModels.Interfaces;
-
-public interface IAutoEncodeClientViewModel
+public interface IAutoEncodeClientViewModel : IViewModel
 {
     void Initialize();
-
-    ISourceFilesViewModel SourceFilesViewModel { get; }
-
-    BulkObservableCollection<IEncodingJobViewModel> EncodingJobs { get; }
-
-    IEncodingJobViewModel SelectedEncodingJobViewModel { get; set; }
 }

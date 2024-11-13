@@ -1,11 +1,9 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 
 namespace AutoEncodeUtilities;
 
@@ -40,9 +38,7 @@ public static class ExtensionMethods
             return default;
         }
 
-        var deserializeSettings = new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace };
-        var serializeSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
-        return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source, serializeSettings), deserializeSettings);
+        return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(source));
     }
 
     public static void CopyProperties(this object source, object target)
@@ -81,12 +77,13 @@ public static class ExtensionMethods
         {
             try
             {
-                var obj = JToken.Parse(s);
+                _ = JsonDocument.Parse(s);
+
                 return true;
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
-                Debug.WriteLine(ex.Message);
+                HelperMethods.DebugLog(ex.Message, nameof(IsValidJson));
                 return false;
             }
         }
