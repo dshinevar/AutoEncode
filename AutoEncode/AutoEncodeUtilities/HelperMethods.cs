@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace AutoEncodeUtilities;
 
@@ -74,28 +73,5 @@ public static class HelperMethods
         {
             File.Delete(file);
         }
-    }
-
-    /// <summary>Check if file size is changing.</summary>
-    /// <param name="filePath"></param>
-    /// <returns>True if file is ready; False, otherwise</returns>
-    public static bool IsFileSizeChanging(string filePath)
-    {
-        List<long> fileSizes = [];
-        FileInfo fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
-
-        Thread.Sleep(TimeSpan.FromSeconds(4));
-
-        // If still able to access, check to see if file size is changing
-        fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
-
-        Thread.Sleep(TimeSpan.FromSeconds(4));
-
-        fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
-
-        return fileSizes.All(x => x.Equals(fileSizes.First()));
     }
 }

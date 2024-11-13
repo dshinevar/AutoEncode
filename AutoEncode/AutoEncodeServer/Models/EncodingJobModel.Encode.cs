@@ -4,6 +4,7 @@ using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,8 +19,6 @@ public partial class EncodingJobModel :
 {
     public void Encode(CancellationTokenSource cancellationTokenSource)
     {
-        const string loggerThreadName = $"{nameof(EncodingJobModel)}_Encode";
-
         TaskCancellationTokenSource = cancellationTokenSource;
         Status = EncodingJobStatus.ENCODING;
 
@@ -33,7 +32,7 @@ public partial class EncodingJobModel :
             // Verify source file is still here
             if (File.Exists(SourceFullPath) is false)
             {
-                SetError(Logger.LogError($"Source file no longer found for {this}", loggerThreadName, new { SourceFullPath }));
+                SetError(Logger.LogError($"Source file no longer found for {this}", nameof(EncodingJobModel), new { SourceFullPath }));
                 return;
             }
 
@@ -47,12 +46,10 @@ public partial class EncodingJobModel :
         }
         catch (Exception ex)
         {
-            SetError(Logger.LogException(ex, $"Failed PreEncodeVerification for {this}.", loggerThreadName, new { Id, Name, SourceFullPath, DestinationFullPath }), ex);
+            SetError(Logger.LogException(ex, $"Failed PreEncodeVerification for {this}.", nameof(EncodingJobModel), new { Id, Name, SourceFullPath, DestinationFullPath }), ex);
             return;
         }
 
-        if (HasError is true)
-            return;
 
         // Do the encode
         if (State.DolbyVisionEncodingEnabled is true && EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision is true)
@@ -88,7 +85,7 @@ public partial class EncodingJobModel :
                     RedirectStandardError = true
                 };
 
-                int count = 0;
+                bool handle = false;
 
                 using (encodingProcess = new())
                 {
@@ -98,18 +95,15 @@ public partial class EncodingJobModel :
                     {
                         (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) progress = (null, null, null);
 
-                        if (count >= 10)
+                        if (handle is true)
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
                                 progress = HandleEncodingOutput(e.Data);
                             }
-                            count = 0;
                         }
-                        else
-                        {
-                            count++;
-                        }
+
+                        handle |= !handle;
 
                         UpdateEncodingProgress(progress.encodingProgress, progress.estimatedSecondsRemaining, progress.currentFps, stopwatch.Elapsed);
                     };
@@ -130,7 +124,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error encoding {this}.", loggerThreadName, details: new { Id, Name, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error encoding {this}.", nameof(EncodingJobModel), details: new { Id, Name, State.FFmpegDirectory }), ex);
             }
 
             stopwatch.Stop();
@@ -145,26 +139,19 @@ public partial class EncodingJobModel :
                     // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     //job.ResetEncoding();
-                    Logger.LogWarning($"Encoding of {this} was cancelled.", loggerThreadName);
+                    Logger.LogWarning($"Encoding of {this} was cancelled.", nameof(EncodingJobModel));
                 }
                 // NON-ZERO EXIT CODE
                 else if (exitCode is not null && exitCode != 0)
                 {
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"{this} encoding job failed. Exit Code: {exitCode}", loggerThreadName, new { exitCode }));
+                    SetError(Logger.LogError($"{this} encoding job failed. Exit Code: {exitCode}", nameof(EncodingJobModel), new { exitCode }));
                 }
                 // FILE NOT CREATED / EMPTY FILE
                 else if (nonEmptyFileExists is false)
                 {
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"{this} either did not create an output or created an empty file", loggerThreadName));
-                }
-                // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (HasError is false && EncodingProgress < 90)
-                {
-                    // Go ahead and clear out the temp file AND the encoded file (most likely didn't finish)
-                    HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"{this} encoding job ended prematurely.", loggerThreadName, new { HasError, EncodingProgress }));
+                    SetError(Logger.LogError($"{this} either did not create an output or created an empty file", nameof(EncodingJobModel)));
                 }
                 // JOB ERRORED
                 else if (HasError is true)
@@ -174,8 +161,16 @@ public partial class EncodingJobModel :
                     // Log occurred in catch
                 }
                 // SUCCESS
-                else if (EncodingProgress >= 90 && HasError is false)
+                else
                 {
+                    List<string> log = [];
+                    log.Add($"Successfully encoded {this}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}");
+                    if (EncodingProgress < 90)
+                    {
+                        log.Add("NOTE: Encoding completed before the calculated encoding progress reached 90%.");
+                        log.Add("No errors appear to have occurred but output file should be checked to ensure completeness.");
+                    }
+
                     CompleteEncoding(stopwatch.Elapsed);
                     HelperMethods.DeleteFiles(Lookups.PreviouslyEncodingTempFile);
                     if (EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
@@ -183,7 +178,8 @@ public partial class EncodingJobModel :
                         // Delete all possible HDRMetadata files
                         SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(File.Delete);
                     }
-                    Logger.LogInfo($"Successfully encoded {this}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}", loggerThreadName);
+
+                    Logger.LogInfo(log, nameof(EncodingJobModel));
                 }
             }
             catch (Exception ex)
@@ -227,7 +223,7 @@ public partial class EncodingJobModel :
             // ENCODING
             try
             {
-                int count = 0;
+                bool handle = false;
 
                 ProcessStartInfo videoEncodeStartInfo = new()
                 {
@@ -260,25 +256,22 @@ public partial class EncodingJobModel :
                         {
                             (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) progress = (null, null, null);
 
-                            if (count >= 10)
+                            if (handle is true)
                             {
                                 if (string.IsNullOrWhiteSpace(e.Data) is false)
                                 {
                                     progress = HandleDolbyVisionEncodingOutput(e.Data, 0.9);
                                 }
-                                count = 0;
                             }
-                            else
-                            {
-                                count++;
-                            }
+
+                            handle |= !handle;
 
                             UpdateEncodingProgress(progress.encodingProgress, progress.estimatedSecondsRemaining, progress.currentFps, stopwatch.Elapsed);
                         }
                         catch (Exception ex)
                         {
                             // Just log for now
-                            Logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {this}.", loggerThreadName, details: new { Id, Name });
+                            Logger.LogException(ex, $"Exception occurred during data receive of video encoding process for {this}.", nameof(EncodingJobModel), details: new { Id, Name });
                             return;
                         }
                     };
@@ -300,7 +293,7 @@ public partial class EncodingJobModel :
                     if (videoEncodeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        SetError(Logger.LogError($"Video encoding failed to start for {this}", loggerThreadName));
+                        SetError(Logger.LogError($"Video encoding failed to start for {this}", nameof(EncodingJobModel)));
                         return;
                     }
 
@@ -330,7 +323,7 @@ public partial class EncodingJobModel :
                     if (audioSubEncodeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        SetError(Logger.LogError($"Audio/Sub encoding failed to start for {this}", loggerThreadName));
+                        SetError(Logger.LogError($"Audio/Sub encoding failed to start for {this}", nameof(EncodingJobModel)));
                         encodingTokenSource.Cancel();
                     }
 
@@ -342,7 +335,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error encoding {this}.", loggerThreadName,
+                SetError(Logger.LogException(ex, $"Error encoding {this}.", nameof(EncodingJobModel),
                     new { Id, Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName }), ex);
                 if (videoEncodeExited is false)
                     videoEncodeProcess?.Kill(true);
@@ -362,7 +355,7 @@ public partial class EncodingJobModel :
                 {
                     // Ensure these files are deleted (should've deleted on exit)
                     HelperMethods.DeleteFiles(EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    Logger.LogWarning($"{this} encoding was cancelled.", loggerThreadName);
+                    Logger.LogWarning($"{this} encoding was cancelled.", nameof(EncodingJobModel));
                     return;
                 }
                 // Most likely, one of the processes failed
@@ -372,15 +365,7 @@ public partial class EncodingJobModel :
                     HelperMethods.DeleteFiles(EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                     string[] messages = [ $"One of the encoding (video/audio-sub) processes errored for {this}.",
                                  $"Video Encode Exit Code: {videoEncodeExitCode} | Audio/Sub Encode Exit Code: {audioSubEncodeExitCode}"];
-                    SetError(Logger.LogError(messages, loggerThreadName, new { videoEncodeExitCode, audioSubEncodeExitCode }));
-                    return;
-                }
-                // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (HasError is false && EncodingProgress < 85)
-                {
-                    // Ensure these files are deleted
-                    HelperMethods.DeleteFiles(EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"{this} encoding job ended prematurely.", loggerThreadName, new { HasError, EncodingProgress }));
+                    SetError(Logger.LogError(messages, nameof(EncodingJobModel), new { videoEncodeExitCode, audioSubEncodeExitCode }));
                     return;
                 }
                 // JOB ERRORED
@@ -399,7 +384,7 @@ public partial class EncodingJobModel :
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                Logger.LogException(ex, $"Error cleaning up dolby vision encoding job for {this}.", loggerThreadName, new { Id, Name, EncodingProgress, HasError });
+                Logger.LogException(ex, $"Error cleaning up dolby vision encoding job for {this}.", nameof(EncodingJobModel), new { Id, Name, EncodingProgress, HasError });
                 return;
                 // Don't error the job for now
             }
@@ -436,7 +421,7 @@ public partial class EncodingJobModel :
 
                         catch (Exception ex)
                         {
-                            Logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {this}.", loggerThreadName, new { Id, Name });
+                            Logger.LogException(ex, $"Error occurred during output data receive for mkvmerge of {this}.", nameof(EncodingJobModel), new { Id, Name });
                             return;
                         }
                     };
@@ -447,7 +432,7 @@ public partial class EncodingJobModel :
                             mergeExitCode = proc?.ExitCode;
                             if (mergeExitCode != 0)
                             {
-                                SetError(Logger.LogError($"Merge process for {this} ended unsuccessfully. ExitCode: {mergeExitCode}", loggerThreadName, new { mergeExitCode }));
+                                SetError(Logger.LogError($"Merge process for {this} ended unsuccessfully. ExitCode: {mergeExitCode}", nameof(EncodingJobModel), new { mergeExitCode }));
                             }
                         }
                     };
@@ -455,7 +440,7 @@ public partial class EncodingJobModel :
                     if (mergeProcess.Start() is false)
                     {
                         // If failed to start, error and end
-                        SetError(Logger.LogError($"Mkvmerge failed to start for {this}", loggerThreadName));
+                        SetError(Logger.LogError($"Mkvmerge failed to start for {this}", nameof(EncodingJobModel)));
                         // Delete previous encoding files
                         HelperMethods.DeleteFiles(EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath, Lookups.PreviouslyEncodingTempFile);
                         return;
@@ -468,7 +453,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error merging {this}.", loggerThreadName, new { Id, Name, State.MkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }), ex);
+                SetError(Logger.LogException(ex, $"Error merging {this}.", nameof(EncodingJobModel), new { Id, Name, State.MkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }), ex);
                 mergeProcess?.Kill(true);
             }
 
@@ -483,26 +468,7 @@ public partial class EncodingJobModel :
                     // Ensure these files are deleted
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     //job.ResetEncoding();
-                    Logger.LogWarning($"{this} encoding was cancelled.", loggerThreadName);
-                }
-                // SUCCESS
-                else if (EncodingProgress >= 90 && HasError is false && nonEmptyFileExists)
-                {
-                    CompleteEncoding(stopwatch.Elapsed);
-                    HelperMethods.DeleteFiles(Lookups.PreviouslyEncodingTempFile, EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath);
-                    if (EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
-                    {
-                        // Delete all possible HDRMetadata files
-                        SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(File.Delete);
-                    }
-                    Logger.LogInfo($"Successfully encoded {this}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}", loggerThreadName);
-                }
-                // DIDN'T FINISH BUT DIDN'T RECEIVE ERROR
-                else if (HasError is false && EncodingProgress < 90)
-                {
-                    // Ensure these files are deleted
-                    HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"{this} encoding job ended prematurely.", loggerThreadName, new { HasError, EncodingProgress }));
+                    Logger.LogWarning($"{this} encoding was cancelled.", nameof(EncodingJobModel));
                 }
                 // JOB ERRORED
                 else if (HasError is true)
@@ -511,16 +477,29 @@ public partial class EncodingJobModel :
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
                     // Log occurred in catch
                 }
+                // EMPTY FILE
                 else if (nonEmptyFileExists is false)
                 {
                     HelperMethods.DeleteFiles(DestinationFullPath, Lookups.PreviouslyEncodingTempFile);
-                    SetError(Logger.LogError($"Output file not created for {this}", loggerThreadName));
+                    SetError(Logger.LogError($"Output file not created for {this}", nameof(EncodingJobModel)));
+                }
+                // SUCCESS
+                else
+                {
+                    CompleteEncoding(stopwatch.Elapsed);
+                    HelperMethods.DeleteFiles(Lookups.PreviouslyEncodingTempFile, EncodingInstructions.EncodedVideoFullPath, EncodingInstructions.EncodedAudioSubsFullPath);
+                    if (EncodingInstructions.VideoStreamEncodingInstructions.HasDynamicHDR is true)
+                    {
+                        // Delete all possible HDRMetadata files
+                        SourceStreamData.VideoStream.HDRData.DynamicMetadataFullPaths.Select(x => x.Value).ToList().ForEach(File.Delete);
+                    }
+                    Logger.LogInfo($"Successfully encoded {this}. Estimated Time Elapsed: {HelperMethods.FormatEncodingTime(stopwatch.Elapsed)}", nameof(EncodingJobModel));
                 }
             }
             catch (Exception ex)
             {
                 // Most likely an exception from File.Delete
-                Logger.LogException(ex, $"Error cleaning up dolby vision merging job for {this}.", loggerThreadName, details: new { Id, Name, EncodingProgress, HasError });
+                Logger.LogException(ex, $"Error cleaning up dolby vision merging job for {this}.", nameof(EncodingJobModel), details: new { Id, Name, EncodingProgress, HasError });
                 return;
                 // Don't error the job for now
             }

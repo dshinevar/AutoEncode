@@ -134,9 +134,9 @@ public partial class App : Application
     {
         try
         {
-            NetMQConfig.Cleanup();
-
             _container.Release(_communicatorMessageHandler);
+
+            NetMQConfig.Cleanup();            
         }
         catch (Exception ex)
         {

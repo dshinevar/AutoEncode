@@ -78,13 +78,21 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     {
         try
         {
+            // Stop adding and clear requests
+            _requests.CompleteAdding();
+            while (_requests.TryTake(out _));
+
             _shutdownCancellationTokenSource.Cancel();
 
             _publisherSocket?.Unbind(ConnectionString);
             _publisherSocket?.Close();
             _publisherSocket?.Dispose();
 
-            _requestHandlerTask?.Wait();
+            try
+            {
+                _requestHandlerTask?.Wait();
+            }
+            catch (OperationCanceledException) { }            
 
             Logger.LogInfo($"{nameof(ClientUpdatePublisher)} unbound from {ConnectionString} -- Request Thread stopped.", nameof(ClientUpdatePublisher));
             _shutdownMRE.Set();

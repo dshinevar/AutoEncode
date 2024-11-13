@@ -29,8 +29,6 @@ public partial class EncodingJobModel :
 
     public void Build(CancellationTokenSource cancellationTokenSource)
     {
-        const string loggerThreadName = $"{nameof(EncodingJobModel)}_Build";
-
         TaskCancellationTokenSource = cancellationTokenSource;
         Status = EncodingJobStatus.BUILDING;
         BuildingStatus = EncodingJobBuildingStatus.BUILDING;
@@ -39,7 +37,7 @@ public partial class EncodingJobModel :
 
         if (File.Exists(SourceFullPath) is false)
         {
-            SetError(Logger.LogError($"Source file no longer found for {this}", loggerThreadName, new { SourceFullPath }));
+            SetError(Logger.LogError($"Source file no longer found for {this}", nameof(EncodingJobModel), new { SourceFullPath }));
             return;
         }
 
@@ -63,13 +61,13 @@ public partial class EncodingJobModel :
                 else
                 {
                     // Set error and end
-                    SetError(Logger.LogError($"Failed to get probe data for {Filename}", loggerThreadName, new { SourceFullPath }));
+                    SetError(Logger.LogError($"Failed to get probe data for {Filename}", nameof(EncodingJobModel), new { SourceFullPath }));
                     return;
                 }
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error getting probe or source file data for {this}", loggerThreadName, new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error getting probe or source file data for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
                 return;
             }
 
@@ -83,7 +81,7 @@ public partial class EncodingJobModel :
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
-                    SetError(Logger.LogError($"Failed to determine VideoScanType for {this}.", loggerThreadName, new { SourceFullPath, State.FFmpegDirectory }));
+                    SetError(Logger.LogError($"Failed to determine VideoScanType for {this}.", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }));
                     return;
                 }
                 else
@@ -97,7 +95,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining VideoScanType for {this}", loggerThreadName, new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error determining VideoScanType for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
                 return;
             }
 
@@ -111,7 +109,7 @@ public partial class EncodingJobModel :
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
-                    SetError(Logger.LogError($"Failed to determine crop for {this}", loggerThreadName, new { SourceFullPath, State.FFmpegDirectory }));
+                    SetError(Logger.LogError($"Failed to determine crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }));
                 }
                 else
                 {
@@ -124,7 +122,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining crop for {this}", loggerThreadName, new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error determining crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
                 return;
             }
 
@@ -150,7 +148,7 @@ public partial class EncodingJobModel :
                         }
                         else
                         {
-                            Logger.LogWarning($"No HDR10+ Metadata Extractor given. Will not use HDR10+ for {Name}.", loggerThreadName);
+                            Logger.LogWarning($"No HDR10+ Metadata Extractor given. Will not use HDR10+ for {Name}.", nameof(EncodingJobModel));
                         }
                     }
 
@@ -167,7 +165,7 @@ public partial class EncodingJobModel :
                         }
                         else
                         {
-                            Logger.LogWarning($"No DolbyVision Metadata Extractor given. Will not use DolbyVision for {Name}.", loggerThreadName);
+                            Logger.LogWarning($"No DolbyVision Metadata Extractor given. Will not use DolbyVision for {Name}.", nameof(EncodingJobModel));
                         }
                     }
                 }
@@ -178,7 +176,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error creating HDR metadata file for {this}", loggerThreadName,
+                SetError(Logger.LogException(ex, $"Error creating HDR metadata file for {this}", nameof(EncodingJobModel),
                     new { Id, Name, DynamicHDR = SourceStreamData.VideoStream.HasDynamicHDR, State.DolbyVisionEncodingEnabled, State.DolbyVisionExtractorFullPath, State.HDR10PlusExtractorFullPath }), ex);
                 return;
             }
@@ -196,7 +194,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error building encoding instructions for {this}", loggerThreadName, new { Id, Name }), ex);
+                SetError(Logger.LogException(ex, $"Error building encoding instructions for {this}", nameof(EncodingJobModel), new { Id, Name }), ex);
                 return;
             }
 
@@ -241,25 +239,25 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error building FFmpeg command for {this}", loggerThreadName, new { Id, Name }), ex);
+                SetError(Logger.LogException(ex, $"Error building FFmpeg command for {this}", nameof(EncodingJobModel), new { Id, Name }), ex);
                 return;
             }
 
         }
         catch (OperationCanceledException)
         {
-            Logger.LogWarning($"Build was cancelled for {this} - Build Step: {BuildingStatus.GetDescription()}", loggerThreadName);
+            Logger.LogWarning($"Build was cancelled for {this} - Build Step: {BuildingStatus.GetDescription()}", nameof(EncodingJobModel));
             return;
         }
         catch (Exception ex)
         {
-            SetError(Logger.LogException(ex, $"Error building encoding job for {this}", loggerThreadName, new { Id, Name, BuildingStatus }), ex);
+            SetError(Logger.LogException(ex, $"Error building encoding job for {this}", nameof(EncodingJobModel), new { Id, Name, BuildingStatus }), ex);
             return;
         }
 
         Status = EncodingJobStatus.BUILT;
         BuildingStatus = EncodingJobBuildingStatus.BUILT;
-        Logger.LogInfo($"Successfully built {this} encoding job.");
+        Logger.LogInfo($"Successfully built {this} encoding job.", nameof(EncodingJobModel));
 
         #region Local Functions
         ProbeData GetProbeData()

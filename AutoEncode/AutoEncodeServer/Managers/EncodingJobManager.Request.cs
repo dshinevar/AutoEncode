@@ -2,12 +2,12 @@
 using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -42,13 +42,13 @@ public partial class EncodingJobManager : IEncodingJobManager
         return _newEncodingJobRequests.TryAdd(sourceFile);
     }
 
-    private void CreateEncodingJob(ISourceFileModel sourceFile)
+    private async void CreateEncodingJob(ISourceFileModel sourceFile)
     {
         try
         {
             if (Count < State.MaxNumberOfJobsInQueue)
             {
-                if ((ExistsByFileName(sourceFile.Filename) is false) && (HelperMethods.IsFileSizeChanging(sourceFile.FullPath) is true))
+                if ((ExistsByFileName(sourceFile.Filename) is false) && (await IsFileSizeChanging(sourceFile.FullPath) is true))
                 {
                     PostProcessingSettings postProcessingSettings = State.Directories[sourceFile.SearchDirectoryName].PostProcessing;
                     // Prep Data for creating job
@@ -85,6 +85,29 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             Logger.LogException(ex, $"Failed to create encoding job for {sourceFile.FullPath}", nameof(EncodingJobManager));
         }
+    }
+
+    /// <summary>Check if file size is changing.</summary>
+    /// <param name="filePath"></param>
+    /// <returns>True if file is ready; False, otherwise</returns>
+    private static async Task<bool> IsFileSizeChanging(string filePath)
+    {
+        List<long> fileSizes = [];
+        FileInfo fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        await Task.Delay(TimeSpan.FromSeconds(4));
+
+        // If still able to access, check to see if file size is changing
+        fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        await Task.Delay(TimeSpan.FromSeconds(4));
+
+        fileInfo = new(filePath);
+        fileSizes.Add(fileInfo.Length);
+
+        return fileSizes.All(x => x.Equals(fileSizes.First()));
     }
     #endregion CreateEncodingJob Processing
 

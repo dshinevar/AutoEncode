@@ -17,6 +17,8 @@
            BasedOn="{StaticResource EncodingJobDataStyle}">
         <Setter Property="Padding"
                 Value="0,0,0,5"/>
+        <Setter Property="VerticalAlignment"
+                Value="Top"/>
     </Style>
     
     <Style x:Key="EncodingJobDataLabelStyle"
