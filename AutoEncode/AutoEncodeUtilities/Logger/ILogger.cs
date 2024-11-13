@@ -16,11 +16,12 @@ public interface ILogger
     int BackupFileCount { get; }
 
     /// <summary>Sets initial data for use.</summary>
-    /// <param name="logFileLocation">Directory to place log file in</param>
+    /// <param name="logFileDirectory">Directory to place log file in</param>
     /// <param name="logFileName">Name of log file</param>
     /// <param name="maxSizeInBytes">Max size in bytes file should be before rolling over (when calling CheckAndDoRollover)</param>
     /// <param name="backupFileCount">Number of backup log files to keep</param>
-    void Initialize(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0);
+    /// <returns>True if initialization succeeds; False, otherwise.</returns>
+    bool Initialize(string logFileDirectory, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0);
 
     /// <summary> Log an Info Message </summary>
     /// <param name="msg">Message to log</param>

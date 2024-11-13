@@ -1,51 +1,71 @@
-﻿using AutoEncodeClient.Communication;
+﻿using AutoEncodeClient.Communication.Interfaces;
 using AutoEncodeClient.Models.Interfaces;
-using AutoEncodeClient.Models.StreamDataModels;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Base;
+using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeUtilities.Interfaces;
-using AutoEncodeUtilities.Json;
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Models;
 
 public class EncodingJobClientModel :
     ModelBase,
-    IEncodingJobClientModel,
-    IUpdateable<IEncodingJobData>,
-    IDisposable
+    IEncodingJobClientModel
 {
     #region Dependencies
-    public ICommunicationManager CommunicationManager { get; set; }
+    public ICommunicationMessageHandler CommunicationMessageHandler { get; set; }
 
     public IClientUpdateSubscriber ClientUpdateSubscriber { get; set; }
     #endregion Dependencies
 
-    public EncodingJobClientModel(IEncodingJobData encodingJobData)
+    public EncodingJobClientModel(EncodingJobData encodingJobData)
     {
         encodingJobData.CopyProperties(this);
-        if (encodingJobData.SourceStreamData is not null)
-        {
-            SourceStreamData = new SourceStreamDataClientModel(encodingJobData.SourceStreamData);
-        }
     }
 
     public void Initialize()
     {
-        ClientUpdateSubscriber.SubscribeToEncodingJobStatusUpdate($"{CommunicationConstants.EncodingJobStatusUpdate}-{Id}", UpdateStatus);
-        ClientUpdateSubscriber.SubscribeToEncodingJobProcessingDataUpdate($"{CommunicationConstants.EncodingJobProcessingDataUpdate}-{Id}", UpdateProcessingData);
-        ClientUpdateSubscriber.SubscribeToEncodingJobEncodingProgressUpdate($"{CommunicationConstants.EncodingJobEncodingProgressUpdate}-{Id}", UpdateEncodingProgress);
+        IEnumerable<string> topics =
+        [
+            $"{nameof(ClientUpdateType.EncodingJobStatus)}-{Id}",
+            $"{nameof(ClientUpdateType.EncodingJobProcessingData)}-{Id}",
+            $"{nameof(ClientUpdateType.EncodingJobEncodingProgress)}-{Id}"
+        ];
+
+        ClientUpdateSubscriber.Initialize();
+        ClientUpdateSubscriber.ClientUpdateMessageReceived += ClientUpdateSubscriber_ClientUpdateMessageReceived;
+
+        ClientUpdateSubscriber.Subscribe(topics);
+        ClientUpdateSubscriber.Start();
     }
 
-    public void Dispose()
+    private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)
     {
-        ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobStatusUpdate}-{Id}");
-        ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobProcessingDataUpdate}-{Id}");
-        ClientUpdateSubscriber.Unsubscribe($"{CommunicationConstants.EncodingJobEncodingProgressUpdate}-{Id}");
+        switch (e.Type)
+        {
+            case ClientUpdateType.EncodingJobStatus:
+            {
+                EncodingJobStatusUpdateData updateData = e.UnpackData<EncodingJobStatusUpdateData>();
+                updateData?.CopyProperties(this);
+                break;
+            }
+            case ClientUpdateType.EncodingJobProcessingData:
+            {
+                EncodingJobProcessingDataUpdateData updateData = e.UnpackData<EncodingJobProcessingDataUpdateData>();
+                updateData?.CopyProperties(this);
+                break;
+            }
+            case ClientUpdateType.EncodingJobEncodingProgress:
+            {
+                EncodingJobEncodingProgressUpdateData updateData = e.UnpackData<EncodingJobEncodingProgressUpdateData>();
+                updateData?.CopyProperties(this);
+                break;
+            }
+        }
     }
 
     #region Properties
@@ -206,11 +226,11 @@ public class EncodingJobClientModel :
     #endregion Status
 
     #region Processing Data        
-    private ISourceStreamDataClientModel _sourceStreamDataClientModel;
-    public ISourceStreamDataClientModel SourceStreamData
+    private SourceStreamData _sourceStreamData;
+    public SourceStreamData SourceStreamData
     {
-        get => _sourceStreamDataClientModel;
-        set => SetAndNotify(_sourceStreamDataClientModel, value, () => _sourceStreamDataClientModel = value);
+        get => _sourceStreamData;
+        set => SetAndNotify(_sourceStreamData, value, () => _sourceStreamData = value);
     }
 
     private EncodingInstructions _encodingInstructions;
@@ -241,9 +261,8 @@ public class EncodingJobClientModel :
         set => SetAndNotify(_postProcessingSettings, value, () => _postProcessingSettings = value);
     }
 
-    private IEncodingCommandArguments _encodingCommandArguments;
-    [JsonConverter(typeof(EncodingCommandArgumentsConverter<IEncodingCommandArguments>))]
-    public IEncodingCommandArguments EncodingCommandArguments
+    private EncodingCommandArguments _encodingCommandArguments;
+    public EncodingCommandArguments EncodingCommandArguments
     {
         get => _encodingCommandArguments;
         set => SetAndNotify(_encodingCommandArguments, value, () => _encodingCommandArguments = value);
@@ -251,33 +270,20 @@ public class EncodingJobClientModel :
     #endregion Processing Data
     #endregion Properties
 
-    public void Update(IEncodingJobData encodingJobData)
-    {
-        encodingJobData.CopyProperties(this);
-
-        if (encodingJobData.SourceStreamData is not null)
-        {
-            if (SourceStreamData is null) SourceStreamData = new SourceStreamDataClientModel(encodingJobData.SourceStreamData);
-            else SourceStreamData.Update(encodingJobData.SourceStreamData);
-
-            OnPropertyChanged(nameof(SourceStreamData));
-        }
-    }
-
     #region Public Methods
-    public async Task<bool> Cancel() => await CommunicationManager.CancelJob(Id);
+    public async Task<bool> Cancel() => await CommunicationMessageHandler.RequestCancelJob(Id);
 
-    public async Task<bool> Pause() => await CommunicationManager.PauseJob(Id);
+    public async Task<bool> Pause() => await CommunicationMessageHandler.RequestPauseJob(Id);
 
-    public async Task<bool> Resume() => await CommunicationManager.ResumeJob(Id);
+    public async Task<bool> Resume() => await CommunicationMessageHandler.RequestResumeJob(Id);
 
-    public async Task<bool> CancelThenPause() => await CommunicationManager.CancelThenPauseJob(Id);
+    public async Task<bool> CancelThenPause() => await CommunicationMessageHandler.RequestPauseAndCancelJob(Id);
 
-    public async Task<bool> Remove() => await CommunicationManager.RequestRemoveJob(Id);
+    public async Task<bool> Remove() => await CommunicationMessageHandler.RequestRemoveJob(Id);
 
     public override bool Equals(object obj)
     {
-        if (obj is IEncodingJobData data)
+        if (obj is EncodingJobData data)
         {
             return Id == data.Id;
         }
@@ -287,28 +293,4 @@ public class EncodingJobClientModel :
 
     public override int GetHashCode() => Id.GetHashCode();
     #endregion Public Methods
-
-    #region Private Methods
-    private void UpdateStatus(EncodingJobStatusUpdateData data) => data.CopyProperties(this);
-
-    private void UpdateProcessingData(EncodingJobProcessingDataUpdateData data)
-    {
-        data.CopyProperties(this);
-
-        if (data.SourceStreamData is not null)
-        {
-            if (SourceStreamData is null)
-            {
-                SourceStreamData = new SourceStreamDataClientModel(data.SourceStreamData);
-            }
-            else
-            {
-                SourceStreamData.Update(data.SourceStreamData);
-                OnPropertyChanged(nameof(SourceStreamData));
-            }
-        }
-    }
-
-    private void UpdateEncodingProgress(EncodingJobEncodingProgressUpdateData data) => data.CopyProperties(this);
-    #endregion Private Methods
 }

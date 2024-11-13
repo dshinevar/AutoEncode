@@ -1,4 +1,7 @@
 ﻿using AutoEncodeClient.Command;
+using AutoEncodeClient.Dialogs;
+using AutoEncodeClient.ViewModels.Interfaces;
+using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,11 +11,12 @@ using System.Windows;
 namespace AutoEncodeClient.ViewModels;
 
 /// <summary>ViewModelBase for when functionality is needed but not a backing model.</summary>
-public abstract class ViewModelBase : INotifyPropertyChanged
+public abstract class ViewModelBase : IViewModel
 {
     private Dictionary<string, List<IAECommand>> Commands = null;
 
-    protected void AddCommand(IAECommand command, string propertyName) => AddCommand(command, new string[] { propertyName });
+    #region Commands
+    protected void AddCommand(IAECommand command, string propertyName) => AddCommand(command, [propertyName]);
 
     protected void AddCommand(IAECommand command, IEnumerable<string> propertyNames)
     {
@@ -26,13 +30,7 @@ public abstract class ViewModelBase : INotifyPropertyChanged
             Commands[propertyName].Add(command);
         }
     }
-
-    protected virtual void SetAndNotify<U>(U oldValue, U newValue, Action setter, [CallerMemberName] string propertyName = null)
-    {
-        if (EqualityComparer<U>.Default.Equals(oldValue, newValue)) return;
-        setter();
-        OnPropertyChanged(propertyName);
-    }
+    #endregion Commands
 
     #region Property Changed
     public event PropertyChangedEventHandler PropertyChanged;
@@ -46,22 +44,95 @@ public abstract class ViewModelBase : INotifyPropertyChanged
             commands?.ForEach(x => x?.RaiseCanExecuteChanged());
         }
     }
+
+    private void NotifyPropertyChanged(object sender, PropertyChangedEventArgs e)
+        => OnPropertyChanged(e.PropertyName);
+
+    protected virtual void SetAndNotify<U>(U oldValue, U newValue, Action setter, [CallerMemberName] string propertyName = null)
+    {
+        if (EqualityComparer<U>.Default.Equals(oldValue, newValue)) return;
+        setter();
+        OnPropertyChanged(propertyName);
+    }
     #endregion Property Changed
+
+    #region Child ViewModels
+    protected void RegisterChildViewModel(IViewModel childViewModel)
+    {
+        childViewModel.PropertyChanged += NotifyPropertyChanged;
+        childViewModel.UserMessageDialogRequested += ChildViewModel_UserMessageDialogRequested;
+    }
+
+    private void ChildViewModel_UserMessageDialogRequested(object sender, UserMessageDialogRequestedEventArgs e)
+        => NotifyUserMessageDialogRequested(e);
+    #endregion Child ViewModels
+
+    #region Dialogs
+    public event EventHandler<UserMessageDialogRequestedEventArgs> UserMessageDialogRequested;
+
+    private void NotifyUserMessageDialogRequested(UserMessageDialogRequestedEventArgs e)
+        => UserMessageDialogRequested?.Invoke(this, e);
+    
+    protected UserMessageDialogResult ShowUserMessageDialog(string message, string title, UserMessageDialogButtons buttons, Severity severity)
+    {
+        UserMessageDialogRequestedEventArgs eventArgs = new()
+        {
+            UserMessage = message,
+            Title = title,
+            Buttons = buttons,
+            Severity = severity
+        };
+
+        UserMessageDialogRequested?.Invoke(this, eventArgs);
+
+        return eventArgs.Result;
+    }
+
+    protected UserMessageDialogResult ShowInfoDialog(string message, string title, UserMessageDialogButtons buttons = UserMessageDialogButtons.Ok)
+        => ShowUserMessageDialog(message, title, buttons, Severity.INFO);
+
+    protected UserMessageDialogResult ShowErrorDialog(string message, string title, UserMessageDialogButtons buttons = UserMessageDialogButtons.Ok)
+        => ShowUserMessageDialog(message, title, buttons, Severity.ERROR);
+    #endregion Dialogs
 }
 
 /// <summary>ViewModelBase for when a backing model is used.</summary>
 /// <typeparam name="T">Model Type</typeparam>
-public abstract class ViewModelBase<T> : ViewModelBase where T : INotifyPropertyChanged
+public abstract class ViewModelBase<TModel> : ViewModelBase where TModel : class
 {
-    public T Model { get; protected set; }
-
-    protected ViewModelBase() { }
-
-    protected ViewModelBase(T model)
+    private TModel _model;
+    public TModel Model
     {
-        Model = model;
-        Model.PropertyChanged += ModelPropertyChanged;
+        get => _model;
+        protected set
+        {
+            if (value != _model)
+            {
+                TModel oldModel = _model;
+                _model = value;
+                ModelChange(oldModel, _model);
+            }
+        }
     }
 
-    protected virtual void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) => Application.Current.Dispatcher.Invoke(() => OnPropertyChanged(e.PropertyName));
+    protected ViewModelBase(TModel model)
+    {
+        Model = model;
+        if (Model is INotifyPropertyChanged notify)
+        {
+            notify.PropertyChanged += ModelPropertyChanged;
+        }       
+    }
+
+    protected virtual void ModelChange(TModel oldModel, TModel newModel)
+    {
+        if (oldModel is INotifyPropertyChanged oldNotifyModel)
+            oldNotifyModel.PropertyChanged -= ModelPropertyChanged;
+
+        if (newModel is INotifyPropertyChanged newNotifyModel)
+            newNotifyModel.PropertyChanged += ModelPropertyChanged;
+    }
+
+    protected virtual void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) 
+        => Application.Current.Dispatcher.BeginInvoke(() => OnPropertyChanged(e.PropertyName));
 }

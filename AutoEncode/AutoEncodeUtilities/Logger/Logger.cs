@@ -15,22 +15,37 @@ public class Logger : ILogger
     private readonly object _fileLock = new();
     private bool _initialized = false;
 
+    public string LogFileDirectory { get; set; }
     public string LogFileFullPath { get; set; }
     public long MaxSizeInBytes { get; set; }
     public int BackupFileCount { get; set; }
 
     public Logger() { }
 
-    public void Initialize(string logFileLocation, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
+    public bool Initialize(string logFileDirectory, string logFileName, long maxSizeInBytes = -1, int backupFileCount = 0)
     {
-        if (_initialized is false)
+        try
         {
-            LogFileFullPath = Path.Combine(logFileLocation, logFileName);
-            MaxSizeInBytes = maxSizeInBytes;
-            BackupFileCount = backupFileCount;
+            if (_initialized is false)
+            {
+                LogFileDirectory = logFileDirectory;
+                LogFileFullPath = Path.Combine(LogFileDirectory, logFileName);
+                MaxSizeInBytes = maxSizeInBytes;
+                BackupFileCount = backupFileCount;
+
+                DirectoryInfo directoryInfo = Directory.CreateDirectory(LogFileDirectory);
+                if (directoryInfo is not null)
+                {
+                    _initialized = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to create / find log directory: {logFileDirectory}{Environment.NewLine}{ex.Message}");
         }
 
-        _initialized = true;
+        return _initialized;
     }
 
     #region Log Functions

@@ -1,18 +1,39 @@
-﻿using AutoEncodeUtilities.Interfaces;
+﻿namespace AutoEncodeUtilities.Data;
 
-namespace AutoEncodeUtilities.Data
+/// <summary>
+/// Encoding Command Arguments holder class. CommandArguments will have a length of 3 if DolbyVision, 1 otherwise.<br/>
+/// BASIC ENCODE:<br/>
+/// [0] = Encoding Arguments<br/>
+/// DOLBY VISION:<br/>
+/// [0] = Video Encoding Arguments<br/>
+/// [1] = Audio/Subs Arguments<br/>
+/// [2] = Merge Arguments<br/>
+/// </summary>
+public class EncodingCommandArguments
 {
-    /// <summary>Basic FFmpegEncodingCommandArguments</summary>
-    public class EncodingCommandArguments : IEncodingCommandArguments
+    public EncodingCommandArguments(bool isDolbyVision, params string[] commandArguments)
     {
-        public string FFmpegEncodingCommandArguments { get; set; }
+        IsDolbyVision = isDolbyVision;
+        CommandArguments = new string[(isDolbyVision ? 3 : 1)];
+
+        for (int i = 0; i < commandArguments.Length; i++)
+        {
+            if (CommandArguments.Length > i)
+            {
+                CommandArguments[i] = commandArguments[i];
+            }
+        }
     }
 
-    /// <summary>Advanced arguments for DolbyVision encoding</summary>
-    public class DolbyVisionEncodingCommandArguments : IEncodingCommandArguments
-    {
-        public string VideoEncodingCommandArguments { get; set; }
-        public string AudioSubsEncodingCommandArguments { get; set; }
-        public string MergeCommandArguments { get; set; }
-    }
+    public bool IsDolbyVision { get; set; }
+
+    /// <summary>
+    /// BASIC ENCODE:<br/>
+    /// [0] = Encoding Arguments<br/>
+    /// DOLBY VISION:<br/>
+    /// [0] = Video Encoding Arguments<br/>
+    /// [1] = Audio/Subs Arguments<br/>
+    /// [2] = Merge Arguments<br/>
+    /// </summary>
+    public string[] CommandArguments { get; } 
 }

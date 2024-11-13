@@ -14,6 +14,13 @@ public abstract class ModelBase : INotifyPropertyChanged
         OnPropertyChanged(propertyName);
     }
 
+    protected virtual void SetAndAct<U>(U oldValue, U newValue, Action setter, Action postSetterAction)
+    {
+        if (EqualityComparer<U>.Default.Equals(oldValue, newValue)) return;
+        setter();
+        postSetterAction();
+    }
+
     #region Property Changed
     public event PropertyChangedEventHandler PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

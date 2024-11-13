@@ -9,42 +9,42 @@
         xmlns:behaviors="clr-namespace:AutoEncodeClient.Behavior"
         xmlns:enums="clr-namespace:AutoEncodeClient.Enums"
         xmlns:utilEnums="clr-namespace:AutoEncodeUtilities.Enums;assembly=AutoEncodeUtilities"
+        xmlns:vm="clr-namespace:AutoEncodeClient.ViewModels"
         mc:Ignorable="d"
-        Icon="../Resources/AutoEncode.ico"
+        Icon="../Resources/AE.ico"
         Height="720" Width="1280"
-        Background="LightSlateGray"
+        Background="{StaticResource ApplicationBackgroundBrush}"
         Closed="Window_Closed"
         d:Title="AutoEncodeClient"
         d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type=designData:AutoEncodeClientDesignData}">
-    <Grid>
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:EncodingJobQueueViewModel}">
+            <local:EncodingJobsView/>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid Margin="0,1,5,1">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"
                               MaxWidth="600"/>
-            <ColumnDefinition Width="6*"
+            <ColumnDefinition Width="*"
                               MinWidth="140"/>
         </Grid.ColumnDefinitions>
 
-        <!-- #region SOURCE FILES -->
-        <Border Grid.Column="0"
-                x:Name="SourceFilesRoot"
-                DataContext="{Binding SourceFilesViewModel}"
-                Margin="0,0,5,0"
-                BorderBrush="Black"
-                Background="{StaticResource BackgroundBrush}"
-                CornerRadius="0,2,2,0"
-                BorderThickness="1.5">
-            <Expander Grid.Column="0"
-                      Style="{StaticResource SourceFilesSideBarExpanderStyle}"
-                      ExpandDirection="Right"
-                      MaxWidth="600">
-                <Expander.Header>
-                    <DockPanel Height="40">
-                        <TextBlock Text="SOURCE FILES"
-                                   FontSize="16"
-                                   FontWeight="DemiBold"
-                                   VerticalAlignment="Center"
-                                   IsHitTestVisible="False"/>
-                        <Button Command="{Binding RefreshSourceFilesCommand}"
+        <!-- #region Source Files -->
+        <Expander Grid.Column="0"
+                  Margin="0,0,5,0"                  
+                  DataContext="{Binding SourceFilesViewModel}"
+                  Template="{StaticResource SourceFilesSideBarExpanderTemplate}"
+                  Style="{StaticResource SourceFilesSideBarExpanderStyle}">
+            <Expander.Header>
+                <DockPanel Height="50">
+                    <TextBlock Text="SOURCE FILES"
+                               Margin="5,0"
+                               FontSize="16"
+                               FontWeight="DemiBold"
+                               VerticalAlignment="Center"
+                               IsHitTestVisible="False"/>
+                    <!--<Button Command="{Binding RefreshSourceFilesCommand}"
                                 ToolTip="Click to Refresh Source Files"
                                 Margin="5">
                             <Button.Template>
@@ -79,541 +79,37 @@
                                     </Border>
                                 </ControlTemplate>
                             </Button.Template>
-                        </Button>
-                        <DockPanel.LayoutTransform>
-                            <RotateTransform Angle="270"/>
-                        </DockPanel.LayoutTransform>
-                    </DockPanel>
-                </Expander.Header>
-                <Border BorderThickness="0,0,1.5,0"
-                        BorderBrush="Black"
-                        Background="{StaticResource BackgroundBrush}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled"
-                                  CanContentScroll="False"
-                                  PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
-                                  MaxWidth="350">
-                        <Grid>
-                            <Grid.Resources>
-                                <Style x:Key="LibraryHeaderBorder"
-                                       TargetType="Border">
-                                    <Setter Property="BorderBrush"
-                                            Value="Black"/>
-                                    <Setter Property="BorderThickness"
-                                            Value="0,0,0,1"/>
-                                    <Setter Property="Background"
-                                            Value="WhiteSmoke"/>
-                                    <Setter Property="HorizontalAlignment"
-                                            Value="Stretch"/>
-                                    <Setter Property="Height"
-                                            Value="30"/>
-                                </Style>
-                                <Style x:Key="LibraryHeaderText"
-                                        TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment"
-                                            Value="Center"/>
-                                    <Setter Property="VerticalAlignment"
-                                            Value="Center"/>
-                                    <Setter Property="FontWeight"
-                                            Value="DemiBold"/>
-                                </Style>
-                            </Grid.Resources>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <Border Grid.Row="0"
-                                    Style="{StaticResource LibraryHeaderBorder}"
-                                    Visibility="{Binding MovieSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                                <TextBlock Text="Movie Libraries"
-                                           Style="{StaticResource LibraryHeaderText}"/>
-                            </Border>
-
-                            <ItemsControl Grid.Row="1"
-                                          ItemsSource="{Binding MovieSourceFiles}"
-                                          ItemTemplate="{StaticResource SourceFileDataTemplate}"/>
-
-                            <Border Grid.Row="2"
-                                    Visibility="{Binding ShowSourceFiles.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}">
-                                <Border.Style>
-                                    <Style TargetType="Border"
-                                           BasedOn="{StaticResource LibraryHeaderBorder}">
-                                        <Setter Property="BorderThickness"
-                                                Value="0,1,0,1"/>
-                                    </Style>
-                                </Border.Style>
-                                <TextBlock Text="Show Libraries"
-                                           Style="{StaticResource LibraryHeaderText}"/>
-                            </Border>
-
-                            <ItemsControl Grid.Row="3"
-                                          ItemsSource="{Binding ShowSourceFiles}"
-                                          ItemTemplate="{StaticResource ShowSourceFileDataTemplate}"/>
-                        </Grid>
-                    </ScrollViewer>
-                </Border>
-            </Expander>
-        </Border>
-        
-        <!--#endregion SOURCE FILES -->
- 
-        <Grid Grid.Column="1"
-              Margin="0,2,2,2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="150"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- #region ENCODING JOBS QUEUE -->
-            <Border Grid.Row="0"
-                    BorderBrush="Black"
-                    BorderThickness="2"
-                    CornerRadius="5"
-                    Padding="2"
-                    Background="LightGray">
-                <Grid>
-                    <ListView Grid.Row="0"
-                              ItemsSource="{Binding EncodingJobs}"
-                              SelectedItem="{Binding SelectedEncodingJobViewModel, Mode=TwoWay}"
-                              ItemContainerStyle="{StaticResource EncodingQueueJobListViewItemStyle}"
-                              Visibility="{Binding EncodingJobs.Count, Converter={StaticResource VisibleWhenGreaterThanConverter}, ConverterParameter=0}"
-                              VerticalAlignment="Stretch"
-                              HorizontalAlignment="Stretch"
-                              VerticalContentAlignment="Stretch"
-                              SelectionMode="Single"
-                              Background="{StaticResource BackgroundBrush}"
-                              BorderBrush="Transparent"
-                              BorderThickness="0">
-                        <ListView.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ListView.ItemsPanel>
-                    </ListView>
-                    <TextBlock Text="Encoding Job Queue Is Empty"
-                               Foreground="Gray"
-                               FontSize="24"
-                               FontWeight="DemiBold"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="VirtualizingPanel.Visibility"
-                                        Value="Hidden"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding EncodingJobs.Count}"
-                                                 Value="0">
-                                        <Setter Property="Visibility"
-                                                Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
+                        </Button> -->
+                    <DockPanel.LayoutTransform>
+                        <RotateTransform Angle="270"/>
+                    </DockPanel.LayoutTransform>
+                </DockPanel>
+            </Expander.Header>
+            <Border BorderThickness="1,1,0,1"
+                    BorderBrush="{StaticResource SideBarPressedBrush}"
+                    Background="{StaticResource BackgroundBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Auto"
+                              CanContentScroll="False"
+                              PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
+                              MaxWidth="450">
+                    <ItemsControl ItemsSource="{Binding SourceFiles}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ContentControl Content="{Binding Value}"
+                                                ContentTemplate="{StaticResource SourceFilesDirectoryDataTemplate}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Border>
-            
-            <!--#endregion ENCODING JOBS QUEUE --> 
-            
-            <!--#region SELECTED ENCODING JOB -->
-            <Border Grid.Row="1"
-                    BorderBrush="Black"
-                    BorderThickness="2"
-                    CornerRadius="5"
-                    Margin="0,5,0,0"
-                    Padding="5,3"
-                    Background="{StaticResource BackgroundBrush}"
-                    DataContext="{Binding SelectedEncodingJobViewModel}"
-                    Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
+        </Expander>
+        <!--#endregion Source Files -->
 
-                    <!-- Title Bar / Controls / Progress -->
-                    <Grid Grid.Row="0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Title -->
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding Name}"
-                                   Width="300"
-                                   behaviors:NumberOfLinesBehavior.MaxLines="2"
-                                   TextWrapping="Wrap"
-                                   TextTrimming="CharacterEllipsis"
-                                   FontSize="16"
-                                   FontWeight="DemiBold"
-                                   TextAlignment="Left"
-                                   VerticalAlignment="Center"/>
-
-                        <!-- Button Controls -->
-                        <StackPanel Grid.Column="1"
-                                    Margin="5,0"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <Button Height="25"
-                                    Padding="5,0">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Command"
-                                                Value="{Binding PauseCommand}"/>
-                                        <Setter Property="ToolTip"
-                                                Value="Pause"/>
-                                        <Setter Property="IsEnabled"
-                                                Value="True"/>
-                                        <Style.Triggers>
-
-                                            <DataTrigger Binding="{Binding Paused}"
-                                                         Value="True">
-                                                <Setter Property="Command"
-                                                        Value="{Binding ResumeCommand}"/>
-                                                <Setter Property="ToolTip"
-                                                        Value="Resume"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Style="{StaticResource PrimaryButtonBorderStyle}">
-                                            <Image>
-                                                <Image.Style>
-                                                    <Style TargetType="Image">
-                                                        <Setter Property="Source"
-                                                                Value="../Resources/pause.png"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Paused}"
-                                                                         Value="True">
-                                                                <Setter Property="Source"
-                                                                        Value="../Resources/play.png"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Image.Style>
-                                            </Image>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                            <Button Command="{Binding CancelCommand}"
-                                    Height="25"
-                                    Margin="5,0"
-                                    ToolTip="Cancel">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Style="{StaticResource PrimaryButtonBorderStyle}">
-                                            <Image Source="../Resources/cancel.png"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
-                                <Button.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Cancel Then Pause"
-                                                  Command="{Binding CancelThenPauseCommand}"
-                                                  ToolTip="Cancels Then Immediately Pauses The Job"/>
-                                    </ContextMenu>
-                                </Button.ContextMenu>
-                            </Button>
-                            <Button Command="{Binding RemoveCommand}"
-                                    Height="25"
-                                    Margin="0"
-                                    ToolTip="Remove / Delete">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Style="{StaticResource CautionButtonBorderStyle}">
-                                            <Image Source="../Resources/delete.png"/>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </StackPanel>
-
-                        <!-- Progress Bar -->
-                        <Grid Grid.Column="2"
-                              VerticalAlignment="Center">
-                            <DockPanel Panel.ZIndex="1">
-                                <TextBlock DockPanel.Dock="Left"
-                                           FontSize="12"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Left"
-                                           VerticalAlignment="Center"
-                                           Margin="10,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Text"
-                                                Value="{Binding Status, Converter={StaticResource EnumDisplayShortNameConverter}}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Path=Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
-                                                    <Setter Property="Text">
-                                                        <Setter.Value>
-                                                            <MultiBinding StringFormat="{}{0} ({1})">
-                                                                <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                                <Binding Path="BuildingStatus" Converter="{StaticResource EnumDisplayDescriptionConverter}"/>
-                                                            </MultiBinding>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Path=Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                                    <Setter Property="Text">
-                                                        <Setter.Value>
-                                                            <MultiBinding StringFormat="{}{0} ({1}%)">
-                                                                <Binding Path="Status" Converter="{StaticResource EnumDisplayShortNameConverter}"/>
-                                                                <Binding Path="EncodingProgress" Mode="OneWay"/>
-                                                            </MultiBinding>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock DockPanel.Dock="Right"
-                                           FontSize="12"
-                                           FontWeight="Bold"
-                                           TextTrimming="CharacterEllipsis"
-                                           HorizontalAlignment="Right"
-                                           VerticalAlignment="Center"
-                                           Margin="10,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Text"
-                                                Value="{x:Static sys:String.Empty}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Path=Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODING}">
-                                                    <Setter Property="Text">
-                                                        <Setter.Value>
-                                                            <MultiBinding StringFormat="{}Time Elapsed: {0} | Estimated Time Remaining: {1} | FPS: {2:N2}">
-                                                                <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
-                                                                <Binding Path="EstimatedEncodingTimeRemaining" Converter="{StaticResource FormatTimeSpanConverter}" TargetNullValue="-"/>
-                                                                <Binding Path="CurrentFramesPerSecond" TargetNullValue="-"/>
-                                                            </MultiBinding>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Path=Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.ENCODED}">
-                                                    <Setter Property="Text">
-                                                        <Setter.Value>
-                                                            <MultiBinding StringFormat="{}Encoding Completed: {0} (Time Elapsed: {1})">
-                                                                <Binding Path="CompletedEncodingDateTime"/>
-                                                                <Binding Path="ElapsedEncodingTime" Converter="{StaticResource FormatTimeSpanConverter}"/>
-                                                            </MultiBinding>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </DockPanel>
-                            <ProgressBar Value="{Binding EncodingProgress, Mode=OneWay}"
-                                         Margin="0,5"
-                                         BorderThickness="1.5">
-                                <ProgressBar.Style>
-                                    <Style TargetType="ProgressBar"
-                                           BasedOn="{StaticResource ProgressBarBaseStyle}">
-                                        <Setter Property="IsIndeterminate"
-                                                Value="False"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.BUILDING}">
-                                                <Setter Property="IsIndeterminate"
-                                                        Value="True"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status}"
-                                                         Value="{x:Static utilEnums:EncodingJobStatus.POST_PROCESSING}">
-                                                <Setter Property="IsIndeterminate"
-                                                        Value="True"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ProgressBar.Style>
-                            </ProgressBar>
-                        </Grid>
-                    </Grid>
-
-                    <!-- Other Top Level Info / Status Image -->
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Top Level Info -->
-                        <StackPanel Grid.Column="0"
-                                    Orientation="Vertical">
-                            <TextBlock TextWrapping="NoWrap">
-                                <TextBlock.Inlines>
-                                    <Run Text="ID:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
-                                    <Run Text="{Binding Id, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
-                                </TextBlock.Inlines>
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap">
-                                <TextBlock.Inlines>
-                                    <Run Text="Source Full Path:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
-                                    <Run Text="{Binding SourceFullPath, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
-                                </TextBlock.Inlines>
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap">
-                                <TextBlock.Inlines>
-                                    <Run Text="Destination Full Path:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
-                                    <Run Text="{Binding DestinationFullPath, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
-                                </TextBlock.Inlines>
-                            </TextBlock>
-                        </StackPanel>
-
-                        <!-- Error/Success/Paused Image -->
-                        <Image Grid.Column="1"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"
-                               Margin="10,5"
-                               Height="50">
-                            <Image.Style>
-                                <Style TargetType="Image">
-                                    <Setter Property="Visibility"
-                                            Value="Hidden"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasError}"
-                                                     Value="True">
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
-                                            <Setter Property="Source"
-                                                    Value="../Resources/error.png"/>
-                                            <Setter Property="ToolTip"
-                                                    Value="Encoding Job has errored."/>
-                                        </DataTrigger>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding HasError}" Value="False"/>
-                                                <Condition Binding="{Binding Complete}" Value="True"/>
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
-                                            <Setter Property="Source"
-                                                    Value="../Resources/success.png"/>
-                                            <Setter Property="ToolTip"
-                                                    Value="Encoding Job has successfully completed."/>
-                                        </MultiDataTrigger>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding HasError}" Value="False"/>
-                                                <Condition Binding="{Binding Complete}" Value="False"/>
-                                                <Condition Binding="{Binding Paused}" Value="True"/>
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
-                                            <Setter Property="Source"
-                                                    Value="../Resources/pause.png"/>
-                                            <Setter Property="ToolTip"
-                                                    Value="Encoding Job is currently paused."/>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Image.Style>
-                        </Image>
-                    </Grid>
-
-                    <!--#region EncodingJob Details -->
-                    <Border Grid.Row="2"
-                            BorderThickness="5"
-                            BorderBrush="{StaticResource SecondaryButtonBackgroundBrush}"
-                            Background="{StaticResource SecondaryBackgroundBrush}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-
-                            <Border Grid.Column="0"
-                                    BorderBrush="{StaticResource ButtonBackgroundBrush}"
-                                    Background="{StaticResource ButtonBackgroundBrush}"
-                                    BorderThickness="5,5,0,5">
-                                <Grid VerticalAlignment="Top">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition/>
-                                        <RowDefinition/>
-                                        <RowDefinition/>
-                                    </Grid.RowDefinitions>
-
-                                    <RadioButton Grid.Row="0"
-                                                 Content="Source Data"
-                                                 GroupName="Encoding Job"
-                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Source_Data}}"
-                                                 Command="{Binding SelectDetailsSectionCommand}"
-                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Source_Data}"
-                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
-                                    <RadioButton Grid.Row="1"
-                                                 Content="Command Arguments"
-                                                 GroupName="Encoding Job"
-                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Command_Arguments}}"
-                                                 Command="{Binding SelectDetailsSectionCommand}"
-                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Command_Arguments}"
-                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
-                                    <RadioButton Grid.Row="2"
-                                                 Content="Error"
-                                                 GroupName="Encoding Job"
-                                                 IsChecked="{Binding SelectedDetailsSection, Mode=OneWay, Converter={StaticResource IsEqualToConverter}, ConverterParameter={x:Static enums:EncodingJobDetailsSection.Error}}"
-                                                 Command="{Binding SelectDetailsSectionCommand}"
-                                                 CommandParameter="{x:Static enums:EncodingJobDetailsSection.Error}"
-                                                 Style="{StaticResource EncodingJobDataRadioButtonStyle}"/>
-                                </Grid>
-                            </Border>
-
-                            <Border Grid.Column="1"
-                                    Background="{StaticResource BackgroundBrush}"
-                                    BorderBrush="{StaticResource ButtonBackgroundBrush}"
-                                    BorderThickness="5"
-                                    CornerRadius="0,2,2,0">
-                                <ContentControl>
-                                    <ContentControl.Style>
-                                        <Style TargetType="ContentControl">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
-                                                             Value="{x:Static enums:EncodingJobDetailsSection.Source_Data}">
-                                                    <Setter Property="ContentTemplate"
-                                                            Value="{StaticResource EncodingJobSourceDataSectionTemplate}"/>
-                                                    <Setter Property="Content"
-                                                            Value="{Binding }"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
-                                                             Value="{x:Static enums:EncodingJobDetailsSection.Command_Arguments}">
-                                                    <Setter Property="ContentTemplate"
-                                                            Value="{StaticResource EncodingJobCommandArgumentsSectionTemplate}"/>
-                                                    <Setter Property="Content"
-                                                            Value="{Binding }"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding SelectedDetailsSection}"
-                                                             Value="{x:Static enums:EncodingJobDetailsSection.Error}">
-                                                    <Setter Property="ContentTemplate"
-                                                            Value="{StaticResource EncodingJobErrorSectionDataTemplate}"/>
-                                                    <Setter Property="Content"
-                                                            Value="{Binding }"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ContentControl.Style>
-                                </ContentControl>
-                            </Border>
-
-                        </Grid>
-                    </Border>
-                    <!--#endregion EncodingJob Details -->
-                </Grid>
-            </Border>
-            <!--#endregion SELECTED ENCODING JOB-->
-
-        </Grid>
+        <!--#region Encoding Jobs -->
+        <ContentControl Grid.Column="1"
+                        Content="{Binding EncodingJobQueueViewModel}"
+                        Margin="0,2,2,2"/>
+        <!--#endregion Encoding Jobs-->
     </Grid>
 </Window>
