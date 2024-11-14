@@ -8,5 +8,7 @@ public interface ISourceFilesViewModel : IViewModel
     /// <summary>Requests initial source file load. </summary>
     void Initialize();
 
+    void Shutdown();
+
     ObservableDictionary<string, ISourceFilesDirectoryViewModel> SourceFiles { get; }
 }

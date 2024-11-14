@@ -38,11 +38,14 @@ public class SourceFilesViewModel :
         {
             Dictionary<string, IEnumerable<SourceFileData>> sourceFiles = await CommunicationMessageHandler.RequestSourceFiles();
 
-            foreach (KeyValuePair<string, IEnumerable<SourceFileData>> sourceFilesByDirectory in sourceFiles.OrderBy(_ => _.Key))
+            if (sourceFiles is not null)
             {
-                ISourceFilesDirectoryViewModel directory = SourceFileFactory.CreateDirectory(sourceFilesByDirectory.Key);
-                directory.Initialize(sourceFilesByDirectory.Value);
-                SourceFiles.Add(sourceFilesByDirectory.Key, directory);
+                foreach (KeyValuePair<string, IEnumerable<SourceFileData>> sourceFilesByDirectory in sourceFiles.OrderBy(_ => _.Key))
+                {
+                    ISourceFilesDirectoryViewModel directory = SourceFileFactory.CreateDirectory(sourceFilesByDirectory.Key);
+                    directory.Initialize(sourceFilesByDirectory.Value);
+                    SourceFiles.Add(sourceFilesByDirectory.Key, directory);
+                }
             }
 
             ClientUpdateSubscriber.ClientUpdateMessageReceived += ClientUpdateSubscriber_ClientUpdateMessageReceived;
@@ -51,6 +54,11 @@ public class SourceFilesViewModel :
         }
 
         _initialized = true;
+    }
+
+    public void Shutdown()
+    {
+        ClientUpdateSubscriber.Stop();
     }
 
     private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)
@@ -69,7 +77,7 @@ public class SourceFilesViewModel :
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 directoryViewModel.AddSourceFile(sourceFileUpdateData.SourceFile);
-                            });                            
+                            });
                         }
                         break;
                     }

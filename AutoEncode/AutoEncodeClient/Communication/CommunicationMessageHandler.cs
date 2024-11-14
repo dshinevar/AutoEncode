@@ -9,6 +9,7 @@ using NetMQ.Sockets;
 using System;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutoEncodeClient.Communication;
@@ -20,6 +21,7 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
     #endregion Dependencies
 
     private bool _initialized = false;
+    private CancellationTokenSource _shutdownCancellationTokenSource = new();
 
     public string ConnectionString => $"tcp://{IpAddress}:{Port}";
     public string IpAddress { get; set; }
@@ -39,6 +41,11 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
         _initialized = true;
     }
 
+    public void Shutdown()
+    {
+        _shutdownCancellationTokenSource.Cancel();
+    }
+
     private async Task<CommunicationMessage> SendReceiveAsync(CommunicationMessage message)
     {
         if (_initialized is false)
@@ -50,39 +57,49 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
 
         responseMessage = await Task.Run(() =>
         {
-            CommunicationMessage messageResponse = null;
+            CancellationToken token = _shutdownCancellationTokenSource.Token;
 
-            using (DealerSocket client = new(ConnectionString))
+            try
             {
+                using DealerSocket client = new(ConnectionString);
                 client.Options.Identity = Encoding.ASCII.GetBytes(Guid.NewGuid().ToString());
 
                 string serializedRequest = JsonSerializer.Serialize(message, CommunicationConstants.SerializerOptions);
 
                 if (string.IsNullOrWhiteSpace(serializedRequest) is false)
                 {
+                    token.ThrowIfCancellationRequested();
+
                     NetMQMessage netMqMessage = new();
                     netMqMessage.AppendEmptyFrame();
                     netMqMessage.Append(serializedRequest);
 
-                    client.SendMultipartMessage(netMqMessage);
+                    NetMQMessage response = null;
+                    try
+                    {
+                        client.SendMultipartMessage(netMqMessage);
 
-                    NetMQMessage response = client.ReceiveMultipartMessage();
+                        response = client.ReceiveMultipartMessage();
+                    }
+                    catch (TerminatingException) { }
 
-                    if (response.FrameCount == 2)
+                    token.ThrowIfCancellationRequested();
+
+                    if (response?.FrameCount == 2)
                     {
                         string responseString = response[1].ConvertToString();
 
                         if (string.IsNullOrWhiteSpace(responseString) is false && responseString.IsValidJson())
                         {
-                            messageResponse = JsonSerializer.Deserialize<CommunicationMessage>(responseString, CommunicationConstants.SerializerOptions);
+                            return JsonSerializer.Deserialize<CommunicationMessage>(responseString, CommunicationConstants.SerializerOptions);
                         }
                     }
-
                 }
             }
+            catch (OperationCanceledException) { }
 
-            return messageResponse ?? new CommunicationMessage(CommunicationMessageType.Error);
-        });
+            return new CommunicationMessage(CommunicationMessageType.Error);
+        }, _shutdownCancellationTokenSource.Token);
 
         return responseMessage;
     }

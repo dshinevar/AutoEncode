@@ -134,5 +134,5 @@ public abstract class ViewModelBase<TModel> : ViewModelBase where TModel : class
     }
 
     protected virtual void ModelPropertyChanged(object sender, PropertyChangedEventArgs e) 
-        => Application.Current.Dispatcher.BeginInvoke(() => OnPropertyChanged(e.PropertyName));
+        => Application.Current?.Dispatcher?.BeginInvoke(() => OnPropertyChanged(e.PropertyName));
 }

@@ -53,6 +53,11 @@ namespace AutoEncodeClient.Views.DesignData
         public void Dispose() => throw new NotImplementedException();
 
         public void Initialize() => throw new NotImplementedException();
+
+        public void Shutdown()
+        {
+            throw new NotImplementedException();
+        }
         #endregion Properties
     }
 }
