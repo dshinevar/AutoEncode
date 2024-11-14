@@ -10,6 +10,8 @@ public interface ICommunicationMessageHandler
     /// <summary>Initializes handler -- sets IP and Port.</summary>
     void Initialize();
 
+    void Shutdown();
+
     /// <summary>Requests source files from the server. </summary>
     /// <returns>Source file payload of a dictionary whose key is the Directory Name and value is a list of source files.</returns>
     Task<Dictionary<string, IEnumerable<SourceFileData>>> RequestSourceFiles();

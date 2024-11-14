@@ -1,5 +1,4 @@
 ﻿using AutoEncodeClient.ViewModels.Interfaces;
-using Castle.Windsor;
 
 namespace AutoEncodeClient.ViewModels;
 
@@ -8,8 +7,6 @@ public class AutoEncodeClientViewModel :
     IAutoEncodeClientViewModel
 {
     #region Dependencies
-    public IWindsorContainer Container { get; set; }
-
     public ISourceFilesViewModel SourceFilesViewModel { get; set; }
 
     public IEncodingJobQueueViewModel EncodingJobQueueViewModel { get; set; }
@@ -25,5 +22,11 @@ public class AutoEncodeClientViewModel :
 
         SourceFilesViewModel.Initialize();
         EncodingJobQueueViewModel.Initialize();
+    }
+
+    public void Shutdown()
+    {
+        SourceFilesViewModel?.Shutdown();
+        EncodingJobQueueViewModel?.Shutdown();
     }
 }

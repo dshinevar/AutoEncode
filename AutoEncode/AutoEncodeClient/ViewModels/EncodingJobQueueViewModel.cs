@@ -54,12 +54,15 @@ public class EncodingJobQueueViewModel :
         {
             IEnumerable<EncodingJobData> queue = await CommunicationMessageHandler.RequestJobQueue();
 
-            foreach (EncodingJobData data in queue)
+            if (queue is not null)
             {
-                IEncodingJobClientModel model = EncodingJobFactory.Create(data);
-                IEncodingJobViewModel viewModel = EncodingJobFactory.Create(model);
-                RegisterChildViewModel(viewModel);
-                _encodingJobs.Add(viewModel);
+                foreach (EncodingJobData data in queue)
+                {
+                    IEncodingJobClientModel model = EncodingJobFactory.Create(data);
+                    IEncodingJobViewModel viewModel = EncodingJobFactory.Create(model);
+                    RegisterChildViewModel(viewModel);
+                    _encodingJobs.Add(viewModel);
+                }
             }
 
             ClientUpdateSubscriber.ClientUpdateMessageReceived += ClientUpdateSubscriber_ClientUpdateMessageReceived;
@@ -68,6 +71,24 @@ public class EncodingJobQueueViewModel :
         }
 
         _initialized = true;
+    }
+
+    public void Shutdown()
+    {
+        ClientUpdateSubscriber?.Stop();
+
+        while (_encodingJobs.Count > 0)
+        {
+            // Release
+
+            IEncodingJobViewModel viewModel = _encodingJobs.FirstOrDefault();
+            IEncodingJobClientModel model = viewModel.GetModel();
+
+            _encodingJobs.Remove(viewModel);
+
+            EncodingJobFactory.Release(model);
+            EncodingJobFactory.Release(viewModel);
+        }
     }
 
     private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)
@@ -113,4 +134,6 @@ public class EncodingJobQueueViewModel :
             }
         }
     }
+
+
 }

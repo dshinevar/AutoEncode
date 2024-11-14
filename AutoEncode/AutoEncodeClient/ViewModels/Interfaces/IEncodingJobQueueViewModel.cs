@@ -7,4 +7,6 @@ public interface IEncodingJobQueueViewModel : IViewModel
     ICollectionView EncodingJobsView { get; }
 
     void Initialize();
+
+    void Shutdown();
 }

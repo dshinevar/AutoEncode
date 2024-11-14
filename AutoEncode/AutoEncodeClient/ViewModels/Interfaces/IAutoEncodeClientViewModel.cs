@@ -3,4 +3,6 @@
 public interface IAutoEncodeClientViewModel : IViewModel
 {
     void Initialize();
+
+    void Shutdown();
 }

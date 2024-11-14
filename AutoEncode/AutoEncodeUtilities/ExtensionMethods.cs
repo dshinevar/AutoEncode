@@ -101,7 +101,22 @@ public static class ExtensionMethods
     public static string GetDescription(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetDescription();
     public static string GetShortName(this Enum value) => value.GetType().GetMember(value.ToString()).First().GetCustomAttribute<DisplayAttribute>().GetShortName();
 
-    #region IEnumerable Extensions
+    #region IEnumerable / IList Extensions
+    public static void AddRange<T>(this IList<T> list, IEnumerable<T> items)
+    {
+        if (list is List<T> asList)
+        {
+            asList.AddRange(items);
+        }
+        else
+        {
+            foreach (T item in items)
+            {
+                list.Add(item);
+            }
+        }
+    }
+
     public static void RemoveRange<T>(this List<T> list, IEnumerable<T> remove)
     {
         foreach (T item in remove.ToList())
@@ -112,5 +127,5 @@ public static class ExtensionMethods
 
     public static IEnumerable<T> Except<T, V>(this IEnumerable<T> first, IEnumerable<V> second, Func<T, V, bool> comparer)
         => first.Where(f => second.Any(s => comparer(f, s)) is false);
-    #endregion IEnumerable Extension
+    #endregion IEnumerable / IList Extension
 }

@@ -14,7 +14,8 @@ namespace AutoEncodeClient.Models;
 
 public class EncodingJobClientModel :
     ModelBase,
-    IEncodingJobClientModel
+    IEncodingJobClientModel,
+    IDisposable
 {
     #region Dependencies
     public ICommunicationMessageHandler CommunicationMessageHandler { get; set; }
@@ -41,6 +42,11 @@ public class EncodingJobClientModel :
 
         ClientUpdateSubscriber.Subscribe(topics);
         ClientUpdateSubscriber.Start();
+    }
+
+    public void Dispose()
+    {
+        ClientUpdateSubscriber.ClientUpdateMessageReceived -= ClientUpdateSubscriber_ClientUpdateMessageReceived;
     }
 
     private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)

@@ -1,5 +1,6 @@
 ﻿using AutoEncodeUtilities.Enums;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -87,19 +88,62 @@ public class Logger : ILogger
     {
         if (details is not null)
         {
-            var detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            messages.Add("Details:");
+            PropertyInfo[] detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
-            StringBuilder detailsSb = new("Details: ");
             for (int i = 0; i < detailsProperties.Length; i++)
             {
-                detailsSb.Append($"{detailsProperties[i].Name} = {detailsProperties[i].GetValue(details).ToString()}");
-                if ((i == detailsProperties.Length - 1) is false) detailsSb.Append(" | ");  // If not the last property, add delimeter
+                messages.AddRange(GenerateDetailsMessages(detailsProperties[i].Name, detailsProperties[i].GetValue(details), 3));
             }
-
-            messages.Add(detailsSb.ToString());
         }
 
         return Log(severity, messages, threadName, callingMemberName);
+    }
+
+    private static List<string> GenerateDetailsMessages(string name, object details, int padding = 0)
+    {
+        List<string> detailsMessages = [];
+
+        StringBuilder sbDetailMessage = new();
+        Type type = details?.GetType();
+        if ((type is null) || (details is null))
+        {
+            sbDetailMessage.Append(' ', padding).Append($"{name} = NULL".PadLeft(padding));
+            detailsMessages.Add(sbDetailMessage.ToString());
+        }
+        else if (type.IsPrimitive || (type == typeof(string)) || (type == typeof(TimeSpan)) || (type == typeof(DateTime)))
+        {
+            sbDetailMessage.Append(' ', padding).Append($"{name} = {details}".PadLeft(padding));
+            detailsMessages.Add(sbDetailMessage.ToString());
+        }
+        else
+        {
+            if (details is IEnumerable enumerable)
+            {
+                Type childType = type.GetGenericArguments()[0];
+                sbDetailMessage.Append(' ', padding).Append($"{name} (IEnumerable<{childType}>) = ");
+                detailsMessages.Add(sbDetailMessage.ToString());
+
+                int index = 0;
+                foreach (var item in enumerable)
+                {
+                    detailsMessages.AddRange(GenerateDetailsMessages($"[{index}]", item, padding + 3));
+                    index++;
+                }
+            }
+            else if (type.IsClass)
+            {
+                sbDetailMessage.Append(' ', padding).Append($"{name} = ".PadLeft(padding));
+                detailsMessages.Add(sbDetailMessage.ToString());
+                PropertyInfo[] detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                for (int i = 0; i < detailsProperties.Length; i++)
+                {
+                    detailsMessages.AddRange(GenerateDetailsMessages(detailsProperties[i].Name, detailsProperties[i].GetValue(details), padding + 3));
+                }
+            }
+        }
+
+        return detailsMessages;
     }
 
     /// <summary>Base log method; Returns first string from list for usage elsewhere if needed. </summary>

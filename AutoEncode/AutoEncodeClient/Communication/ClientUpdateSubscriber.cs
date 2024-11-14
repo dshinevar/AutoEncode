@@ -13,12 +13,13 @@ using System.Text.Json;
 namespace AutoEncodeClient.Communication;
 
 public class ClientUpdateSubscriber :
-    IClientUpdateSubscriber,
-    IDisposable
+    IClientUpdateSubscriber
 {
     #region Dependencies
     public ILogger Logger { get; set; }
     #endregion Dependencies
+
+    private bool _connected = false;
 
     private readonly SubscriberSocket _subscriberSocket = new();
     private readonly NetMQPoller _poller = null;
@@ -87,15 +88,20 @@ public class ClientUpdateSubscriber :
     {
         try
         {
-            _poller.Stop();
+            _subscriberSocket.ReceiveReady -= SubscriberSocket_ReceiveReady;
 
             if (_subscribedTopics.Count > 0)
             {
                 Unsubscribe([.. _subscribedTopics]);
             }
 
-            _subscriberSocket.Disconnect(ConnectionString);
-            _subscriberSocket.Close();
+            _poller.Stop();
+
+            if (_connected is true)
+                _subscriberSocket.Disconnect(ConnectionString);
+
+            if (_subscriberSocket.IsDisposed is false)
+                _subscriberSocket.Close();
 
             _monitor.Stop();
         }
@@ -104,8 +110,6 @@ public class ClientUpdateSubscriber :
             Logger.LogException(ex, $"Error stopping {nameof(ClientUpdateSubscriber)}", nameof(ClientUpdateSubscriber), new { ConnectionString, _subscribedTopics });
         }
     }
-
-    public void Dispose() => Stop();
     #endregion Init / Start / Stop
 
     #region Public Methods
@@ -141,12 +145,12 @@ public class ClientUpdateSubscriber :
     {
         try
         {
-            while (e.Socket.TryReceiveFrameString(out string frameString, out bool more) is true)
+            while ((e.Socket.TryReceiveFrameString(TimeSpan.FromSeconds(10), out string frameString, out bool more) is true) && (_subscribedTopics.Count > 0))
             {
                 string message = null;
                 if (more is true)
                 {
-                    e.Socket.TryReceiveFrameString(out message);
+                    e.Socket.TryReceiveFrameString(TimeSpan.FromSeconds(10), out message);
                 }
 
                 if ((string.IsNullOrWhiteSpace(message) is false) && (message.IsValidJson() is true))
@@ -158,14 +162,20 @@ public class ClientUpdateSubscriber :
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error receiving messages.", nameof(ClientUpdateSubscriber), new { ConnectionString, _subscribedTopics, EventArgs = e });
+            Logger.LogException(ex, $"Error receiving messages.", nameof(ClientUpdateSubscriber), new { ConnectionString, _subscribedTopics, SocketReadyToReceive = e.IsReadyToReceive, IsSocketDisposedOrNull = e.Socket?.IsDisposed });
         }
     }
 
     private void Socket_Connected(object sender, NetMQMonitorSocketEventArgs e)
-        => HelperMethods.DebugLog($"Connected to {e.Address}", nameof(ClientUpdateSubscriber));
+    {
+        _connected = true;
+        HelperMethods.DebugLog($"Connected to {e.Address}", nameof(ClientUpdateSubscriber));
+    }
 
     private void Socket_Disconnected(object sender, NetMQMonitorSocketEventArgs e)
-        => HelperMethods.DebugLog($"Disconnected from {e.Address}", nameof(ClientUpdateSubscriber));
+    {
+        _connected = false;
+        HelperMethods.DebugLog($"Disconnected from {e.Address}", nameof(ClientUpdateSubscriber));
+    }
     #endregion Events
 }

@@ -44,6 +44,8 @@ public partial class App : Application
     private const string LOG_FILENAME = "aeclient.log";
     private ILogger Logger = null;
     private WindsorContainer _container;
+
+    private IAutoEncodeClientViewModel _clientViewModel;
     private ICommunicationMessageHandler _communicatorMessageHandler;
 
     private void AEClient_Startup(object sender, StartupEventArgs e)
@@ -51,7 +53,7 @@ public partial class App : Application
 #if DEBUG
         if (System.Diagnostics.Debugger.IsAttached)
         {
-            System.Threading.Thread.Sleep(10000);
+            //System.Threading.Thread.Sleep(10000);
         }
 #endif
 
@@ -113,10 +115,10 @@ public partial class App : Application
             _communicatorMessageHandler = _container.Resolve<ICommunicationMessageHandler>();
             _communicatorMessageHandler.Initialize();
 
-            IAutoEncodeClientViewModel viewModel = _container.Resolve<IAutoEncodeClientViewModel>();
-            viewModel.Initialize();
+            _clientViewModel = _container.Resolve<IAutoEncodeClientViewModel>();
+            _clientViewModel.Initialize();
 
-            AutoEncodeClientView view = new(viewModel)
+            AutoEncodeClientView view = new(_clientViewModel)
             {
                 Title = $"AutoEncodeClient - {Assembly.GetExecutingAssembly().GetName().Version}"
             };
@@ -134,9 +136,12 @@ public partial class App : Application
     {
         try
         {
-            _container.Release(_communicatorMessageHandler);
+            // Manually shutdown components to ensure all sockets dispose
+            _communicatorMessageHandler.Shutdown();
+            _clientViewModel.Shutdown();
 
-            NetMQConfig.Cleanup();            
+            // Do final cleanup of networking
+            NetMQConfig.Cleanup(false);
         }
         catch (Exception ex)
         {
@@ -172,7 +177,8 @@ public partial class App : Application
         container.Register(Component.For<IClientUpdateSubscriber>()
             .ImplementedBy<ClientUpdateSubscriber>()
             .LifestyleTransient()
-            .OnCreate(sub => sub.Initialize()));
+            .OnCreate(sub => sub.Initialize())
+            .OnDestroy(sub => sub.Stop()));
 
         container.Register(Component.For<IAutoEncodeClientViewModel>()
             .ImplementedBy<AutoEncodeClientViewModel>()

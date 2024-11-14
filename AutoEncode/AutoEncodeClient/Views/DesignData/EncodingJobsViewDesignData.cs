@@ -157,4 +157,9 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
     {
         throw new NotImplementedException();
     }
+
+    public void Shutdown()
+    {
+        throw new NotImplementedException();
+    }
 }

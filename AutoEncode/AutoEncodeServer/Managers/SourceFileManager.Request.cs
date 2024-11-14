@@ -1,7 +1,10 @@
-﻿using AutoEncodeServer.Data.Request;
+﻿using AutoEncodeServer.Communication;
+using AutoEncodeServer.Data.Request;
 using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
@@ -91,8 +94,16 @@ public partial class SourceFileManager : ISourceFileManager
     {
         if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFile) is true)
         {
-            sourceFile.UpdateEncodingStatus(TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus));
-            // TODO: Notify?
+            if (sourceFile.UpdateEncodingStatus(TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus)) is true)
+            {
+                SourceFileUpdateData update = new()
+                {
+                    Type = SourceFileUpdateType.Update,
+                    SourceFile = sourceFile.ToData()
+                };
+                (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateSourceFileUpdate([update]);
+                ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
+            }
         }
     }
     #endregion Request Processing
