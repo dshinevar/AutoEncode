@@ -61,7 +61,7 @@ public class SourceFilesViewModel :
         ClientUpdateSubscriber.Stop();
     }
 
-    private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)
+    private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, CommunicationMessage<ClientUpdateType> e)
     {
         if (e.Type == ClientUpdateType.SourceFilesUpdate)
         {

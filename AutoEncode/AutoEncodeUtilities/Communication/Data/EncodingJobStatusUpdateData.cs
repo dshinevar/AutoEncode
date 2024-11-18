@@ -3,7 +3,8 @@ using System;
 
 namespace AutoEncodeUtilities.Communication.Data;
 
-public class EncodingJobStatusUpdateData
+/// <summary>Encapsulates data describing an encoding job's status.</summary>
+public record EncodingJobStatusUpdateData
 {
     public EncodingJobStatus Status { get; set; }
 

@@ -1,6 +1,5 @@
 ﻿using AutoEncodeClient.Communication.Interfaces;
 using AutoEncodeUtilities.Communication.Data;
-using AutoEncodeUtilities.Communication.Data.Response;
 using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Data;
 using System;
@@ -13,185 +12,164 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
 {
     public async Task<Dictionary<string, IEnumerable<SourceFileData>>> RequestSourceFiles()
     {
+        Dictionary<string, IEnumerable<SourceFileData>> sourceFiles = null;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateSourceFilesRequest());
-            ValidateResponse(responseMessage, CommunicationMessageType.SourceFilesResponse);
-            ConvertedMessage<SourceFilesResponse> convertedResponse = CommunicationMessage.Convert<SourceFilesResponse>(responseMessage);
-
-            if (convertedResponse?.Data is SourceFilesResponse sourceFilesResponse)
-            {
-                return sourceFilesResponse.SourceFiles;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateSourceFilesRequest());
+            ValidateResponse(responseMessage, ResponseMessageType.SourceFilesResponse);
+            sourceFiles = responseMessage.UnpackData<Dictionary<string, IEnumerable<SourceFileData>>>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to get source files.", nameof(CommunicationMessageHandler));
         }
 
-        return null;
+        return sourceFiles;
     }
 
     public async Task<bool> RequestCancelJob(ulong jobId)
     {
+        bool response = false;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateCancelJobRequest(jobId));
-            ValidateResponse(responseMessage, CommunicationMessageType.CancelResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
-
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateCancelJobRequest(jobId));
+            ValidateResponse(responseMessage, ResponseMessageType.CancelResponse);
+            response = responseMessage.UnpackData<bool>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job cancel.", nameof(CommunicationMessageHandler), new { jobId });
         }
 
-        return false;
+        return response;
     }
 
     public async Task<bool> RequestPauseJob(ulong jobId)
     {
+        bool response = false;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreatePauseJobRequest(jobId));
-            ValidateResponse(responseMessage, CommunicationMessageType.PauseResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
-
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreatePauseJobRequest(jobId));
+            ValidateResponse(responseMessage, ResponseMessageType.PauseResponse);
+            response = responseMessage.UnpackData<bool>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job pause.", nameof(CommunicationMessageHandler), new { jobId });
         }
 
-        return false;
+        return response;
     }
 
     public async Task<bool> RequestResumeJob(ulong jobId)
     {
+        bool response = false;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateResumeJobRequest(jobId));
-            ValidateResponse(responseMessage, CommunicationMessageType.ResumeResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateResumeJobRequest(jobId));
+            ValidateResponse(responseMessage, ResponseMessageType.ResumeResponse);
+            response = responseMessage.UnpackData<bool>();
 
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job resume.", nameof(CommunicationMessageHandler), new { jobId });
         }
 
-        return false;
+        return response;
     }
 
     public async Task<bool> RequestPauseAndCancelJob(ulong jobId)
     {
+        bool response = false;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreatePauseAndCancelRequest(jobId));
-            ValidateResponse(responseMessage, CommunicationMessageType.PauseCancelResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
-
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreatePauseAndCancelRequest(jobId));
+            ValidateResponse(responseMessage, ResponseMessageType.PauseCancelResponse);
+            response = responseMessage.UnpackData<bool>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job pause and cancel.", nameof(CommunicationMessageHandler), new { jobId });
         }
 
-        return false;
-    }
-
-    public async Task<bool> RequestEncode(Guid sourceFileGuid)
-    {
-        try
-        {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateEncodeRequest(sourceFileGuid));
-            ValidateResponse(responseMessage, CommunicationMessageType.EncodeResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
-
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex, "Failed to request job encode.", nameof(CommunicationMessageHandler), new { sourceFileGuid });
-        }
-
-        return false;
-    }
-
-    public async Task<IEnumerable<string>> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids)
-    {
-        try
-        {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateBulkEncodeRequest(sourceFileGuids));
-            ValidateResponse(responseMessage, CommunicationMessageType.BulkEncodeResponse);
-            ConvertedMessage<IEnumerable<string>> convertedResponse = CommunicationMessage.Convert<IEnumerable<string>>(responseMessage);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex, "Failed to bulk request job encode.", nameof(CommunicationMessageHandler), new { sourceFileGuids });
-        }
-
-        return null;
+        return response;
     }
 
     public async Task<bool> RequestRemoveJob(ulong jobId)
     {
+        bool response = false;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateRemoveJobRequest(jobId));
-            ValidateResponse(responseMessage, CommunicationMessageType.RemoveJobResponse);
-            ConvertedMessage<bool> convertedResponse = CommunicationMessage.Convert<bool>(responseMessage);
-
-            if (convertedResponse?.Data is bool response)
-            {
-                return response;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateRemoveJobRequest(jobId));
+            ValidateResponse(responseMessage, ResponseMessageType.RemoveJobResponse);
+            response = responseMessage.UnpackData<bool>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job removal.", nameof(CommunicationMessageHandler), new { jobId });
         }
 
-        return false;
+        return response;
+    }
+
+    public async Task<bool> RequestEncode(Guid sourceFileGuid)
+    {
+        bool response = false;
+
+        try
+        {
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateEncodeRequest(sourceFileGuid));
+            ValidateResponse(responseMessage, ResponseMessageType.EncodeResponse);
+            response = responseMessage.UnpackData<bool>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, "Failed to request job encode.", nameof(CommunicationMessageHandler), new { sourceFileGuid });
+        }
+
+        return response;
+    }
+
+    public async Task<IEnumerable<string>> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids)
+    {
+        IEnumerable<string> response = null;
+
+        try
+        {
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateBulkEncodeRequest(sourceFileGuids));
+            ValidateResponse(responseMessage, ResponseMessageType.BulkEncodeResponse);
+            response = responseMessage.UnpackData<IEnumerable<string>>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, "Failed to bulk request job encode.", nameof(CommunicationMessageHandler), new { sourceFileGuids });
+        }
+
+        return response;
     }
 
     public async Task<IEnumerable<EncodingJobData>> RequestJobQueue()
     {
+        IEnumerable<EncodingJobData> response = null;
+
         try
         {
-            CommunicationMessage responseMessage = await SendReceiveAsync(CommunicationRequestMessageFactory.CreateJobQueueRequest());
-            ValidateResponse(responseMessage, CommunicationMessageType.JobQueueResponse);
-            ConvertedMessage<IEnumerable<EncodingJobData>> convertedResponse = CommunicationMessage.Convert<IEnumerable<EncodingJobData>>(responseMessage);
-
-            if (convertedResponse?.Data is IEnumerable<EncodingJobData> response)
-            {
-                return response;
-            }
+            CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateJobQueueRequest());
+            ValidateResponse(responseMessage, ResponseMessageType.JobQueueResponse);
+            response = responseMessage.UnpackData<IEnumerable<EncodingJobData>>();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, "Failed to request job queue.", nameof(CommunicationMessageHandler));
         }
 
-        return null;
+        return response;
     }
 }

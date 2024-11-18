@@ -1,4 +1,5 @@
 ﻿using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +7,7 @@ namespace AutoEncodeClient.Communication.Interfaces;
 
 public interface IClientUpdateSubscriber
 {
-    event EventHandler<ClientUpdateMessage> ClientUpdateMessageReceived;
+    event EventHandler<CommunicationMessage<ClientUpdateType>> ClientUpdateMessageReceived;
 
     bool Initialized { get; }
 

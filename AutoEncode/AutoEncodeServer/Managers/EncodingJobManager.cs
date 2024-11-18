@@ -138,7 +138,7 @@ public partial class EncodingJobManager :
             IEncodingJobModel addedEncodingJob = e.NewItems.Cast<IEncodingJobModel>().FirstOrDefault();
             if (addedEncodingJob is not null)
             {
-                (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType.Add, addedEncodingJob.Id, addedEncodingJob.ToEncodingJobData());
+                (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType.Add, addedEncodingJob.Id, addedEncodingJob.ToEncodingJobData());
                 ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
             }
 
@@ -150,7 +150,7 @@ public partial class EncodingJobManager :
             IEncodingJobModel removedEncodingJob = e.OldItems.Cast<IEncodingJobModel>().FirstOrDefault();
             if (removedEncodingJob is not null)
             {
-                (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType.Remove, removedEncodingJob.Id, null);
+                (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType.Remove, removedEncodingJob.Id, null);
                 ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
             }
         }

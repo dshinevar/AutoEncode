@@ -245,6 +245,12 @@
                                 <Run Text="{Binding Id, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
                             </TextBlock.Inlines>
                         </TextBlock>
+                        <TextBlock TextWrapping="NoWrap">
+                            <TextBlock.Inlines>
+                                <Run Text="Title:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
+                                <Run Text="{Binding Title, Mode=OneWay}" Style="{StaticResource EncodingJobDataRunStyle}"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
                         <TextBlock TextWrapping="Wrap">
                             <TextBlock.Inlines>
                                 <Run Text="Source Full Path:" Style="{StaticResource EncodingJobDataLabelRunStyle}"/>
@@ -416,16 +422,22 @@
                                                          Value="{x:Static enums:EncodingJobDetailsSection.Source_Data}">
                                                 <Setter Property="ContentTemplate"
                                                         Value="{StaticResource EncodingJobSourceDataSectionTemplate}"/>
+                                                <Setter Property="Content"
+                                                        Value="{Binding SourceStreamData}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding SelectedDetailsSection}"
                                                          Value="{x:Static enums:EncodingJobDetailsSection.Command_Arguments}">
                                                 <Setter Property="ContentTemplate"
                                                         Value="{StaticResource EncodingJobCommandArgumentsSectionTemplate}"/>
+                                                <Setter Property="Content"
+                                                        Value="{Binding EncodingCommandArguments}"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding SelectedDetailsSection}"
                                                          Value="{x:Static enums:EncodingJobDetailsSection.Error}">
                                                 <Setter Property="ContentTemplate"
                                                         Value="{StaticResource EncodingJobErrorSectionDataTemplate}"/>
+                                                <Setter Property="Content"
+                                                        Value="{Binding .}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>

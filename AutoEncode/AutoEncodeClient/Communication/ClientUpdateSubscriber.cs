@@ -2,6 +2,7 @@
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication;
 using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Logger;
 using NetMQ;
 using NetMQ.Monitoring;
@@ -139,7 +140,7 @@ public class ClientUpdateSubscriber :
     #endregion Public Methods
 
     #region Events
-    public event EventHandler<ClientUpdateMessage> ClientUpdateMessageReceived;
+    public event EventHandler<CommunicationMessage<ClientUpdateType>> ClientUpdateMessageReceived;
 
     private void SubscriberSocket_ReceiveReady(object sender, NetMQSocketEventArgs e)
     {
@@ -155,7 +156,7 @@ public class ClientUpdateSubscriber :
 
                 if ((string.IsNullOrWhiteSpace(message) is false) && (message.IsValidJson() is true))
                 {
-                    ClientUpdateMessage updateMessage = JsonSerializer.Deserialize<ClientUpdateMessage>(message, CommunicationConstants.SerializerOptions);
+                    CommunicationMessage<ClientUpdateType> updateMessage = JsonSerializer.Deserialize<CommunicationMessage<ClientUpdateType>>(message, CommunicationConstants.SerializerOptions);
                     ClientUpdateMessageReceived?.Invoke(this, updateMessage);
                 }
             }

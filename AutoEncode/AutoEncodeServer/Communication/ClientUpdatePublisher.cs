@@ -2,6 +2,7 @@
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication;
 using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Logger;
 using NetMQ;
 using NetMQ.Sockets;
@@ -18,7 +19,7 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     private struct ClientUpdateRequest
     {
         public string Topic { get; set; }
-        public ClientUpdateMessage Message { get; set; }
+        public CommunicationMessage<ClientUpdateType> Message { get; set; }
     }
 
     #region Dependencies
@@ -86,7 +87,6 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
 
             _publisherSocket?.Unbind(ConnectionString);
             _publisherSocket?.Close();
-            _publisherSocket?.Dispose();
 
             try
             {
@@ -140,7 +140,7 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         }
     }
 
-    public bool AddClientUpdateRequest(string topic, ClientUpdateMessage message)
+    public bool AddClientUpdateRequest(string topic, CommunicationMessage<ClientUpdateType> message)
         => _requests.TryAdd(new ClientUpdateRequest()
         {
             Topic = topic,

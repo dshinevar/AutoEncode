@@ -1,4 +1,5 @@
 ﻿using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using System.Threading;
 
 namespace AutoEncodeServer.Communication.Interfaces;
@@ -27,5 +28,5 @@ public interface IClientUpdatePublisher
     /// <param name="topic">The topic the client(s) should be subscribed to.</param>
     /// <param name="message">The update message.</param>
     /// <returns>True if added to queue.</returns>
-    bool AddClientUpdateRequest(string topic, ClientUpdateMessage message);
+    bool AddClientUpdateRequest(string topic, CommunicationMessage<ClientUpdateType> message);
 }

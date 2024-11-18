@@ -108,12 +108,12 @@ public class Logger : ILogger
         Type type = details?.GetType();
         if ((type is null) || (details is null))
         {
-            sbDetailMessage.Append(' ', padding).Append($"{name} = NULL".PadLeft(padding));
+            sbDetailMessage.Append(' ', padding).Append($"{name} = NULL");
             detailsMessages.Add(sbDetailMessage.ToString());
         }
         else if (type.IsPrimitive || (type == typeof(string)) || (type == typeof(TimeSpan)) || (type == typeof(DateTime)))
         {
-            sbDetailMessage.Append(' ', padding).Append($"{name} = {details}".PadLeft(padding));
+            sbDetailMessage.Append(' ', padding).Append($"{name} = {details}");
             detailsMessages.Add(sbDetailMessage.ToString());
         }
         else
@@ -133,7 +133,7 @@ public class Logger : ILogger
             }
             else if (type.IsClass)
             {
-                sbDetailMessage.Append(' ', padding).Append($"{name} = ".PadLeft(padding));
+                sbDetailMessage.Append(' ', padding).Append($"{name} = ");
                 detailsMessages.Add(sbDetailMessage.ToString());
                 PropertyInfo[] detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
                 for (int i = 0; i < detailsProperties.Length; i++)

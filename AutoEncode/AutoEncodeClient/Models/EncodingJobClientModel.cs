@@ -49,7 +49,7 @@ public class EncodingJobClientModel :
         ClientUpdateSubscriber.ClientUpdateMessageReceived -= ClientUpdateSubscriber_ClientUpdateMessageReceived;
     }
 
-    private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, ClientUpdateMessage e)
+    private void ClientUpdateSubscriber_ClientUpdateMessageReceived(object sender, CommunicationMessage<ClientUpdateType> e)
     {
         switch (e.Type)
         {
@@ -286,17 +286,5 @@ public class EncodingJobClientModel :
     public async Task<bool> CancelThenPause() => await CommunicationMessageHandler.RequestPauseAndCancelJob(Id);
 
     public async Task<bool> Remove() => await CommunicationMessageHandler.RequestRemoveJob(Id);
-
-    public override bool Equals(object obj)
-    {
-        if (obj is EncodingJobData data)
-        {
-            return Id == data.Id;
-        }
-
-        return false;
-    }
-
-    public override int GetHashCode() => Id.GetHashCode();
     #endregion Public Methods
 }

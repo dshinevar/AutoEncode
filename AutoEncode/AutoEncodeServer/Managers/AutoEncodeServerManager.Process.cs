@@ -16,90 +16,85 @@ namespace AutoEncodeServer.Managers;
 
 public partial class AutoEncodeServerManager : IAutoEncodeServerManager
 {
-    private readonly BlockingCollection<(NetMQFrame, CommunicationMessage)> _messages = [];
+    private readonly BlockingCollection<(NetMQFrame, CommunicationMessage<RequestMessageType>)> _messages = [];
     private const int _messageProcessorTimeout = 3600000;   // 1 hour
 
     private Task StartMessageProcessor()
         => _messageProcessingTask = Task.Run(() =>
         {
-            while (_messages.TryTake(out (NetMQFrame ClientAddress, CommunicationMessage Message) clientMessage, _messageProcessorTimeout, _shutdownCancellationTokenSource.Token))
+            while (_messages.TryTake(out (NetMQFrame ClientAddress, CommunicationMessage<RequestMessageType> Message) clientMessage, _messageProcessorTimeout, _shutdownCancellationTokenSource.Token))
             {
                 try
                 {
                     NetMQFrame clientAddress = clientMessage.ClientAddress;
-                    CommunicationMessage message = clientMessage.Message;
+                    CommunicationMessage<RequestMessageType> message = clientMessage.Message;
 
-                    switch (message.MessageType)
+                    switch (message.Type)
                     {
-                        case CommunicationMessageType.SourceFilesRequest:
+                        case RequestMessageType.SourceFilesRequest:
                         {
                             var sourceFiles = _sourceFileManager.RequestSourceFiles();
-                            var response = CommunicationResponseMessageFactory.CreateSourceFilesResponse(sourceFiles);
-                            _communicationMessageHandler.SendMessage(clientAddress, response);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateSourceFilesResponse(sourceFiles));
                             break;
                         }
-                        case CommunicationMessageType.CancelRequest:
+                        case RequestMessageType.CancelRequest:
                         {
-                            ConvertedMessage<ulong> convertedMessage = CommunicationMessage.Convert<ulong>(message);
-                            bool success = _encodingJobManager.AddCancelJobByIdRequest(convertedMessage.Data);
-                            var response = CommunicationResponseMessageFactory.CreateCancelResponse(success);
-                            _communicationMessageHandler.SendMessage(clientAddress, response);
+                            ulong jobId = message.UnpackData<ulong>();
+                            bool success = _encodingJobManager.AddCancelJobByIdRequest(jobId);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateCancelResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.PauseRequest:
+                        case RequestMessageType.PauseRequest:
                         {
-                            ConvertedMessage<ulong> convertedMessage = CommunicationMessage.Convert<ulong>(message);
-                            bool success = _encodingJobManager.AddPauseJobByIdRequest(convertedMessage.Data);
-                            var response = CommunicationResponseMessageFactory.CreatePauseResponse(success);
-                            _communicationMessageHandler.SendMessage(clientAddress, response);
+                            ulong jobId = message.UnpackData<ulong>();
+                            bool success = _encodingJobManager.AddPauseJobByIdRequest(jobId);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.ResumeRequest:
+                        case RequestMessageType.ResumeRequest:
                         {
-                            ConvertedMessage<ulong> convertedMessage = CommunicationMessage.Convert<ulong>(message);
-                            bool success = _encodingJobManager.AddResumeJobByIdRequest(convertedMessage.Data);
-                            var response = CommunicationResponseMessageFactory.CreateResumeResponse(success);
-                            _communicationMessageHandler.SendMessage(clientAddress, response);
+                            ulong jobId = message.UnpackData<ulong>();
+                            bool success = _encodingJobManager.AddResumeJobByIdRequest(jobId);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateResumeResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.PauseCancelRequest:
+                        case RequestMessageType.PauseCancelRequest:
                         {
-                            ConvertedMessage<ulong> convertedMessage = CommunicationMessage.Convert<ulong>(message);
-                            bool success = _encodingJobManager.AddPauseAndCancelJobByIdRequest(convertedMessage.Data);
-                            var response = CommunicationResponseMessageFactory.CreatePauseAndCancelResponse(success);
-                            _communicationMessageHandler.SendMessage(clientAddress, response);
+                            ulong jobId = message.UnpackData<ulong>();
+                            bool success = _encodingJobManager.AddPauseAndCancelJobByIdRequest(jobId);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseAndCancelResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.EncodeRequest:
+                        case RequestMessageType.RemoveJobRequest:
                         {
-                            ConvertedMessage<Guid> convertedMessage = CommunicationMessage.Convert<Guid>(message);
-                            bool success = _sourceFileManager.RequestEncodingJob(convertedMessage.Data);
-                            _communicationMessageHandler.SendMessage(clientAddress, CommunicationResponseMessageFactory.CreateEncodeResponse(success));
+                            ulong jobId = message.UnpackData<ulong>();
+                            bool success = _encodingJobManager.AddRemoveEncodingJobByIdRequest(jobId, RemovedEncodingJobReason.UserRequested);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateRemoveJobResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.BulkEncodeRequest:
+                        case RequestMessageType.EncodeRequest:
                         {
-                            ConvertedMessage<IEnumerable<Guid>> convertedMessage = CommunicationMessage.Convert<IEnumerable<Guid>>(message);
-                            IEnumerable<string> failedRequests = _sourceFileManager.BulkRequestEncodingJob(convertedMessage.Data);
-                            _communicationMessageHandler.SendMessage(clientAddress, CommunicationResponseMessageFactory.CreateBulkEncodeResponse(failedRequests));
+                            Guid sourceFileGuid = message.UnpackData<Guid>();
+                            bool success = _sourceFileManager.RequestEncodingJob(sourceFileGuid);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateEncodeResponse(success));
                             break;
                         }
-                        case CommunicationMessageType.RemoveJobRequest:
+                        case RequestMessageType.BulkEncodeRequest:
                         {
-                            ConvertedMessage<ulong> convertedMessage = CommunicationMessage.Convert<ulong>(message);
-                            bool success = _encodingJobManager.AddRemoveEncodingJobByIdRequest(convertedMessage.Data, RemovedEncodingJobReason.UserRequested);
-                            _communicationMessageHandler.SendMessage(clientAddress, CommunicationResponseMessageFactory.CreateRemoveJobResponse(success));
+                            IEnumerable<Guid> sourceFileGuids = message.UnpackData<IEnumerable<Guid>>();
+                            IEnumerable<string> failedRequests = _sourceFileManager.BulkRequestEncodingJob(sourceFileGuids);
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateBulkEncodeResponse(failedRequests));
                             break;
                         }
-                        case CommunicationMessageType.JobQueueRequest:
+                        case RequestMessageType.JobQueueRequest:
                         {
                             IEnumerable<EncodingJobData> queue = _encodingJobManager.GetEncodingJobQueue();
-                            _communicationMessageHandler.SendMessage(clientAddress, CommunicationResponseMessageFactory.CreateJobQueueResponse(queue));
+                            _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateJobQueueResponse(queue));
                             break;
                         }
                         default:
                         {
-                            throw new NotImplementedException($"MessageType {message.MessageType} ({message.MessageType.GetDisplayName()}) is not implemented.");
+                            throw new NotImplementedException($"MessageType {message.Type} ({message.Type.GetDisplayName()}) is not implemented.");
                         }
                     }
                 }
@@ -110,7 +105,7 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
             }
         });
 
-    private void CommunicationMessageHandler_MessageReceived(object sender, CommunicationMessageReceivedEventArgs e)
+    private void CommunicationMessageHandler_MessageReceived(object sender, RequestMessageReceivedEventArgs e)
     {
         // Restart message processing thread if stopped
         if ((_messageProcessingTask is null) ||                         // Null somehow

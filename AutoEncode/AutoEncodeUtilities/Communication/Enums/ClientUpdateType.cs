@@ -3,9 +3,11 @@
 /// <summary>The type of client update. Used in constructing pub/sub topics as well.</summary>
 public enum ClientUpdateType
 {
+    /// <summary>Default -- should be unused.</summary>
     None = 0,
 
     #region Source File Updates
+    /// <summary>Indicates update to source files.</summary>
     SourceFilesUpdate = 10,
     #endregion Source File Updates
 
