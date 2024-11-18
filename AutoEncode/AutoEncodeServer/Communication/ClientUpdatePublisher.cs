@@ -87,7 +87,6 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
 
             _publisherSocket?.Unbind(ConnectionString);
             _publisherSocket?.Close();
-            _publisherSocket?.Dispose();
 
             try
             {
