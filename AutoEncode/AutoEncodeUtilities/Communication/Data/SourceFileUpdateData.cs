@@ -3,9 +3,4 @@ using AutoEncodeUtilities.Data;
 
 namespace AutoEncodeUtilities.Communication.Data;
 
-public class SourceFileUpdateData
-{
-    public SourceFileUpdateType Type { get; set; }
-
-    public SourceFileData SourceFile { get; set; }
-}
+public record SourceFileUpdateData(SourceFileUpdateType Type, SourceFileData SourceFile);

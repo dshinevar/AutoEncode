@@ -49,7 +49,7 @@ public partial class SourceFileManager : ISourceFileManager
                     // Send out updates if any
                     if (sourceFileUpdates.Any())
                     {
-                        (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateSourceFileUpdate(sourceFileUpdates);
+                        (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateSourceFileUpdate(sourceFileUpdates);
                         ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
                     }
 
@@ -142,11 +142,7 @@ public partial class SourceFileManager : ISourceFileManager
         {
             if (_sourceFiles.Remove(sourceFile.Guid, out _))
             {
-                sourceFileUpdates.Add(new()
-                {
-                    Type = SourceFileUpdateType.Remove,
-                    SourceFile = sourceFile.ToData()
-                });
+                sourceFileUpdates.Add(new(SourceFileUpdateType.Remove, sourceFile.ToData()));
                 SourceFileModelFactory.Release(sourceFile);
             }           
         }
@@ -159,11 +155,7 @@ public partial class SourceFileManager : ISourceFileManager
             {
                 if (model.UpdateEncodingStatus(newSourceFile.EncodingStatus) is true)
                 {
-                    sourceFileUpdates.Add(new()
-                    {
-                        Type = SourceFileUpdateType.Update,
-                        SourceFile = model.ToData()
-                    });
+                    sourceFileUpdates.Add(new(SourceFileUpdateType.Update, model.ToData()));
                 }
             }
             else
@@ -171,11 +163,7 @@ public partial class SourceFileManager : ISourceFileManager
                 model = SourceFileModelFactory.Create(newSourceFile);
                 if (_sourceFiles.TryAdd(model.Guid, model) is true)
                 {
-                    sourceFileUpdates.Add(new()
-                    {
-                        Type = SourceFileUpdateType.Add,
-                        SourceFile = model.ToData()
-                    });
+                    sourceFileUpdates.Add(new(SourceFileUpdateType.Add, model.ToData()));
                 }
             }
 

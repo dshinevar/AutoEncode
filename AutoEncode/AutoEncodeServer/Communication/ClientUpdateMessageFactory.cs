@@ -7,68 +7,43 @@ namespace AutoEncodeServer.Communication;
 
 public static class ClientUpdateMessageFactory
 {
-    public static (string, ClientUpdateMessage) CreateSourceFileUpdate(IEnumerable<SourceFileUpdateData> data)
+    public static (string, CommunicationMessage<ClientUpdateType>) CreateSourceFileUpdate(IEnumerable<SourceFileUpdateData> data)
     {
         string topic = nameof(ClientUpdateType.SourceFilesUpdate);
-        ClientUpdateMessage message = new()
-        {
-            Type = ClientUpdateType.SourceFilesUpdate,
-            Data = data
-        };
-
+        CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.SourceFilesUpdate, data);
         return (topic, message);
     }
 
-    public static (string, ClientUpdateMessage) CreateEncodingJobStatusUpdate(ulong jobId, EncodingJobStatusUpdateData data)
+    public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobStatusUpdate(ulong jobId, EncodingJobStatusUpdateData data)
     {
         string topic = $"{nameof(ClientUpdateType.EncodingJobStatus)}-{jobId}";
-        ClientUpdateMessage message = new()
-        {
-            Type = ClientUpdateType.EncodingJobStatus,
-            Data = data
-        };
-
+        CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobStatus, data);
         return (topic, message);
     }
 
-    public static (string, ClientUpdateMessage) CreateEncodingJobProcessingDataUpdate(ulong jobId, EncodingJobProcessingDataUpdateData data)
+    public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobProcessingDataUpdate(ulong jobId, EncodingJobProcessingDataUpdateData data)
     {
         string topic = $"{nameof(ClientUpdateType.EncodingJobProcessingData)}-{jobId}";
-        ClientUpdateMessage message = new()
-        {
-            Type = ClientUpdateType.EncodingJobProcessingData,
-            Data = data
-        };
-
+        CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobProcessingData, data);
         return (topic, message);
     }
 
-    public static (string, ClientUpdateMessage) CreateEncodingJobEncodingProgressUpdate(ulong jobId, EncodingJobEncodingProgressUpdateData data)
+    public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobEncodingProgressUpdate(ulong jobId, EncodingJobEncodingProgressUpdateData data)
     {
         string topic = $"{nameof(ClientUpdateType.EncodingJobEncodingProgress)}-{jobId}";
-        ClientUpdateMessage message = new()
-        {
-            Type = ClientUpdateType.EncodingJobEncodingProgress,
-            Data = data
-        };
-
+        CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobEncodingProgress, data);
         return (topic, message);
     }
 
-    public static (string, ClientUpdateMessage) CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType type, ulong jobId, EncodingJobData data = null)
+    public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobQueueUpdate(EncodingJobQueueUpdateType type, ulong jobId, EncodingJobData data = null)
     {
         string topic = nameof(ClientUpdateType.EncodingJobQueue);
-        ClientUpdateMessage message = new()
+        CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobQueue, new EncodingJobQueueUpdateData()
         {
-            Type = ClientUpdateType.EncodingJobQueue,
-            Data = new EncodingJobQueueUpdateData()
-            {
-                Type = type,
-                JobId = jobId,
-                EncodingJob = data
-            }
-        };
-
+            Type = type,
+            JobId = jobId,
+            EncodingJob = data
+        });
         return (topic, message);
     }
 }

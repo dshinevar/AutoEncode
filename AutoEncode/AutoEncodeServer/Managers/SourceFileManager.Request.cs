@@ -96,12 +96,8 @@ public partial class SourceFileManager : ISourceFileManager
         {
             if (sourceFile.UpdateEncodingStatus(TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus)) is true)
             {
-                SourceFileUpdateData update = new()
-                {
-                    Type = SourceFileUpdateType.Update,
-                    SourceFile = sourceFile.ToData()
-                };
-                (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateSourceFileUpdate([update]);
+                SourceFileUpdateData update = new(SourceFileUpdateType.Update, sourceFile.ToData());
+                (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateSourceFileUpdate([update]);
                 ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
             }
         }

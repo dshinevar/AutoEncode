@@ -2,7 +2,8 @@
 
 namespace AutoEncodeUtilities.Communication.Data;
 
-public class EncodingJobEncodingProgressUpdateData
+/// <summary>Encapsulates data describing an encoding job's encoding progress.</summary>
+public record EncodingJobEncodingProgressUpdateData
 {
     public byte EncodingProgress { get; set; }
 

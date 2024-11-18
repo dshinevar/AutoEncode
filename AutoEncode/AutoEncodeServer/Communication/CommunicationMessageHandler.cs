@@ -3,6 +3,7 @@ using AutoEncodeServer.Communication.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication;
 using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Logger;
 using NetMQ;
 using NetMQ.Sockets;
@@ -29,7 +30,7 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
     public string ConnectionString => $"tcp://*:{Port}";
     public int Port { get; set; }
 
-    public event EventHandler<CommunicationMessageReceivedEventArgs> MessageReceived;
+    public event EventHandler<RequestMessageReceivedEventArgs> MessageReceived;
     #endregion Public Properties
 
     public CommunicationMessageHandler()
@@ -107,9 +108,9 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
 
                     if (string.IsNullOrWhiteSpace(messageString) is false && messageString.IsValidJson())
                     {
-                        CommunicationMessage communicationMessage = JsonSerializer.Deserialize<CommunicationMessage>(messageString, CommunicationConstants.SerializerOptions);
+                        CommunicationMessage<RequestMessageType> communicationMessage = JsonSerializer.Deserialize<CommunicationMessage<RequestMessageType>>(messageString, CommunicationConstants.SerializerOptions);
 
-                        MessageReceived?.Invoke(this, new CommunicationMessageReceivedEventArgs(message[0], communicationMessage));
+                        MessageReceived?.Invoke(this, new RequestMessageReceivedEventArgs(message[0], communicationMessage));
                     }
                 }
             }
@@ -120,7 +121,7 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
         }
     }
 
-    public void SendMessage(NetMQFrame clientAddress, CommunicationMessage communicationMessage)
+    public void SendMessage(NetMQFrame clientAddress, CommunicationMessage<ResponseMessageType> communicationMessage)
     {
         try
         {

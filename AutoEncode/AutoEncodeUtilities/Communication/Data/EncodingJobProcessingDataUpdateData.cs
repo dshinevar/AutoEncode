@@ -3,7 +3,8 @@ using AutoEncodeUtilities.Enums;
 
 namespace AutoEncodeUtilities.Communication.Data;
 
-public class EncodingJobProcessingDataUpdateData
+/// <summary>Encapsulates data describing an encoding job's processing data.</summary>
+public record EncodingJobProcessingDataUpdateData
 {
     public SourceStreamData SourceStreamData { get; set; }
 

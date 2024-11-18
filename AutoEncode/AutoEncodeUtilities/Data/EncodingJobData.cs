@@ -1,9 +1,12 @@
 ﻿using AutoEncodeUtilities.Enums;
 using System;
-using System.IO;
 
 namespace AutoEncodeUtilities.Data;
 
+/// <summary>
+/// Data class that encapsulates the data related to an EncodingJob.</br>
+/// Used generally for communication purposes.
+/// </summary>
 public class EncodingJobData
 {
     /// <summary>Unique job identifier </summary>
@@ -11,13 +14,13 @@ public class EncodingJobData
     /// <summary>Title of job</summary>
     public string Title { get; set; } = string.Empty;
     /// <summary>Name of job (FileName without extension) </summary>
-    public string Name => Path.GetFileNameWithoutExtension(Filename);
+    public string Name { get; set; }
     /// <summary>FileName of Job </summary>
-    public string Filename => Path.GetFileName(SourceFullPath);
+    public string Filename { get; set; } = string.Empty;
     /// <summary>Full Path of the job's Source File </summary>
     public string SourceFullPath { get; set; } = string.Empty;
     /// <summary>Directory of destination file full path </summary>
-    public string DestinationDirectory => Path.GetDirectoryName(DestinationFullPath);
+    public string DestinationDirectory { get; set; } = string.Empty;
     /// <summary>Full Path of the job's expected Destination File </summary>
     public string DestinationFullPath { get; set; } = string.Empty;
 
@@ -62,7 +65,7 @@ public class EncodingJobData
     /// <summary>Instructions on how to encode job based on the source stream data and rules </summary>
     public EncodingInstructions EncodingInstructions { get; set; }
     /// <summary>Determines if the job needs PostProcessing</summary>
-    public bool NeedsPostProcessing => !PostProcessingFlags.Equals(PostProcessingFlags.None) && PostProcessingSettings is not null;
+    public bool NeedsPostProcessing { get; set; }
     /// <summary>Marks what PostProcessing functions should be done to this job. </summary>
     public PostProcessingFlags PostProcessingFlags { get; set; } = PostProcessingFlags.None;
     /// <summary>Settings for PostProcessing; Initially copied over from AEServerConfig file. </summary>
@@ -70,18 +73,4 @@ public class EncodingJobData
     /// <summary>Arguments passed to FFmpeg Encoding Job </summary>
     public EncodingCommandArguments EncodingCommandArguments { get; set; }
     #endregion Processing Data
-
-    public EncodingJobData() { }
-
-    public override bool Equals(object obj)
-    {
-        if (obj is EncodingJobData data)
-        {
-            return Id == data.Id;
-        }
-
-        return false;
-    }
-
-    public override int GetHashCode() => Id.GetHashCode();
 }

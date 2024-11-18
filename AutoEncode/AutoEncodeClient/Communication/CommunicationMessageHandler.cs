@@ -46,14 +46,14 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
         _shutdownCancellationTokenSource.Cancel();
     }
 
-    private async Task<CommunicationMessage> SendReceiveAsync(CommunicationMessage message)
+    private async Task<CommunicationMessage<ResponseMessageType>> SendReceiveAsync(CommunicationMessage<RequestMessageType> message)
     {
         if (_initialized is false)
         {
             throw new InvalidOperationException($"{nameof(CommunicationMessageHandler)} not initialized.");
         }
 
-        CommunicationMessage responseMessage = null;
+        CommunicationMessage<ResponseMessageType> responseMessage = null;
 
         responseMessage = await Task.Run(() =>
         {
@@ -91,14 +91,14 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
 
                         if (string.IsNullOrWhiteSpace(responseString) is false && responseString.IsValidJson())
                         {
-                            return JsonSerializer.Deserialize<CommunicationMessage>(responseString, CommunicationConstants.SerializerOptions);
+                            return JsonSerializer.Deserialize<CommunicationMessage<ResponseMessageType>>(responseString, CommunicationConstants.SerializerOptions);
                         }
                     }
                 }
             }
             catch (OperationCanceledException) { }
 
-            return new CommunicationMessage(CommunicationMessageType.Error);
+            return new CommunicationMessage<ResponseMessageType>(ResponseMessageType.Error);
         }, _shutdownCancellationTokenSource.Token);
 
         return responseMessage;
@@ -114,17 +114,17 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
     /// <param name="response">The response <see cref="CommunicationMessage"/></param>
     /// <param name="expectedResponseType">The expected <see cref="CommunicationMessageType"/> from the response.</param>
     /// <exception cref="Exception"/>
-    private static void ValidateResponse(CommunicationMessage response, CommunicationMessageType expectedResponseType)
+    private static void ValidateResponse(CommunicationMessage<ResponseMessageType> response, ResponseMessageType expectedResponseType)
     {
         if (response is null)
         {
             throw new Exception("Null response message received.");
         }
-        else if (response.MessageType == CommunicationMessageType.Error)
+        else if (response.Type == ResponseMessageType.Error)
         {
             throw new Exception("Error occurred with response message.");
         }
-        else if (response.MessageType != expectedResponseType)
+        else if (response.Type != expectedResponseType)
         {
             throw new Exception("Invalid response message type.");
         }

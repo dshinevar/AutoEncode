@@ -5,6 +5,7 @@ using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Communication.Data;
+using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Logger;
@@ -403,7 +404,7 @@ public partial class EncodingJobModel :
     {
         EncodingJobStatusUpdateData statusUpdateData = new();
         this.CopyProperties(statusUpdateData);
-        (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateEncodingJobStatusUpdate(Id, statusUpdateData);
+        (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateEncodingJobStatusUpdate(Id, statusUpdateData);
         ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
     }
 
@@ -411,7 +412,7 @@ public partial class EncodingJobModel :
     {
         EncodingJobProcessingDataUpdateData processingDataUpdate = new();
         this.CopyProperties(processingDataUpdate);
-        (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateEncodingJobProcessingDataUpdate(Id, processingDataUpdate);
+        (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateEncodingJobProcessingDataUpdate(Id, processingDataUpdate);
         ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
     }
 
@@ -419,7 +420,7 @@ public partial class EncodingJobModel :
     {
         EncodingJobEncodingProgressUpdateData encodingProgressUpdateData = new();
         this.CopyProperties(encodingProgressUpdateData);
-        (string topic, ClientUpdateMessage message) = ClientUpdateMessageFactory.CreateEncodingJobEncodingProgressUpdate(Id, encodingProgressUpdateData);
+        (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateEncodingJobEncodingProgressUpdate(Id, encodingProgressUpdateData);
         ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
     }
     #endregion == Send Update Methods ==
