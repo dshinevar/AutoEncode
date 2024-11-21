@@ -13,10 +13,10 @@ public partial class AutoEncodeServerManager :
     private bool _initialized = false;
 
     // MREs are true by default -- initializers should reset the MRE
-    private readonly ManualResetEvent _sourceFileManagerShutdown = new(false);
-    private readonly ManualResetEvent _encodingJobManagerShutdown = new(false);
-    private readonly ManualResetEvent _clientUpdatePublisherShutdown = new(false);
-    private readonly ManualResetEvent _communicationMessageHandlerShutdown = new(false);
+    private readonly ManualResetEvent _sourceFileManagerShutdown = new(true);
+    private readonly ManualResetEvent _encodingJobManagerShutdown = new(true);
+    private readonly ManualResetEvent _clientUpdatePublisherShutdown = new(true);
+    private readonly ManualResetEvent _communicationMessageHandlerShutdown = new(true);
 
     #region Managers / Comms
     private IEncodingJobManager _encodingJobManager;
