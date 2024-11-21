@@ -1,0 +1,43 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Default app tooltip style -->
+    <Style TargetType="ToolTip">
+        <Setter Property="OverridesDefaultStyle"
+                Value="True"/>
+        <Setter Property="HasDropShadow"
+                Value="False"/>
+        <Setter Property="Placement"
+                Value="Right"/>
+        <Setter Property="BorderBrush"
+                Value="{StaticResource SecondaryBackgroundBrush}"/>
+        <Setter Property="BorderThickness"
+                Value="2"/>
+        <Setter Property="FontSize"
+                Value="14"/>
+        <Setter Property="FontWeight"
+                Value="DemiBold"/>
+        <Setter Property="Background"
+                Value="{StaticResource BackgroundBrush}"/>
+        <Setter Property="Foreground"
+                Value="{StaticResource ApplicationBackgroundBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border BorderThickness="{TemplateBinding BorderThickness}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Background="{TemplateBinding Background}"
+                            Width="{TemplateBinding Width}"
+                            Height="{TemplateBinding Height}"
+                            CornerRadius="5"
+                            SnapsToDevicePixels="False">
+                        <ContentPresenter Margin="4"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Top"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+</ResourceDictionary>

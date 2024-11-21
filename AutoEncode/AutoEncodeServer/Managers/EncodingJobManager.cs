@@ -12,7 +12,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers;
 
@@ -28,8 +27,7 @@ public partial class EncodingJobManager :
     #endregion Dependencies
 
     #region Private Properties
-    private readonly object _lock = new();
-    private bool _initialized = false;
+    private static readonly object _lock = new();
     private ulong _idNumber = 1;
     private ulong IdNumber
     {
@@ -42,13 +40,10 @@ public partial class EncodingJobManager :
     }
 
     private readonly ObservableCollection<IEncodingJobModel> _encodingJobQueue = [];
-
-    private Task _encodingJobManagerTask = null;
-    private ManualResetEvent _shutdownMRE;
-
     #endregion Private Properties
 
     #region Public Properties
+    public bool Initialized { get; private set; } = false;
     public int Count => _encodingJobQueue.Count;
     #endregion Public Properties
 
@@ -59,14 +54,14 @@ public partial class EncodingJobManager :
     }
 
     #region Initialize / Start / Shutdown
-    public void Initialize(ManualResetEvent shutdownMRE)
+    public override void Initialize(ManualResetEvent shutdownMRE)
     {
-        if (_initialized is false)
+        if (Initialized is false)
         {
             try
             {
-                _shutdownMRE = shutdownMRE;
-                _shutdownMRE.Reset();
+                ShutdownMRE = shutdownMRE;
+                ShutdownMRE.Reset();
 
                 _sourceFileManager = Container.Resolve<ISourceFileManager>();
             }
@@ -76,19 +71,21 @@ public partial class EncodingJobManager :
                 throw;
             }
 
-            _initialized = true;
+            Initialized = true;
             HelperMethods.DebugLog($"{nameof(EncodingJobManager)} Initialized", nameof(EncodingJobManager));
         }
     }
 
-    public void Start()
+    public override void Start()
     {
         try
         {
-            if (_initialized is false)
+            if (Initialized is false)
                 throw new InvalidOperationException($"{nameof(EncodingJobManager)} is not initialized");
 
-            _encodingJobManagerTask = StartEncodingJobManagerThread();
+            StartManagerProcess();
+            StartNewEncodingJobRequestHandler();
+            StartRequestHandler();
         }
         catch (Exception ex)
         {
@@ -99,10 +96,13 @@ public partial class EncodingJobManager :
         Logger.LogInfo($"{nameof(EncodingJobManager)} Started", nameof(EncodingJobManager));
     }
 
-    public void Stop()
+    public override void Shutdown()
     {
         try
         {
+            Requests.CompleteAdding();
+            _newEncodingJobRequests.CompleteAdding();
+
             _encodingJobManagerMRE.Set();
 
             ShutdownCancellationTokenSource.Cancel();
@@ -114,16 +114,16 @@ public partial class EncodingJobManager :
             EncodingTask?.Wait();
             EncodingJobPostProcessingTask?.Wait();
 
-            _encodingJobManagerTask?.Wait();
+            ManagerProcessTask?.Wait();
             RequestHandlerTask?.Wait();
 
-            Logger.LogInfo($"{nameof(EncodingJobManager)} Stopped", nameof(EncodingJobManager));
+            Logger.LogInfo($"{nameof(EncodingJobManager)} Shutdown", nameof(EncodingJobManager));
 
-            _shutdownMRE.Set();
+            ShutdownMRE.Set();
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Failed to shut down {nameof(EncodingJobManager)}", nameof(EncodingJobManager));
+            Logger.LogException(ex, $"Failed to shutdown {nameof(EncodingJobManager)}", nameof(EncodingJobManager));
             throw;
         }
     }

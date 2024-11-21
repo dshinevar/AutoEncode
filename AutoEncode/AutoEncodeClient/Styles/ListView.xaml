@@ -17,6 +17,10 @@
                             CornerRadius="5"
                             Padding="4"
                             Margin="1">
+                        <Border.ToolTip>
+                            <ToolTip Placement="Bottom"
+                                     Content="Click for details"/>
+                        </Border.ToolTip>
                         <Border BorderBrush="{StaticResource SecondaryBackgroundBrush}"        
                                 BorderThickness="1"
                                 CornerRadius="5"

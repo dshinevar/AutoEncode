@@ -1,6 +1,4 @@
 ﻿using AutoEncodeServer.Communication;
-using AutoEncodeServer.Data.Request;
-using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities.Communication.Data;
@@ -16,31 +14,7 @@ namespace AutoEncodeServer.Managers;
 // REQUESTS
 public partial class SourceFileManager : ISourceFileManager
 {
-    private readonly object _lock = new();
-
-    protected override void ProcessManagerRequest(ManagerRequest request)
-    {
-        try
-        {
-            switch (request.Type)
-            {
-                case ManagerRequestType.UpdateSourceFileEncodingStatus:
-                {
-                    if (request is ManagerRequest<UpdateSourceFileEncodingStatusRequest> updateRequest)
-                    {
-                        UpdateSourceFileEncodingStatusFromEncodingJobStatus(updateRequest.RequestData.SourceFileGuid, updateRequest.RequestData.EncodingJobStatus);
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex, $"Error processing request {request.Type}.", nameof(SourceFileManager));
-        }
-    }
+    private static readonly object _lock = new();
 
     #region Request Processing
     public Dictionary<string, IEnumerable<SourceFileData>> RequestSourceFiles()
@@ -56,38 +30,44 @@ public partial class SourceFileManager : ISourceFileManager
         return null;
     }
 
-    public bool RequestEncodingJob(Guid sourceFileGuid)
+    private void RequestEncodingJobForSourceFile(Guid sourceFileGuid)
     {
-        if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
+        ISourceFileModel sourceFileModel = null;
+        try
         {
-            if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFileModel) is true)
+            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
             {
-                return _encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel);
+                if (_sourceFiles.TryGetValue(sourceFileGuid, out sourceFileModel) is true)
+                {
+                    _encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel);
+                }
             }
         }
-
-        return false;
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, "Error occured requesting an encoding job for a source file.", nameof(SourceFileManager), new { SourceFile = sourceFileModel?.Filename });
+        }
     }
 
-    public IEnumerable<string> BulkRequestEncodingJob(IEnumerable<Guid> sourceFileGuids)
+    public void BulkRequestEncodingJob(IEnumerable<Guid> sourceFileGuids)
     {
-        List<string> failedRequests = [];
-
-        if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
+        try
         {
-            foreach (Guid sourceFileGuid in sourceFileGuids)
+            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
             {
-                if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFileModel) is true)
+                foreach (Guid sourceFileGuid in sourceFileGuids)
                 {
-                    if (_encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel) is false)
+                    if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFileModel) is true)
                     {
-                        failedRequests.Add(sourceFileModel.Filename);
+                        _encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel);
                     }
                 }
             }
         }
-
-        return failedRequests;
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, "Error occurred bulk requesting encoding jobs.", nameof(SourceFileManager));
+        }
     }
 
     private void UpdateSourceFileEncodingStatusFromEncodingJobStatus(Guid sourceFileGuid, EncodingJobStatus encodingJobStatus)
@@ -106,14 +86,12 @@ public partial class SourceFileManager : ISourceFileManager
 
     #region Add Requests
     public bool AddUpdateSourceFileEncodingStatusRequest(Guid sourceFileGuid, EncodingJobStatus encodingJobStatus)
-        => TryAddRequest(new ManagerRequest<UpdateSourceFileEncodingStatusRequest>()
-        {
-            Type = ManagerRequestType.UpdateSourceFileEncodingStatus,
-            RequestData = new()
-            {
-                SourceFileGuid = sourceFileGuid,
-                EncodingJobStatus = encodingJobStatus
-            }
-        });
+        => Requests.TryAdd(() => UpdateSourceFileEncodingStatusFromEncodingJobStatus(sourceFileGuid, encodingJobStatus));
+
+    public bool AddRequestEncodingJobForSourceFileRequest(Guid sourceFileGuid)
+        => Requests.TryAdd(() => RequestEncodingJobForSourceFile(sourceFileGuid));
+
+    public bool AddBulkRequestEncodingJobRequest(IEnumerable<Guid> sourceFileGuids)
+        => Requests.TryAdd(() => BulkRequestEncodingJob(sourceFileGuids));
     #endregion Add Requests
 }

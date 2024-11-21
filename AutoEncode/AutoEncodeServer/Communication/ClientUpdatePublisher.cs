@@ -109,10 +109,15 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     private Task StartRequestHandler()
         => Task.Run(() =>
         {
-            foreach (ClientUpdateRequest request in _requests.GetConsumingEnumerable(_shutdownCancellationTokenSource.Token))
+            try
             {
-                SendUpdateToClients(request);
+                foreach (ClientUpdateRequest request in _requests.GetConsumingEnumerable(_shutdownCancellationTokenSource.Token))
+                {
+                    SendUpdateToClients(request);
+                }
             }
+            catch (OperationCanceledException) { }
+
         }, _shutdownCancellationTokenSource.Token);
 
     private void SendUpdateToClients(ClientUpdateRequest request)

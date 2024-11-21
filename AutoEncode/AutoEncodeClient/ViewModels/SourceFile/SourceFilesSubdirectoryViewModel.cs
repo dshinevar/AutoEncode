@@ -167,15 +167,11 @@ public class SourceFilesSubdirectoryViewModel :
     {
         RequestingEncode = true;
 
-        IEnumerable<string> failedRequests = await CommunicationMessageHandler.BulkRequestEncode(GetSourceFileGuids());
+        bool success = await CommunicationMessageHandler.BulkRequestEncode(GetSourceFileGuids());
 
-        if (failedRequests is null)
+        if (success is false)
         {
             ShowErrorDialog("Failed to request bulk encode.", "Bulk Encode Request Failed");
-        }
-        else if (failedRequests.Any())
-        {
-            ShowErrorDialog($"The following files failed to request encode:{Environment.NewLine}{failedRequests.Select(f => $"{f}{Environment.NewLine}")}", "Errors Requesting Bulk Encode");
         }
 
         RequestingEncode = false;

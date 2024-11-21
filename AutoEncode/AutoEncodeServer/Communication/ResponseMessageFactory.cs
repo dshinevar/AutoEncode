@@ -25,8 +25,8 @@ public static class ResponseMessageFactory
     public static CommunicationMessage<ResponseMessageType> CreateEncodeResponse(bool success)
         => new(ResponseMessageType.EncodeResponse, success);
 
-    public static CommunicationMessage<ResponseMessageType> CreateBulkEncodeResponse(IEnumerable<string> failedRequests)
-        => new(ResponseMessageType.BulkEncodeResponse, failedRequests);
+    public static CommunicationMessage<ResponseMessageType> CreateBulkEncodeResponse(bool success)
+        => new(ResponseMessageType.BulkEncodeResponse, success);
 
     public static CommunicationMessage<ResponseMessageType> CreateRemoveJobResponse(bool success)
         => new(ResponseMessageType.RemoveJobResponse, success);

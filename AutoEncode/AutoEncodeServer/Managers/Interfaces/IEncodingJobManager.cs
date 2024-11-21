@@ -10,6 +10,9 @@ namespace AutoEncodeServer.Managers.Interfaces;
 
 public interface IEncodingJobManager
 {
+    /// <summary>Indicates if the manager is initialized.</summary>
+    bool Initialized { get; }
+
     /// <summary>Number of jobs in queue</summary>
     int Count { get; }
 
@@ -24,7 +27,7 @@ public interface IEncodingJobManager
 
     /// <summary>Stops threads.</summary>
     /// <exception cref="Exception">Rethrows exceptions.</exception>
-    void Stop();
+    void Shutdown();
 
     #region Get Requests
     /// <summary>Gets the current state of the queue</summary>

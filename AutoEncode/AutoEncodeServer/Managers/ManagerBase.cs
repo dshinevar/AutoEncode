@@ -1,7 +1,7 @@
 ﻿using AutoEncodeServer.Communication.Interfaces;
-using AutoEncodeServer.Data.Request;
 using AutoEncodeUtilities.Logger;
 using Castle.Windsor;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,39 +18,57 @@ public abstract class ManagerBase
     public IClientUpdatePublisher ClientUpdatePublisher { get; set; }
     #endregion Dependencies
 
+
+    #region Properties / Fields
     protected readonly CancellationTokenSource ShutdownCancellationTokenSource = new();
+    protected ManualResetEvent ShutdownMRE = null;
+    #endregion Properties / Fields
+
+
+    #region Init / Start / Shutdown
+    public abstract void Initialize(ManualResetEvent shutdownMRE);
+
+    public abstract void Start();
+
+    public abstract void Shutdown();
+    #endregion Init / Start / Shutdown
+
+
+    #region Manager Process
+    protected Task ManagerProcessTask = null;
+
+    protected Task StartManagerProcess()
+        => ManagerProcessTask = Task.Run(Process, ShutdownCancellationTokenSource.Token);
+
+    protected abstract void Process();
+    #endregion Manager Process
+
 
     #region Request Handling
-    private const int _requestHandlerTimeout = 3600000;   // 1 hour
-    protected Task RequestHandlerTask;
-    protected BlockingCollection<ManagerRequest> Requests { get; } = [];
+    protected Task RequestHandlerTask = null;
+    protected BlockingCollection<Action> Requests { get; } = [];
 
     /// <summary>Starts the Request Handler thread.</summary>
     /// <returns><see cref="Task"/> -- <see cref="RequestHandlerTask"/></returns>
     protected Task StartRequestHandler()
         => RequestHandlerTask = Task.Run(() =>
         {
-            while (Requests.TryTake(out ManagerRequest request, _requestHandlerTimeout, ShutdownCancellationTokenSource.Token))
+            try
             {
-                ProcessManagerRequest(request);
+                foreach (Action request in Requests.GetConsumingEnumerable(ShutdownCancellationTokenSource.Token))
+                {
+                    try
+                    {
+                        request();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogException(ex, "Error processing request.", this.GetType().Name);
+                    }
+                }
             }
+            catch (OperationCanceledException) { }
+
         }, ShutdownCancellationTokenSource.Token);
-
-    /// <summary>Attempts to add request to queue -- starts up request handler if not running. </summary>
-    /// <param name="request"><see cref="ManagerRequest"/> to process</param>
-    /// <returns>True if added; False, otherwise.</returns>
-    protected bool TryAddRequest(ManagerRequest request)
-    {
-        if ((RequestHandlerTask is null) ||
-            (RequestHandlerTask.Status != TaskStatus.Running) ||
-            (RequestHandlerTask.IsCompleted is true))
-        {
-            StartRequestHandler();
-        }
-
-        return Requests.TryAdd(request);
-    }
-
-    protected abstract void ProcessManagerRequest(ManagerRequest request);
     #endregion Request Handling
 }

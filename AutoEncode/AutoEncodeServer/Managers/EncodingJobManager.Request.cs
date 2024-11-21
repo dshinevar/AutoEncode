@@ -1,7 +1,7 @@
-﻿using AutoEncodeServer.Data.Request;
-using AutoEncodeServer.Enums;
+﻿using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
@@ -17,30 +17,25 @@ namespace AutoEncodeServer.Managers;
 public partial class EncodingJobManager : IEncodingJobManager
 {
     #region CreateEncodingJob Processing
-    private const int _newEncodingJobRequestHandlerTimeout = 300000;   // 5 minutes
     private Task _newEncodingJobRequestHandlerTask;
     private readonly BlockingCollection<ISourceFileModel> _newEncodingJobRequests = [];
 
     private Task StartNewEncodingJobRequestHandler()
         => _newEncodingJobRequestHandlerTask = Task.Run(() =>
         {
-            while (_newEncodingJobRequests.TryTake(out ISourceFileModel sourceFile, _newEncodingJobRequestHandlerTimeout, ShutdownCancellationTokenSource.Token))
+            try
             {
-                CreateEncodingJob(sourceFile);
+                foreach (ISourceFileModel request in _newEncodingJobRequests.GetConsumingEnumerable(ShutdownCancellationTokenSource.Token))
+                {
+                    CreateEncodingJob(request);
+                }
             }
+            catch (OperationCanceledException) { }
+
         }, ShutdownCancellationTokenSource.Token);
 
     public bool AddCreateEncodingJobRequest(ISourceFileModel sourceFile)
-    {
-        if ((_newEncodingJobRequestHandlerTask is null) ||
-            (_newEncodingJobRequestHandlerTask.Status != TaskStatus.Running) ||
-            (_newEncodingJobRequestHandlerTask.IsCompleted is true))
-        {
-            StartNewEncodingJobRequestHandler();
-        }
-
-        return _newEncodingJobRequests.TryAdd(sourceFile);
-    }
+        => _newEncodingJobRequests.TryAdd(sourceFile);
 
     private async void CreateEncodingJob(ISourceFileModel sourceFile)
     {
@@ -48,7 +43,7 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             if (Count < State.MaxNumberOfJobsInQueue)
             {
-                if ((ExistsByFileName(sourceFile.Filename) is false) && (await IsFileSizeChanging(sourceFile.FullPath) is true))
+                if ((ExistsByFileName(sourceFile.Filename) is false) && (await IsFileReady(sourceFile.FullPath) is true))
                 {
                     PostProcessingSettings postProcessingSettings = State.Directories[sourceFile.SearchDirectoryName].PostProcessing;
                     // Prep Data for creating job
@@ -90,7 +85,7 @@ public partial class EncodingJobManager : IEncodingJobManager
     /// <summary>Check if file size is changing.</summary>
     /// <param name="filePath"></param>
     /// <returns>True if file is ready; False, otherwise</returns>
-    private static async Task<bool> IsFileSizeChanging(string filePath)
+    private static async Task<bool> IsFileReady(string filePath)
     {
         List<long> fileSizes = [];
         FileInfo fileInfo = new(filePath);
@@ -113,151 +108,103 @@ public partial class EncodingJobManager : IEncodingJobManager
 
 
     #region Request Processing
-    protected override void ProcessManagerRequest(ManagerRequest request)
+    private void RemoveEncodingJobById(ulong id, RemovedEncodingJobReason reason)
     {
+        IEncodingJobModel job = null;
         try
         {
-            switch (request.Type)
+            lock (_lock)
             {
-                case ManagerRequestType.RemoveEncodingJobById:
+                job = _encodingJobQueue.SingleOrDefault(x => x.Id == id);
+                if (job is not null)
                 {
-                    if (request is ManagerRequest<RemoveEncodingJobRequest> removeEncodingJobRequest)
+                    if (job.IsProcessing)
                     {
-                        RemoveEncodingJobById(removeEncodingJobRequest.RequestData.JobId, removeEncodingJobRequest.RequestData.Reason);
+                        job.Pause();
+                        job.Cancel();
                     }
-                    break;
-                }
-                case ManagerRequestType.CancelJobById:
-                {
-                    if (request is ManagerRequest<ulong> canceljobRequest)
+
+                    if (_encodingJobQueue.Remove(job) is true)
                     {
-                        CancelJobById(canceljobRequest.RequestData);
+                        Logger.LogInfo($"({reason.GetDescription()}) Job [{job}] was removed from queue.", nameof(EncodingJobManager));
                     }
-                    break;
                 }
-                case ManagerRequestType.PauseJobById:
-                {
-                    if (request is ManagerRequest<ulong> pausejobRequest)
-                    {
-                        PauseJobById(pausejobRequest.RequestData);
-                    }
-                    break;
-                }
-                case ManagerRequestType.ResumeJobById:
-                {
-                    if (request is ManagerRequest<ulong> resumejobRequest)
-                    {
-                        ResumeJobById(resumejobRequest.RequestData);
-                        _encodingJobManagerMRE.Set();   // Force the process thread to keep running if resumed.
-                    }
-                    break;
-                }
-                case ManagerRequestType.PauseAndCancelJobById:
-                {
-                    if (request is ManagerRequest<ulong> pauseCanceljobRequest)
-                    {
-                        PauseAndCancelJobById(pauseCanceljobRequest.RequestData);
-                    }
-                    break;
-                }
-                default:
-                    break;
             }
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error processing request {request.Type}.", nameof(EncodingJobManager));
-        }
-    }
-
-    private void RemoveEncodingJobById(ulong id, RemovedEncodingJobReason reason)
-    {
-        lock (_lock)
-        {
-            IEncodingJobModel job = _encodingJobQueue.SingleOrDefault(x => x.Id == id);
-            if (job is not null)
-            {
-                if (job.IsProcessing)
-                {
-                    job.Pause();
-                    job.Cancel();
-                }
-
-                if (_encodingJobQueue.Remove(job) is true)
-                {
-                    string msg;
-                    switch (reason)
-                    {
-                        case RemovedEncodingJobReason.Completed:
-                        {
-                            msg = $"Completed Job [{job}] was removed from queue.";
-                            break;
-                        }
-                        case RemovedEncodingJobReason.Errored:
-                        {
-                            msg = $"Errored Job [{job}] was removed from queue.";
-                            break;
-                        }
-                        case RemovedEncodingJobReason.UserRequested:
-                        {
-                            msg = $"User Requested Job [{job}] was removed from queue.";
-                            break;
-                        }
-                        case RemovedEncodingJobReason.None:
-                        default:
-                        {
-                            msg = $"{job} was removed from queue.";
-                            break;
-                        }
-                    }
-
-                    Logger.LogInfo(msg, nameof(EncodingJobManager));
-                }
-            }
+            Logger.LogException(ex, $"Error removing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, reason, job?.Filename });
         }
     }
 
     private void CancelJobById(ulong id)
     {
-        lock (_lock)
+        IEncodingJobModel job = null;
+        try
         {
-            IEncodingJobModel job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
-
-            job?.Cancel();
+            lock (_lock)
+            {
+                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job?.Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Error cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
         }
     }
 
     private void PauseJobById(ulong id)
     {
-        lock (_lock)
+        IEncodingJobModel job = null;
+        try
         {
-            IEncodingJobModel job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
-
-            job?.Pause();
+            lock (_lock)
+            {
+                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job?.Pause();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Error pausing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
         }
     }
 
     private void ResumeJobById(ulong id)
     {
-        lock (_lock)
+        IEncodingJobModel job = null;
+        try
         {
-            IEncodingJobModel job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
-
-            job?.Resume();
+            lock (_lock)
+            {
+                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job?.Resume();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Error resuming encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
         }
     }
 
     private void PauseAndCancelJobById(ulong id)
     {
-        lock (_lock)
+        IEncodingJobModel job = null;
+        try
         {
-            IEncodingJobModel job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
-
-            job?.Pause();
-            job?.Cancel();
+            lock (_lock)
+            {
+                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job?.Pause();
+                job?.Cancel();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Error pausing and cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
         }
     }
-
     #endregion Request Processing
 
 
@@ -292,42 +239,18 @@ public partial class EncodingJobManager : IEncodingJobManager
 
     #region Add Requests
     public bool AddRemoveEncodingJobByIdRequest(ulong id, RemovedEncodingJobReason reason)
-        => TryAddRequest(new ManagerRequest<RemoveEncodingJobRequest>()
-        {
-            Type = ManagerRequestType.RemoveEncodingJobById,
-            RequestData = new()
-            {
-                JobId = id,
-                Reason = reason
-            }
-        });
+        => Requests.TryAdd(() => RemoveEncodingJobById(id, reason));
 
     public bool AddCancelJobByIdRequest(ulong id)
-        => TryAddRequest(new ManagerRequest<ulong>()
-        {
-            Type = ManagerRequestType.CancelJobById,
-            RequestData = id
-        });
+        => Requests.TryAdd(() => CancelJobById(id));
 
     public bool AddPauseJobByIdRequest(ulong id)
-        => TryAddRequest(new ManagerRequest<ulong>()
-        {
-            Type = ManagerRequestType.PauseJobById,
-            RequestData = id
-        });
+        => Requests.TryAdd(() => PauseJobById(id));
 
     public bool AddResumeJobByIdRequest(ulong id)
-        => TryAddRequest(new ManagerRequest<ulong>()
-        {
-            Type = ManagerRequestType.ResumeJobById,
-            RequestData = id
-        });
+        => Requests.TryAdd(() => ResumeJobById(id));
 
     public bool AddPauseAndCancelJobByIdRequest(ulong id)
-        => TryAddRequest(new ManagerRequest<ulong>()
-        {
-            Type = ManagerRequestType.PauseAndCancelJobById,
-            RequestData = id
-        });
+        => Requests.TryAdd(() => PauseAndCancelJobById(id));
     #endregion Add Requests
 }

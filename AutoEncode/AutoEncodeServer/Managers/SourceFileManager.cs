@@ -4,7 +4,6 @@ using AutoEncodeUtilities;
 using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers;
 
@@ -19,23 +18,20 @@ public partial class SourceFileManager :
     private IEncodingJobManager _encodingJobManager;
     #endregion Dependencies
 
-    private bool _initialized = false;
-
-    private Task _sourceFileManagerTask;
-    private ManualResetEvent _shutdownMRE;
+    public bool Initialized { get; set; }
 
     /// <summary>Default Constructor</summary>
     public SourceFileManager() { }
 
-    #region Init / Start / Stop
-    public void Initialize(ManualResetEvent shutdownMRE)
+    #region Init / Start / Shutdown
+    public override void Initialize(ManualResetEvent shutdownMRE)
     {
-        if (_initialized is false)
+        if (Initialized is false)
         {
             try
             {
-                _shutdownMRE = shutdownMRE;
-                _shutdownMRE.Reset();
+                ShutdownMRE = shutdownMRE;
+                ShutdownMRE.Reset();
                 _searchDirectories = State.Directories.ToDictionary(x => x.Key, x => x.Value.DeepClone());  // For now, clone a copy
 
                 _encodingJobManager = Container.Resolve<IEncodingJobManager>();
@@ -47,18 +43,19 @@ public partial class SourceFileManager :
             }
         }
 
-        _initialized = true;
+        Initialized = true;
         HelperMethods.DebugLog($"{nameof(SourceFileManager)} Initialized", nameof(SourceFileManager));
     }
 
-    public void Start()
+    public override void Start()
     {
         try
         {
-            if (_initialized is false)
+            if (Initialized is false)
                 throw new InvalidOperationException($"{nameof(SourceFileManager)} is not initialized.");
 
-            StartSourceFileManagerThread();
+            StartManagerProcess();
+            StartRequestHandler();
         }
         catch (Exception ex)
         {
@@ -69,26 +66,28 @@ public partial class SourceFileManager :
         Logger.LogInfo($"{nameof(SourceFileManager)} Started", nameof(SourceFileManager));
     }
 
-    public void Stop()
+    public override void Shutdown()
     {
         try
         {
+            Requests.CompleteAdding();
+
             ShutdownCancellationTokenSource.Cancel();
 
             Wake();
 
-            _sourceFileManagerTask.Wait();
+            ManagerProcessTask?.Wait();
             RequestHandlerTask?.Wait();
 
-            Logger.LogInfo($"{nameof(SourceFileManager)} Stopped", nameof(SourceFileManager));
+            Logger.LogInfo($"{nameof(SourceFileManager)} Shutdown", nameof(SourceFileManager));
 
-            _shutdownMRE.Set();
+            ShutdownMRE.Set();
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Failed to stop {nameof(SourceFileManager)}", nameof(SourceFileManager));
+            Logger.LogException(ex, $"Failed to shutdown {nameof(SourceFileManager)}", nameof(SourceFileManager));
             throw;
         }
     }
-    #endregion Init / Start / Stop
+    #endregion Init / Start / Shutdown
 }
