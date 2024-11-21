@@ -43,8 +43,8 @@ public interface ICommunicationMessageHandler
 
     /// <summary>Requests the given source files to be encoded.</summary>
     /// <param name="sourceFileGuids">List of source files to be encoded.</param>
-    /// <returns>List of source files whose request failed.</returns>
-    Task<IEnumerable<string>> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids);
+    /// <returns>True if request went through (not necessarily successfully created encoding job).</returns>
+    Task<bool> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids);
 
     /// <summary>Requests for the given job to removed from the queue.</summary>
     /// <param name="jobId">Job to be removed.</param>

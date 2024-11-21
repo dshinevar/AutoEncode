@@ -29,49 +29,49 @@ public partial class SourceFileManager : ISourceFileManager
 
     private readonly ConcurrentBag<ISourceFileModel> _potentialNewEncodingJobs = [];
 
-    private Task StartSourceFileManagerThread()
-        => _sourceFileManagerTask = Task.Run(() =>
+    protected override void Process()
+    {
+        CancellationToken shutdownToken = ShutdownCancellationTokenSource.Token;
+        _potentialNewEncodingJobs.Clear();
+
+        while (shutdownToken.IsCancellationRequested is false)
         {
-            CancellationToken shutdownToken = ShutdownCancellationTokenSource.Token;
-            _potentialNewEncodingJobs.Clear();
-
-            while (shutdownToken.IsCancellationRequested is false)
+            try
             {
-                try
-                {
-                    _buildingSourceFilesEvent.Reset();
-                    IEnumerable<SourceFile> foundSourceFiles = BuildSourceFiles();
-                    IEnumerable<SourceFileUpdateData> sourceFileUpdates = UpdateSourceFiles(foundSourceFiles);
-                    _buildingSourceFilesEvent.Set();
+                IEnumerable<SourceFile> foundSourceFiles = BuildSourceFiles();
 
-                    shutdownToken.ThrowIfCancellationRequested();
+                _buildingSourceFilesEvent.Reset();
+                IEnumerable<SourceFileUpdateData> sourceFileUpdates = UpdateSourceFiles(foundSourceFiles);
+                _buildingSourceFilesEvent.Set();
 
-                    // Send out updates if any
-                    if (sourceFileUpdates.Any())
-                    {
-                        (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateSourceFileUpdate(sourceFileUpdates);
-                        ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
-                    }
+                shutdownToken.ThrowIfCancellationRequested();
 
-                    // Add request to encode all potential encoding jobs
-                    foreach (ISourceFileModel sourceFile in _potentialNewEncodingJobs.OrderBy(sf => sf.FullPath))
-                    {
-                        _encodingJobManager.AddCreateEncodingJobRequest(sourceFile);
-                    }
-                    _potentialNewEncodingJobs.Clear();
-                }
-                catch (OperationCanceledException)
+                // Send out updates if any
+                if (sourceFileUpdates.Any())
                 {
-                    return; // If cancelled, just end
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogException(ex, "Exception occurred during building source files / looking for files to encode.", nameof(SourceFileManager), new { SearchDirectoriesCount = _searchDirectories.Count });
+                    (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateSourceFileUpdate(sourceFileUpdates);
+                    ClientUpdatePublisher.AddClientUpdateRequest(topic, message);
                 }
 
-                Sleep();
+                // Add request to encode all potential encoding jobs
+                foreach (ISourceFileModel sourceFile in _potentialNewEncodingJobs.OrderBy(sf => sf.FullPath))
+                {
+                    _encodingJobManager.AddCreateEncodingJobRequest(sourceFile);
+                }
+                _potentialNewEncodingJobs.Clear();
             }
-        }, ShutdownCancellationTokenSource.Token);
+            catch (OperationCanceledException)
+            {
+                return; // If cancelled, just end
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex, "Exception occurred during building source files / looking for files to encode.", nameof(SourceFileManager), new { SearchDirectoriesCount = _searchDirectories.Count });
+            }
+
+            Sleep();
+        }
+    }
 
     /// <summary>Finds / builds all source files</summary>
     /// <returns>Returns list of <see cref="SourceFile"/></returns>

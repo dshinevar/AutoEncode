@@ -248,7 +248,8 @@ public partial class EncodingJobModel :
         StringBuilder sb = new(errorMessage);
         if (ex is not null)
         {
-            sb.AppendLine(ex.Message);
+
+            sb.AppendLine().AppendLine(ex.Message);
 
             Exception innerEx = ex.InnerException;
             while (innerEx is not null)

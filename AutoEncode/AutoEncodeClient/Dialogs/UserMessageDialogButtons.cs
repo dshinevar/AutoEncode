@@ -9,6 +9,9 @@ public enum UserMessageDialogButtons
 
     [Display(Name = "OK/Cancel", ShortName = "Ok/Cancel", Description = "Ok and Cancel")]
     Ok_Cancel = 1,
+
+    [Display(Name = "Yes/No", ShortName = "Yes/No", Description = "Yes and No")]
+    Yes_No = 2,
 }
 
 public enum UserMessageDialogResult
@@ -18,4 +21,10 @@ public enum UserMessageDialogResult
 
     [Display(Name = "Cancel", ShortName = "Cancel", Description = "Cancel")]
     Cancel = 1,
+
+    [Display(Name = "Yes", ShortName = "Yes", Description = "Yes")]
+    Yes = 2,
+
+    [Display(Name = "No", ShortName = "No", Description = "No")]
+    No = 3,
 }

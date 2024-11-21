@@ -91,6 +91,9 @@ public abstract class ViewModelBase : IViewModel
     protected UserMessageDialogResult ShowInfoDialog(string message, string title, UserMessageDialogButtons buttons = UserMessageDialogButtons.Ok)
         => ShowUserMessageDialog(message, title, buttons, Severity.INFO);
 
+    protected UserMessageDialogResult ShowWarningDialog(string message, string title, UserMessageDialogButtons buttons = UserMessageDialogButtons.Ok)
+        => ShowUserMessageDialog(message, title, buttons, Severity.WARNING);
+
     protected UserMessageDialogResult ShowErrorDialog(string message, string title, UserMessageDialogButtons buttons = UserMessageDialogButtons.Ok)
         => ShowUserMessageDialog(message, title, buttons, Severity.ERROR);
     #endregion Dialogs

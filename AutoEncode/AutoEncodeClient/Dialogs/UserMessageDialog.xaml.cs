@@ -49,4 +49,9 @@ public partial class UserMessageDialog : Window
 
         Close();
     }
+
+    private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Left) DragMove();
+    }
 }

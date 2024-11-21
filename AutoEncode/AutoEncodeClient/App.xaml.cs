@@ -53,7 +53,7 @@ public partial class App : Application
 #if DEBUG
         if (System.Diagnostics.Debugger.IsAttached)
         {
-            //System.Threading.Thread.Sleep(10000);
+            System.Threading.Thread.Sleep(10000);
         }
 #endif
 

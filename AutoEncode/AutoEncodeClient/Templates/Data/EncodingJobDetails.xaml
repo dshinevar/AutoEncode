@@ -841,18 +841,19 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0"
-                       Text="Error Occurred:"
-                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                           Text="Error Occurred:"
+                           Style="{StaticResource EncodingJobDataLabelStyle}"/>
                 <TextBlock Grid.Row="0" Grid.Column="2"
-                       Text="{Binding ErrorTime}"
-                       Style="{StaticResource EncodingJobDataStyle}"/>
+                           Text="{Binding ErrorTime}"
+                           Style="{StaticResource EncodingJobDataStyle}"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0"
-                       Text="Error Message:"
-                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                           Text="Error Message:"
+                           Style="{StaticResource EncodingJobDataLabelStyle}"
+                           VerticalAlignment="Top"/>
                 <TextBlock Grid.Row="1" Grid.Column="2"
-                       Text="{Binding ErrorMessage}"
-                       Style="{StaticResource EncodingJobDataStyle}"/>
+                           Text="{Binding ErrorMessage}"
+                           Style="{StaticResource EncodingJobDataStyle}"/>
             </Grid>
         </Border>
     </DataTemplate>

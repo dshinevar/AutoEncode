@@ -23,76 +23,75 @@ public partial class EncodingJobManager : IEncodingJobManager
 
     private readonly ManualResetEvent _encodingJobManagerMRE = new(false);
 
-    private Task StartEncodingJobManagerThread()
-        => Task.Run(() =>
+    protected override void Process()
+    {
+        while (ShutdownCancellationTokenSource.IsCancellationRequested is false)
         {
-            while (ShutdownCancellationTokenSource.IsCancellationRequested is false)
+            if (_encodingJobQueue.Count > 0)
             {
-                if (_encodingJobQueue.Count > 0)
+                // Check if task is done (or null -- first time setup)
+                if (EncodingJobBuilderTask?.IsCompletedSuccessfully ?? true)
                 {
-                    // Check if task is done (or null -- first time setup)
-                    if (EncodingJobBuilderTask?.IsCompletedSuccessfully ?? true)
+                    IEncodingJobModel jobToBuild = GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
+                    if (jobToBuild is not null)
                     {
-                        IEncodingJobModel jobToBuild = GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
-                        if (jobToBuild is not null)
-                        {
-                            EncodingJobBuilderCancellationToken = new CancellationTokenSource();
+                        EncodingJobBuilderCancellationToken = new CancellationTokenSource();
 
-                            EncodingJobBuilderTask = Task.Run(() => jobToBuild.Build(EncodingJobBuilderCancellationToken), EncodingJobBuilderCancellationToken.Token)
+                        EncodingJobBuilderTask = Task.Run(() => jobToBuild.Build(EncodingJobBuilderCancellationToken), EncodingJobBuilderCancellationToken.Token)
+                                                        .ContinueWith(t =>
+                                                        {
+                                                            jobToBuild.CleanupJob();
+                                                            _encodingJobManagerMRE.Set();
+                                                        });
+                    }
+                }
+
+                if (EncodingTask?.IsCompletedSuccessfully ?? true)
+                {
+                    IEncodingJobModel jobToEncode = GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
+                    if (jobToEncode is not null)
+                    {
+                        EncodingCancellationToken = new CancellationTokenSource();
+
+                        EncodingTask = Task.Run(() => jobToEncode.Encode(EncodingCancellationToken), EncodingCancellationToken.Token)
+                                            .ContinueWith(t =>
+                                            {
+                                                jobToEncode.CleanupJob();
+                                                _encodingJobManagerMRE.Set();
+                                            });
+                    }
+                }
+
+                if (EncodingJobPostProcessingTask?.IsCompletedSuccessfully ?? true)
+                {
+                    IEncodingJobModel jobToPostProcess = GetNextEncodingJobForPostProcessing();
+                    if (jobToPostProcess is not null)
+                    {
+                        EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
+
+                        EncodingJobPostProcessingTask = Task.Run(() => jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken), EncodingJobPostProcessingCancellationToken.Token)
                                                             .ContinueWith(t =>
                                                             {
-                                                                jobToBuild.CleanupJob();
+                                                                jobToPostProcess.CleanupJob();
                                                                 _encodingJobManagerMRE.Set();
                                                             });
-                        }
                     }
-
-                    if (EncodingTask?.IsCompletedSuccessfully ?? true)
-                    {
-                        IEncodingJobModel jobToEncode = GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
-                        if (jobToEncode is not null)
-                        {
-                            EncodingCancellationToken = new CancellationTokenSource();
-
-                            EncodingTask = Task.Run(() => jobToEncode.Encode(EncodingCancellationToken), EncodingCancellationToken.Token)
-                                                .ContinueWith(t =>
-                                                {
-                                                    jobToEncode.CleanupJob();
-                                                    _encodingJobManagerMRE.Set();
-                                                });
-                        }
-                    }
-
-                    if (EncodingJobPostProcessingTask?.IsCompletedSuccessfully ?? true)
-                    {
-                        IEncodingJobModel jobToPostProcess = GetNextEncodingJobForPostProcessing();
-                        if (jobToPostProcess is not null)
-                        {
-                            EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
-
-                            EncodingJobPostProcessingTask = Task.Run(() => jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken), EncodingJobPostProcessingCancellationToken.Token)
-                                                                .ContinueWith(t =>
-                                                                {
-                                                                    jobToPostProcess.CleanupJob();
-                                                                    _encodingJobManagerMRE.Set();
-                                                                });
-                        }
-                    }
-
-                    do
-                    {
-                        ClearCompletedAndErroredJobs();
-                    }
-                    while (_encodingJobManagerMRE.WaitOne(TimeSpan.FromHours(1)) is false);
-
-                    _encodingJobManagerMRE.Reset();
                 }
-                else
+
+                do
                 {
-                    _encodingJobManagerMRE.WaitOne();   // Wait until signalled -- either for shutdown or job added to queue
-                }                
+                    ClearCompletedAndErroredJobs();
+                }
+                while (_encodingJobManagerMRE.WaitOne(TimeSpan.FromHours(1)) is false);
+
+                _encodingJobManagerMRE.Reset();
             }
-        });
+            else
+            {
+                _encodingJobManagerMRE.WaitOne();   // Wait until signalled -- either for shutdown or job added to queue
+            }
+        }
+    }
 
     /// <summary>Adds jobs to request processing queue for removal.</summary>
     private void ClearCompletedAndErroredJobs()

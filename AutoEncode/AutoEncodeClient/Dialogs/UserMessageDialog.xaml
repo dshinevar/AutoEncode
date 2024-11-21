@@ -11,23 +11,81 @@
         d:DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
         Height="175" Width="400"
         Background="{StaticResource BackgroundBrush}"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterOwner"
         WindowStyle="None"
-        SizeToContent="Height">
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        BorderBrush="{StaticResource SecondaryBackgroundBrush}"
+        BorderThickness="2"
+        SizeToContent="Height"
+        MouseDown="Window_MouseDown">
     <Window.Resources>
-        <ControlTemplate x:Key="PrimaryButtonTemplate" 
-                         TargetType="Button">
-            <Border Style="{StaticResource PrimaryButtonBorderStyle}">
+        <ControlTemplate x:Key="UserMessageDialogButtonTemplate"
+                         TargetType="{x:Type Button}">
+            <Border BorderBrush="{StaticResource SecondaryBackgroundBrush}"
+                    BorderThickness="0"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="2"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="contentScaleTransform"
+                                        ScaleX="1"
+                                        ScaleY="1"/>
+                </Border.RenderTransform>
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="CommonState">
+                        <VisualState x:Name="Normal">
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1"
+                                                 Duration="0"/>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1"
+                                                 Duration="0"/>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="MouseOver">
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1.1"
+                                                 Duration="0"/>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1.1"
+                                                 Duration="0"/>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Pressed">
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1"
+                                                 Duration="0"/>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1"
+                                                 Duration="0"/>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Disabled">
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1"
+                                                 Duration="0"/>
+                                <DoubleAnimation Storyboard.TargetName="contentScaleTransform"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1"
+                                                 Duration="0"/>
+                            </Storyboard>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
                 <TextBlock Text="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontWeight="SemiBold"/>
-            </Border>
-        </ControlTemplate>
-        <ControlTemplate x:Key="SecondaryButtonTemplate"
-                         TargetType="Button">
-            <Border Style="{StaticResource SecondaryButtonBorderStyle}">
-                <TextBlock Text="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                           Foreground="{TemplateBinding Foreground}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            FontWeight="SemiBold"/>
@@ -43,18 +101,20 @@
                     Value="0,10"/>
             <Setter Property="Command"
                     Value="{Binding ButtonResultCommand, RelativeSource={RelativeSource AncestorType={x:Type local:UserMessageDialog}}}"/>
+            <Setter Property="Template"
+                    Value="{StaticResource UserMessageDialogButtonTemplate}"/>
         </Style>
         <Style x:Key="PrimaryButtonStyle"
                TargetType="Button"
                BasedOn="{StaticResource UserMessageDialogButtonStyle}">
-            <Setter Property="Template"
-                    Value="{StaticResource PrimaryButtonTemplate}"/>
+            <Setter Property="Background"
+                    Value="{StaticResource DefaultButtonBrush}"/>
         </Style>
         <Style x:Key="SecondaryButtonStyle"
                TargetType="Button"
                BasedOn="{StaticResource UserMessageDialogButtonStyle}">
-            <Setter Property="Template"
-                    Value="{StaticResource SecondaryButtonTemplate}"/>
+            <Setter Property="Background"
+                    Value="{StaticResource DefaultButtonDisabledBrush}"/>
         </Style>
     </Window.Resources>
     <Grid>
@@ -135,7 +195,8 @@
                        HorizontalAlignment="Left"/>
         </Grid>
 
-        <ContentControl Grid.Row="2">
+        <ContentControl Grid.Row="2"
+                        Margin="50,0">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
                     <Setter Property="ContentTemplate">
@@ -154,17 +215,52 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Content="OK"
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <Button Grid.Column="0"
+                                                    Content="OK"
                                                     IsDefault="True"
                                                     Style="{StaticResource PrimaryButtonStyle}"
                                                     CommandParameter="{x:Static local:UserMessageDialogResult.Ok}"/>
-                                            <Button Content="Cancel"
+                                            <Button Grid.Column="1"
+                                                    Content="Cancel"
                                                     IsDefault="False"
                                                     IsCancel="True"
                                                     Style="{StaticResource SecondaryButtonStyle}"
                                                     CommandParameter="{x:Static local:UserMessageDialogResult.Cancel}"/>
-                                        </StackPanel>
+                                        </Grid>
+
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Buttons}"
+                                     Value="{x:Static local:UserMessageDialogButtons.Yes_No}">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Button Grid.Column="0"
+                                                    Content="Yes"
+                                                    IsDefault="True"
+                                                    Style="{StaticResource PrimaryButtonStyle}"
+                                                    CommandParameter="{x:Static local:UserMessageDialogResult.Yes}"/>
+                                            <Button Grid.Column="1"
+                                                    Content="No"
+                                                    IsDefault="False"
+                                                    IsCancel="True"
+                                                    Style="{StaticResource SecondaryButtonStyle}"
+                                                    CommandParameter="{x:Static local:UserMessageDialogResult.No}"/>
+                                        </Grid>
 
                                     </DataTemplate>
                                 </Setter.Value>

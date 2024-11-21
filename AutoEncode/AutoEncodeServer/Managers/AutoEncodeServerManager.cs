@@ -1,33 +1,22 @@
 ﻿using AutoEncodeServer.Communication.Interfaces;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeUtilities;
-using AutoEncodeUtilities.Logger;
-using Castle.Windsor;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers;
 
-public partial class AutoEncodeServerManager : IAutoEncodeServerManager
+public partial class AutoEncodeServerManager :
+    ManagerBase,
+    IAutoEncodeServerManager
 {
     private bool _initialized = false;
-
-    private Task _messageProcessingTask = null;
-    private ManualResetEvent _shutdownMRE = null;
 
     // MREs are true by default -- initializers should reset the MRE
     private readonly ManualResetEvent _sourceFileManagerShutdown = new(true);
     private readonly ManualResetEvent _encodingJobManagerShutdown = new(true);
     private readonly ManualResetEvent _clientUpdatePublisherShutdown = new(true);
     private readonly ManualResetEvent _communicationMessageHandlerShutdown = new(true);
-    private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
-
-    #region Dependencies
-    public IWindsorContainer Container { get; set; }
-
-    public ILogger Logger { get; set; }
-    #endregion Dependencies
 
     #region Managers / Comms
     private IEncodingJobManager _encodingJobManager;
@@ -43,13 +32,13 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
     public AutoEncodeServerManager() { }
 
     #region Init / Start / Shutdown
-    public void Initialize(ManualResetEvent shutdown)
+    public override void Initialize(ManualResetEvent shutdown)
     {
         if (_initialized is false)
         {
             try
             {
-                _shutdownMRE = shutdown;
+                ShutdownMRE = shutdown;
 
                 // Initialize comms first
                 _clientUpdatePublisher = Container.Resolve<IClientUpdatePublisher>();
@@ -77,7 +66,7 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
         }
     }
 
-    public void Start()
+    public override void Start()
     {
         if (_initialized is false)
             throw new InvalidOperationException($"{nameof(AutoEncodeServerManager)} is not initialized.");
@@ -93,7 +82,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
             _sourceFileManager.Start();
             _encodingJobManager.Start();
 
-            StartMessageProcessor();
+            // DO NOT CALL StartManagerProcess()
+            StartRequestHandler();
         }
         catch (Exception ex)
         {
@@ -104,37 +94,39 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
         Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Started", nameof(AutoEncodeServerManager));
     }
 
-    public void Shutdown()
+    public override void Shutdown()
     {
-        HelperMethods.DebugLog($"{nameof(AutoEncodeServerManager)} Stopping", nameof(AutoEncodeServerManager));
+        HelperMethods.DebugLog($"{nameof(AutoEncodeServerManager)} Shutting Down", nameof(AutoEncodeServerManager));
 
         try
         {
+            Requests.CompleteAdding();
+
             // Shutdown this manager's threads (message processor)
-            _shutdownCancellationTokenSource.Cancel();
+            ShutdownCancellationTokenSource.Cancel();
 
             // Stop Comms
             _clientUpdatePublisher?.Stop();
             _communicationMessageHandler?.Stop();
 
             // Stop threads
-            _sourceFileManager?.Stop();
-            _encodingJobManager?.Stop();
+            _sourceFileManager?.Shutdown();
+            _encodingJobManager?.Shutdown();
 
             // Wait for threads to stop
             try
             {
-                _messageProcessingTask?.Wait();
+                RequestHandlerTask?.Wait();
             }
             catch (OperationCanceledException) { }
-            
+
             _clientUpdatePublisherShutdown.WaitOne();
             _communicationMessageHandlerShutdown.WaitOne();
             _encodingJobManagerShutdown.WaitOne();
             _sourceFileManagerShutdown.WaitOne();
 
-            Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Stopped", nameof(AutoEncodeServerManager));
-            _shutdownMRE.Set();
+            Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Shutdown", nameof(AutoEncodeServerManager));
+            ShutdownMRE.Set();
         }
         catch (Exception ex)
         {
@@ -142,4 +134,10 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
         }
     }
     #endregion Init / Start / Shutdown
+
+    protected override void Process()
+    {
+        // Not used currently
+        throw new NotImplementedException();
+    }
 }

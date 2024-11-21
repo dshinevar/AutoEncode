@@ -137,15 +137,15 @@ public partial class CommunicationMessageHandler : ICommunicationMessageHandler
         return response;
     }
 
-    public async Task<IEnumerable<string>> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids)
+    public async Task<bool> BulkRequestEncode(IEnumerable<Guid> sourceFileGuids)
     {
-        IEnumerable<string> response = null;
+        bool response = false;
 
         try
         {
             CommunicationMessage<ResponseMessageType> responseMessage = await SendReceiveAsync(RequestMessageFactory.CreateBulkEncodeRequest(sourceFileGuids));
             ValidateResponse(responseMessage, ResponseMessageType.BulkEncodeResponse);
-            response = responseMessage.UnpackData<IEnumerable<string>>();
+            response = responseMessage.UnpackData<bool>();
         }
         catch (Exception ex)
         {

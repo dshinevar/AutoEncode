@@ -153,7 +153,7 @@ public class EncodingJobViewModel :
         bool success = await Model.Cancel();
         if (success is false)
         {
-            UserMessageDialogHandler.ShowDialog($"Failed to cancel job for {FileName}", "Cancel Failed", UserMessageDialogButtons.Ok, Severity.ERROR, null);
+            ShowErrorDialog($"Failed to cancel job for {FileName}", "Cancel Failed", UserMessageDialogButtons.Ok);
         }
     }
 
@@ -162,7 +162,7 @@ public class EncodingJobViewModel :
         bool success = await Model.Pause();
         if (success is false)
         {
-            UserMessageDialogHandler.ShowDialog($"Failed to pause job for {FileName}", "Pause Failed", UserMessageDialogButtons.Ok, Severity.ERROR, null);
+            ShowErrorDialog($"Failed to pause job for {FileName}", "Pause Failed", UserMessageDialogButtons.Ok);
         }
     }
 
@@ -171,7 +171,7 @@ public class EncodingJobViewModel :
         bool success = await Model.Resume();
         if (success is false)
         {
-            UserMessageDialogHandler.ShowDialog($"Failed to resume job for {FileName}", "Resume Failed", UserMessageDialogButtons.Ok, Severity.ERROR, null);
+            ShowErrorDialog($"Failed to resume job for {FileName}", "Resume Failed", UserMessageDialogButtons.Ok);
         }
     }
 
@@ -180,16 +180,21 @@ public class EncodingJobViewModel :
         bool success = await Model.CancelThenPause();
         if (success is false)
         {
-            UserMessageDialogHandler.ShowDialog($"Failed to cancel then pause job for {FileName}", "Cancel Then Pause Failed", UserMessageDialogButtons.Ok, Severity.ERROR, null);
+            ShowErrorDialog($"Failed to cancel then pause job for {FileName}", "Cancel Then Pause Failed", UserMessageDialogButtons.Ok);
         }
     }
 
     private async void Remove()
     {
+        if (UserMessageDialogResult.No == ShowWarningDialog($"Are you sure you want to request {Name} to be removed from the queue?", "Confirm Job Deletion", UserMessageDialogButtons.Yes_No))
+        {
+            return;
+        }
+
         bool success = await Model.Remove();
         if (success is false)
         {
-            UserMessageDialogHandler.ShowDialog($"Failed to remove job {FileName} from encoding queue.", "Removal Failed", UserMessageDialogButtons.Ok, Severity.ERROR, null);
+            ShowErrorDialog($"Failed to remove job {FileName} from encoding queue.", "Removal Failed", UserMessageDialogButtons.Ok);
         }
     }
 
