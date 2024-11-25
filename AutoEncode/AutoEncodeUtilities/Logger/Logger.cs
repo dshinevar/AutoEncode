@@ -136,9 +136,12 @@ public class Logger : ILogger
                 sbDetailMessage.Append(' ', padding).Append($"{name} = ");
                 detailsMessages.Add(sbDetailMessage.ToString());
                 PropertyInfo[] detailsProperties = details.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                for (int i = 0; i < detailsProperties.Length; i++)
+                if (detailsProperties.Length > 0)
                 {
-                    detailsMessages.AddRange(GenerateDetailsMessages(detailsProperties[i].Name, detailsProperties[i].GetValue(details), padding + 3));
+                    for (int i = 0; i < detailsProperties.Length; i++)
+                    {
+                        detailsMessages.AddRange(GenerateDetailsMessages(detailsProperties[i].Name, detailsProperties[i].GetValue(details), padding + 3));
+                    }
                 }
             }
         }
