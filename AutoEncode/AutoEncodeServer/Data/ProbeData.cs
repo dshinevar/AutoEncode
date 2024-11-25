@@ -81,6 +81,10 @@ public class ProbeData
         public int @default;
         public int comment;
         public int forced;
+        public int dub;
+        public int original;
+        public int hearing_impaired;
+        public int visual_impaired;
     }
 
     public class Format

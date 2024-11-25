@@ -1,6 +1,7 @@
 ﻿using AutoEncodeServer.Communication;
 using AutoEncodeServer.Data;
 using AutoEncodeServer.Managers.Interfaces;
+using AutoEncodeServer.Models;
 using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication.Data;
@@ -21,7 +22,7 @@ namespace AutoEncodeServer.Managers;
 public partial class SourceFileManager : ISourceFileManager
 {
     private readonly ManualResetEvent _sleepMRE = new(false);
-    private readonly ManualResetEvent _buildingSourceFilesEvent = new(false);
+    private readonly ManualResetEvent _updatingSourceFilesMRE = new(false);
 
     private Dictionary<string, SearchDirectory> _searchDirectories;
 
@@ -40,9 +41,9 @@ public partial class SourceFileManager : ISourceFileManager
             {
                 IEnumerable<SourceFile> foundSourceFiles = BuildSourceFiles();
 
-                _buildingSourceFilesEvent.Reset();
+                _updatingSourceFilesMRE.Reset();
                 IEnumerable<SourceFileUpdateData> sourceFileUpdates = UpdateSourceFiles(foundSourceFiles);
-                _buildingSourceFilesEvent.Set();
+                _updatingSourceFilesMRE.Set();
 
                 shutdownToken.ThrowIfCancellationRequested();
 
@@ -67,6 +68,7 @@ public partial class SourceFileManager : ISourceFileManager
             catch (Exception ex)
             {
                 Logger.LogException(ex, "Exception occurred during building source files / looking for files to encode.", nameof(SourceFileManager), new { SearchDirectoriesCount = _searchDirectories.Count });
+                _updatingSourceFilesMRE.Set();  // Go ahead and set this if an error occurred so other processes can proceed
             }
 
             Sleep();
@@ -160,10 +162,17 @@ public partial class SourceFileManager : ISourceFileManager
             }
             else
             {
-                model = SourceFileModelFactory.Create(newSourceFile);
-                if (_sourceFiles.TryAdd(model.Guid, model) is true)
+                try
                 {
-                    sourceFileUpdates.Add(new(SourceFileUpdateType.Add, model.ToData()));
+                    model = SourceFileModelFactory.Create(newSourceFile);
+                    if (_sourceFiles.TryAdd(model.Guid, model) is true)
+                    {
+                        sourceFileUpdates.Add(new(SourceFileUpdateType.Add, model.ToData()));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogException(ex, $"Error creating {nameof(SourceFileModel)} for {newSourceFile.FullPath}", nameof(SourceFileManager), new { newSourceFile });
                 }
             }
 
