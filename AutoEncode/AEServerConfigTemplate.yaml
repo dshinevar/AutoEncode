@@ -1,29 +1,34 @@
 # AutoEncodeServer Config Template
 ---
-ServerSettings:
-    IP: 127.0.0.1
-    Port: 39000
-    VideoFileExtensions: ['.mkv', '.m4v', '.avi']
-    ThreadSleepInMS: 300000
-    FFmpegDirectory: ''
-    HDR10PlusExtractorFullPath: ''
-    DolbyVisionExtractorFullPath: ''
-    LoggerSettings:
-        LogFileLocation: '\Fake\Path'
-        MaxFileSizeInBytes: 4098
-        BackupFileCount: 3
 
-GlobalJobSettings:
-    MaxNumberOfJobsInQueue: 20
-    HoursCompletedUntilRemoval: 1
-    HoursErroredUntilRemoval: 2
+FFmpegDirectory: ''
+X265FullPath: ''
+HDR10PlusExtractorFullPath: ''
+DolbyVisionExtractorFullPath: ''
+DolbyVisionEncodingEnabled: True
+MkvMergeFullPath: ''
+MaxNumberOfJobsInQueue: 30
+HoursCompletedUntilRemoval: 1
+HoursErroredUntilRemoval: 2
+VideoFileExtensions: ['.mkv', '.m4v', '.avi']
+SecondarySkipExtension: 'skip'
+
+LoggerSettings:
+    LogFileLocation: ''
+    MaxFileSizeInBytes: 102400
+    BackupFileCount: 3
+
+ConnectionSettings:
+    IPAddress: '127.0.0.1'  # Unused by server
+    ClientUpdatePort: 39000
+    CommunicationPort: 39001
 
 Directories:
     Movies:
         Source: '\\Source\Path\Movies'
         Destination: '\\Destination\Path\Movies (Encoded)'
         Automated: True
-        TVShowStructure: False
+        EpisodeNaming: False
         PostProcessing:
             CopyFilePaths: ['\\Fake\Path1', '\\Path\Fake2']
             DeleteSourceFile: False
@@ -32,4 +37,4 @@ Directories:
         Source: '\\Source\Path\TV Shows'
         Destination: '\\Source\Path\TV Shows (Encoded)'
         Automated: False
-        TVShowStructure: True
+        EpisodeNaming: True

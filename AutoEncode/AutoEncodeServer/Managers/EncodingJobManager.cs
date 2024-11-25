@@ -84,7 +84,6 @@ public partial class EncodingJobManager :
                 throw new InvalidOperationException($"{nameof(EncodingJobManager)} is not initialized");
 
             StartManagerProcess();
-            StartNewEncodingJobRequestHandler();
             StartRequestHandler();
         }
         catch (Exception ex)
@@ -101,7 +100,6 @@ public partial class EncodingJobManager :
         try
         {
             Requests.CompleteAdding();
-            _newEncodingJobRequests.CompleteAdding();
 
             _encodingJobManagerMRE.Set();
 

@@ -122,8 +122,8 @@ public class SourceFileModel : ISourceFileModel
         }
         catch (Exception ex)
         {
-            // If an exception is thrown, tack on a message about what file and rethrow
-            throw new Exception($"Issue with creating {nameof(SourceFileModel)} for {FullPath}", ex);
+            // Determining episode info is "extra" -- don't throw errors for now.
+            HelperMethods.DebugLog($"Issue with determining episode info for {FullPath} -- filename may be in an incorrect format. {ex.Message}", nameof(SourceFileModel));
         }
     }
     #endregion Private Methods

@@ -19,7 +19,7 @@ public partial class SourceFileManager : ISourceFileManager
     #region Request Processing
     public Dictionary<string, IEnumerable<SourceFileData>> RequestSourceFiles()
     {
-        if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
+        if (_updatingSourceFilesMRE.WaitOne(TimeSpan.FromSeconds(45)))
         {
             lock (_lock)
             {
@@ -35,7 +35,7 @@ public partial class SourceFileManager : ISourceFileManager
         ISourceFileModel sourceFileModel = null;
         try
         {
-            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
+            if (_updatingSourceFilesMRE.WaitOne(TimeSpan.FromSeconds(45)))
             {
                 if (_sourceFiles.TryGetValue(sourceFileGuid, out sourceFileModel) is true)
                 {
@@ -53,7 +53,7 @@ public partial class SourceFileManager : ISourceFileManager
     {
         try
         {
-            if (_buildingSourceFilesEvent.WaitOne(TimeSpan.FromSeconds(45)))
+            if (_updatingSourceFilesMRE.WaitOne(TimeSpan.FromSeconds(45)))
             {
                 foreach (Guid sourceFileGuid in sourceFileGuids)
                 {

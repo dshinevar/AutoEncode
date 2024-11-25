@@ -5,11 +5,9 @@ using AutoEncodeUtilities;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers;
 
@@ -17,33 +15,13 @@ namespace AutoEncodeServer.Managers;
 public partial class EncodingJobManager : IEncodingJobManager
 {
     #region CreateEncodingJob Processing
-    private Task _newEncodingJobRequestHandlerTask;
-    private readonly BlockingCollection<ISourceFileModel> _newEncodingJobRequests = [];
-
-    private Task StartNewEncodingJobRequestHandler()
-        => _newEncodingJobRequestHandlerTask = Task.Run(() =>
-        {
-            try
-            {
-                foreach (ISourceFileModel request in _newEncodingJobRequests.GetConsumingEnumerable(ShutdownCancellationTokenSource.Token))
-                {
-                    CreateEncodingJob(request);
-                }
-            }
-            catch (OperationCanceledException) { }
-
-        }, ShutdownCancellationTokenSource.Token);
-
-    public bool AddCreateEncodingJobRequest(ISourceFileModel sourceFile)
-        => _newEncodingJobRequests.TryAdd(sourceFile);
-
-    private async void CreateEncodingJob(ISourceFileModel sourceFile)
+    private void CreateEncodingJob(ISourceFileModel sourceFile)
     {
         try
         {
             if (Count < State.MaxNumberOfJobsInQueue)
             {
-                if ((ExistsByFileName(sourceFile.Filename) is false) && (await IsFileReady(sourceFile.FullPath) is true))
+                if ((ExistsByFileName(sourceFile.Filename) is false) && (IsFileReady(sourceFile.FullPath) is true))
                 {
                     PostProcessingSettings postProcessingSettings = State.Directories[sourceFile.SearchDirectoryName].PostProcessing;
                     // Prep Data for creating job
@@ -82,27 +60,30 @@ public partial class EncodingJobManager : IEncodingJobManager
         }
     }
 
-    /// <summary>Check if file size is changing.</summary>
-    /// <param name="filePath"></param>
+    /// <summary>Check if file ready. Attempts to open a stream for the file. Retries 3 times.</summary>
+    /// <param name="filePath">Path to the file</param>
     /// <returns>True if file is ready; False, otherwise</returns>
-    private static async Task<bool> IsFileReady(string filePath)
+    private static bool IsFileReady(string filePath)
     {
-        List<long> fileSizes = [];
         FileInfo fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
+        const int retries = 3;
+        int retryCount = 0;
+        bool ready = false;
 
-        await Task.Delay(TimeSpan.FromSeconds(4));
+        while ((ready is false) && (retryCount < retries))
+        {
+            try
+            {
+                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+                ready = true;
+            }
+            catch (IOException)
+            {
+                retryCount++;
+            }
+        }
 
-        // If still able to access, check to see if file size is changing
-        fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
-
-        await Task.Delay(TimeSpan.FromSeconds(4));
-
-        fileInfo = new(filePath);
-        fileSizes.Add(fileInfo.Length);
-
-        return fileSizes.All(x => x.Equals(fileSizes.First()));
+        return ready;
     }
     #endregion CreateEncodingJob Processing
 
@@ -238,6 +219,9 @@ public partial class EncodingJobManager : IEncodingJobManager
 
 
     #region Add Requests
+    public bool AddCreateEncodingJobRequest(ISourceFileModel sourceFile)
+        => Requests.TryAdd(() => CreateEncodingJob(sourceFile));
+
     public bool AddRemoveEncodingJobByIdRequest(ulong id, RemovedEncodingJobReason reason)
         => Requests.TryAdd(() => RemoveEncodingJobById(id, reason));
 
