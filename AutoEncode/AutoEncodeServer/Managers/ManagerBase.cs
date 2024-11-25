@@ -50,8 +50,11 @@ public abstract class ManagerBase
 
     /// <summary>Starts the Request Handler thread.</summary>
     /// <returns><see cref="Task"/> -- <see cref="RequestHandlerTask"/></returns>
-    protected Task StartRequestHandler()
-        => RequestHandlerTask = Task.Run(() =>
+    protected void StartRequestHandler()
+    {
+        RequestHandlerTask = Task.Run(ProcessRequests, ShutdownCancellationTokenSource.Token);
+
+        void ProcessRequests()
         {
             try
             {
@@ -68,7 +71,7 @@ public abstract class ManagerBase
                 }
             }
             catch (OperationCanceledException) { }
-
-        }, ShutdownCancellationTokenSource.Token);
+        }
+    }
     #endregion Request Handling
 }

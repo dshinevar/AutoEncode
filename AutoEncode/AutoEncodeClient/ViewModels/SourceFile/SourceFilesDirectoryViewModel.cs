@@ -116,7 +116,12 @@ public class SourceFilesDirectoryViewModel :
         }
 
         string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, "").Replace(sourceFileData.Filename, "");
-        string[] subPathParts = pathWithoutSourceAndFilename.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+        char directorySeparator = System.IO.Path.DirectorySeparatorChar;
+        if (pathWithoutSourceAndFilename.Contains(System.IO.Path.AltDirectorySeparatorChar))
+            directorySeparator = System.IO.Path.AltDirectorySeparatorChar;
+
+        string[] subPathParts = pathWithoutSourceAndFilename.Split(directorySeparator, StringSplitOptions.RemoveEmptyEntries);
 
         // Already checked files -- find subdirectory
         if (subPathParts.Length > 0)
