@@ -5,6 +5,8 @@ namespace AutoEncodeUtilities.Data;
 
 public class EncodingInstructions
 {
+    public bool DolbyVisionEncoding { get; set; }
+
     /// <summary> Contains encoding instructions for the video stream </summary>
     public VideoStreamEncodingInstructions VideoStreamEncodingInstructions { get; set; }
     /// <summary> 
@@ -53,4 +55,6 @@ public class SubtitleStreamEncodingInstructions
     public int SourceIndex { get; set; }
     public string Title { get; set; }
     public bool Forced { get; set; }
+    public bool Commentary { get; set; }
+    public bool HearingImpaired { get; set; }
 }

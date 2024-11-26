@@ -96,6 +96,8 @@ public class SubtitleStreamData :
     public string Language { get; set; }
     public string Descriptor { get; set; }
     public bool Forced { get; set; }
+    public bool Commentary { get; set; }
+    public bool HearingImpaired { get; set; }
 
     public void Update(SubtitleStreamData data) => data.CopyProperties(this);
     public override bool Equals(object obj)

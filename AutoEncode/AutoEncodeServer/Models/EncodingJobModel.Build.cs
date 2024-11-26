@@ -204,36 +204,26 @@ public partial class EncodingJobModel :
             try
             {
                 BuildingStatus = EncodingJobBuildingStatus.COMMAND;
-                if (EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision)
-                {
-                    BuildDolbyVisionEncodingCommandArguments();
 
-                    if (EncodingCommandArguments.IsDolbyVision is true)
+                EncodingCommandArguments = EncodingCommandArgumentsBuilder.Build(this);
+
+                if (EncodingCommandArguments is null)
+                {
+                    throw new Exception("Failed to build encoding command arguments.");
+                }
+
+                if (EncodingCommandArguments.IsDolbyVision is true)
+                {
+                    if (EncodingCommandArguments.CommandArguments.Any(string.IsNullOrWhiteSpace))
                     {
-                        if (EncodingCommandArguments.CommandArguments.Any(string.IsNullOrWhiteSpace))
-                        {
-                            throw new Exception("Empty dolby vision encoding command argument string returned.");
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception("Null or invalid dolby vision encoding command arguments");
+                        throw new Exception("Empty dolby vision encoding command argument string returned.");
                     }
                 }
                 else
                 {
-                    BuildFFmpegCommandArguments();
-
-                    if (EncodingCommandArguments.IsDolbyVision is false)
+                    if (string.IsNullOrWhiteSpace(EncodingCommandArguments.CommandArguments[0]))
                     {
-                        if (string.IsNullOrWhiteSpace(EncodingCommandArguments.CommandArguments[0]))
-                        {
-                            throw new Exception("Empty encoding command argument string returned.");
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception("Null or invalid encoding command arguments");
+                        throw new Exception("Empty encoding command argument string returned.");
                     }
                 }
             }
@@ -480,9 +470,14 @@ public partial class EncodingJobModel :
 
             if (streamData.VideoStream.HasDynamicHDR)
             {
+                if (State.DolbyVisionEncodingEnabled is true)
+                {
+                    instructions.DolbyVisionEncoding = true;
+                }
+
                 HDRData hdrData = streamData.VideoStream.HDRData;
                 videoStreamEncodingInstructions.HDRFlags |= HDRFlags.HDR10;
-                videoStreamEncodingInstructions.DynamicHDRMetadataFullPaths = new Dictionary<HDRFlags, string>();
+                videoStreamEncodingInstructions.DynamicHDRMetadataFullPaths = [];
                 // Go through each possible metadata entry
                 foreach (KeyValuePair<HDRFlags, string> path in hdrData.DynamicMetadataFullPaths)
                 {
@@ -581,7 +576,9 @@ public partial class EncodingJobModel :
                     {
                         SourceIndex = stream.SubtitleIndex,
                         Forced = stream.Forced,
-                        Title = stream.Title
+                        Title = stream.Title,
+                        Commentary = stream.Commentary,
+                        HearingImpaired = stream.HearingImpaired,
                     });
                 }
             }
@@ -589,262 +586,6 @@ public partial class EncodingJobModel :
             instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
 
             EncodingInstructions = instructions;
-        }
-
-        void BuildFFmpegCommandArguments()
-        {
-            SourceStreamData streamData = SourceStreamData;
-            EncodingInstructions instructions = EncodingInstructions;
-
-            VideoStreamEncodingInstructions videoInstructions = instructions.VideoStreamEncodingInstructions;
-
-            // Format should hopefully always add space to end of append
-            const string format = "{0} ";
-            StringBuilder sbArguments = new();
-            sbArguments.AppendFormat(format, $"-y -nostdin -i \"{SourceFullPath}\"");
-
-            // Map Section
-            sbArguments.AppendFormat(format, "-map 0:v:0");
-            foreach (AudioStreamEncodingInstructions audioInstructions in instructions.AudioStreamEncodingInstructions)
-            {
-                sbArguments.AppendFormat(format, $"-map 0:a:{audioInstructions.SourceIndex}");
-            }
-            foreach (SubtitleStreamEncodingInstructions subtitleInstructions in instructions.SubtitleStreamEncodingInstructions)
-            {
-                sbArguments.AppendFormat(format, $"-map 0:s:{subtitleInstructions.SourceIndex}");
-            }
-
-            // Video Section
-            string deinterlace = videoInstructions.Deinterlace is true ? $"yadif=1:{(int)streamData.VideoStream.ScanType}:0" : string.Empty;
-            string crop = videoInstructions.Crop is true ? $"crop={streamData.VideoStream.Crop}" : string.Empty;
-            string videoFilter = string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(deinterlace) || !string.IsNullOrWhiteSpace(crop))
-            {
-                videoFilter = $"-vf \"{HelperMethods.JoinFilter(", ", crop, deinterlace)}\"";
-            }
-
-            sbArguments.AppendFormat(format, $"-pix_fmt {videoInstructions.PixelFormat}");
-            if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX265))
-            {
-                HDRData hdr = streamData.VideoStream.HDRData;
-                sbArguments.AppendFormat(format, "-c:v libx265").AppendFormat(format, "-preset slow").AppendFormat(format, $"-crf {videoInstructions.CRF}");
-                if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
-                sbArguments.Append($"-x265-params \"bframes={videoInstructions.BFrames}:keyint=120:repeat-headers=1:")
-                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorPrimaries) ? string.Empty : $"colorprim={streamData.VideoStream.ColorPrimaries}:")}")
-                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorTransfer) ? string.Empty : $"transfer={streamData.VideoStream.ColorTransfer}:")}")
-                    .Append($"{(string.IsNullOrWhiteSpace(streamData.VideoStream.ColorSpace) ? string.Empty : $"colormatrix={streamData.VideoStream.ColorSpace}:")}")
-                    .Append($"{(streamData.VideoStream.ChromaLocation is null ? string.Empty : $"chromaloc={(int)streamData.VideoStream.ChromaLocation}")}");
-
-                if (videoInstructions.HasHDR)
-                {
-                    // HDR10 data; Always add
-                    sbArguments.Append($":master-display='G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})':max-cll={streamData.VideoStream.HDRData.MaxCLL}");
-
-                    if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
-                    {
-                        videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.HDR10PLUS, out string metadataPath);
-                        if (!string.IsNullOrWhiteSpace(metadataPath))
-                        {
-                            sbArguments.Append($":dhdr10-info='{metadataPath}'");
-                        }
-                    }
-                    if (videoInstructions.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION))
-                    {
-                        throw new NotSupportedException($"Cannot build encoding arguments for DolbyVision with this method: {nameof(BuildFFmpegCommandArguments)}.");
-                    }
-                }
-                sbArguments.AppendFormat(format, '"');
-            }
-            else if (videoInstructions.VideoEncoder.Equals(VideoEncoder.LIBX264))
-            {
-                sbArguments.AppendFormat(format, "-c:v libx264").AppendFormat(format, "-preset veryslow");
-                if (!string.IsNullOrWhiteSpace(videoFilter)) sbArguments.AppendFormat(format, videoFilter);
-                sbArguments.AppendFormat(format, $"-x264-params \"bframes=16:b-adapt=2:b-pyramid=normal:partitions=all\" -crf {videoInstructions.CRF}");
-            }
-            else
-            {
-                throw new NotImplementedException("Unknown VideoEncoder. Unable to build ffmpeg arguments.");
-            }
-
-            // Audio Section
-            for (int i = 0; i < instructions.AudioStreamEncodingInstructions.Count; i++)
-            {
-                AudioStreamEncodingInstructions audioInstruction = instructions.AudioStreamEncodingInstructions[i];
-                if (audioInstruction.AudioCodec.Equals(AudioCodec.UNKNOWN))
-                {
-                    throw new Exception("AudioCodec not set (Unknown). Unable to build ffmpeg arguments");
-                }
-                else if (audioInstruction.AudioCodec.Equals(AudioCodec.COPY))
-                {
-                    if (audioInstruction.Commentary is true)
-                    {
-                        sbArguments.AppendFormat(format, $"-c:a:{i} copy -disposition:a:{i} comment");
-                    }
-                    else
-                    {
-                        sbArguments.AppendFormat(format, $"-c:a:{i} copy");
-                    }
-                }
-                else
-                {
-                    sbArguments.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
-                        .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
-                }
-            }
-
-            // Subtitle Section
-            for (int i = 0; i < instructions.SubtitleStreamEncodingInstructions.Count; i++)
-            {
-                SubtitleStreamEncodingInstructions subtitleInstruction = instructions.SubtitleStreamEncodingInstructions[i];
-                if (subtitleInstruction.Forced is true)
-                {
-                    sbArguments.AppendFormat(format, $"-c:s:{i} copy -disposition:s:{i} forced");
-                }
-                else
-                {
-                    sbArguments.AppendFormat(format, $"-c:s:{i} copy");
-                }
-            }
-
-            sbArguments.Append($"-max_muxing_queue_size 9999 -metadata title=\"{Name}\" \"{DestinationFullPath}\"");
-
-            EncodingCommandArguments = new EncodingCommandArguments(false, sbArguments.ToString());
-        }
-
-        void BuildDolbyVisionEncodingCommandArguments()
-        {
-            const string format = "{0} ";
-            string encodedVideoFullPath = EncodingInstructions.EncodedVideoFullPath;
-            SourceStreamData streamData = SourceStreamData;
-
-            string videoEncodingCommandArguments;
-            string audioSubEncodingCommandArguments;
-            string mergeCommandArguments;
-
-            // Video extraction/encoding
-            StringBuilder sbVideo = new();
-            string ffmpegFormatted;
-            string sourceFormatted;
-            string x265Formatted;
-            string outputFormatted;
-            string dolbyVisionPathFormatted;
-            string masterDisplayFormatted;
-            string maxCLLFormatted;
-
-            VideoStreamEncodingInstructions videoInstructions = EncodingInstructions.VideoStreamEncodingInstructions;
-            HDRData hdr = streamData.VideoStream.HDRData;
-            videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                ffmpegFormatted = $"'{Path.Combine(State.FFmpegDirectory, "ffmpeg")}'";
-                sourceFormatted = $"'{SourceFullPath.Replace("'", "'\\''")}'";
-                x265Formatted = $"'{State.X265FullPath}'";
-                outputFormatted = $"'{encodedVideoFullPath}'";
-                masterDisplayFormatted = $"'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'";
-                maxCLLFormatted = $"'{streamData.VideoStream.HDRData.MaxCLL}'";
-                dolbyVisionPathFormatted = $"'{dolbyVisionMetadataPath}'";
-            }
-            else
-            {
-                ffmpegFormatted = $"\"{Path.Combine(State.FFmpegDirectory, "ffmpeg")}\"";
-                sourceFormatted = $"\"{SourceFullPath}\"";
-                x265Formatted = $"\"{State.X265FullPath}\"";
-                outputFormatted = $"\"{encodedVideoFullPath}\"";
-                masterDisplayFormatted = $"\"G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})\"";
-                maxCLLFormatted = $"\"{streamData.VideoStream.HDRData.MaxCLL}\"";
-                dolbyVisionPathFormatted = $"\"{dolbyVisionMetadataPath}\"";
-            }
-
-            sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")}")
-                .AppendFormat(format, $"\"{ffmpegFormatted} -y -hide_banner -loglevel error -nostdin -i {sourceFormatted}");
-
-            if (videoInstructions.Crop is true) sbVideo.AppendFormat(format, $"-vf crop={streamData.VideoStream.Crop}");
-
-            sbVideo.AppendFormat(format, $"-an -sn -f yuv4mpegpipe -strict -1 -pix_fmt {videoInstructions.PixelFormat} - |")
-                .AppendFormat(format, $"{x265Formatted} - --input-depth 10 --output-depth 10 --y4m --preset slow --crf {videoInstructions.CRF} --bframes {videoInstructions.BFrames}")
-                .AppendFormat(format, $"--repeat-headers --keyint 120")
-                .AppendFormat(format, $"--master-display {masterDisplayFormatted}")
-                .AppendFormat(format, $"--max-cll {maxCLLFormatted} --colormatrix {streamData.VideoStream.ColorSpace} --colorprim {streamData.VideoStream.ColorPrimaries} --transfer {streamData.VideoStream.ColorTransfer}")
-                .AppendFormat(format, $"--dolby-vision-rpu {dolbyVisionPathFormatted} --dolby-vision-profile 8.1 --vbv-bufsize 120000 --vbv-maxrate 120000");
-
-            if (videoInstructions.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
-            {
-                videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.HDR10PLUS, out string hdr10PlusMetadataPath);
-                if (!string.IsNullOrWhiteSpace(hdr10PlusMetadataPath))
-                {
-                    sbVideo.AppendFormat(format, $"--dhdr10-info '{hdr10PlusMetadataPath}'");
-                }
-            }
-
-            sbVideo.Append($"{outputFormatted}\"");
-            videoEncodingCommandArguments = sbVideo.ToString();
-
-            // Audio/Sub extraction/encoding
-            StringBuilder sbAudioSubs = new();
-            sbAudioSubs.AppendFormat(format, $"-y -nostdin -i \"{SourceFullPath}\" -vn");
-            foreach (AudioStreamEncodingInstructions audioInstructions in EncodingInstructions.AudioStreamEncodingInstructions)
-            {
-                sbAudioSubs.AppendFormat(format, $"-map 0:a:{audioInstructions.SourceIndex}");
-            }
-            foreach (SubtitleStreamEncodingInstructions subtitleInstructions in EncodingInstructions.SubtitleStreamEncodingInstructions)
-            {
-                sbAudioSubs.AppendFormat(format, $"-map 0:s:{subtitleInstructions.SourceIndex}");
-            }
-
-            for (int i = 0; i < EncodingInstructions.AudioStreamEncodingInstructions.Count; i++)
-            {
-                AudioStreamEncodingInstructions audioInstruction = EncodingInstructions.AudioStreamEncodingInstructions[i];
-                if (audioInstruction.AudioCodec.Equals(AudioCodec.UNKNOWN))
-                {
-                    throw new Exception("AudioCodec not set (Unknown). Unable to build ffmpeg arguments");
-                }
-                else if (audioInstruction.AudioCodec.Equals(AudioCodec.COPY))
-                {
-                    if (audioInstruction.Commentary is true)
-                    {
-                        sbAudioSubs.AppendFormat(format, $"-c:a:{i} copy -disposition:a:{i} comment");
-                    }
-                    else
-                    {
-                        sbAudioSubs.AppendFormat(format, $"-c:a:{i} copy");
-                    }
-                }
-                else
-                {
-                    sbAudioSubs.AppendFormat(format, $"-c:a:{i} {audioInstruction.AudioCodec.GetDescription()}")
-                        .AppendFormat(format, $"-ac:a:{i} 2 -b:a:{i} 192k -filter:a:{i} \"aresample=matrix_encoding=dplii\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} title=\"Stereo ({audioInstruction.AudioCodec.GetDescription()})\"")
-                        .AppendFormat(format, $"-metadata:s:a:{i} language=\"{audioInstruction.Language}\"");
-                }
-            }
-
-            for (int i = 0; i < EncodingInstructions.SubtitleStreamEncodingInstructions.Count; i++)
-            {
-                SubtitleStreamEncodingInstructions subtitleInstruction = EncodingInstructions.SubtitleStreamEncodingInstructions[i];
-                if (subtitleInstruction.Forced is true)
-                {
-                    sbAudioSubs.AppendFormat(format, $"-c:s:{i} copy -disposition:s:{i} forced");
-                }
-                else
-                {
-                    sbAudioSubs.AppendFormat(format, $"-c:s:{i} copy");
-                }
-            }
-
-            sbAudioSubs.AppendFormat(format, $"-max_muxing_queue_size 9999 \"{EncodingInstructions.EncodedAudioSubsFullPath}\"");
-            audioSubEncodingCommandArguments = sbAudioSubs.ToString();
-
-            // Merging
-            StringBuilder sbMerge = new();
-            sbMerge.AppendFormat(format, $"-o \"{DestinationFullPath}\" --compression -1:none \"{encodedVideoFullPath}\" --compression -1:none \"{EncodingInstructions.EncodedAudioSubsFullPath}\"")
-                .Append($"--title \"{Name}\"");
-            mergeCommandArguments = sbMerge.ToString();
-
-            EncodingCommandArguments = new EncodingCommandArguments(true, videoEncodingCommandArguments, audioSubEncodingCommandArguments, mergeCommandArguments);
         }
         #endregion Local Functions
     }

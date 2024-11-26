@@ -5,6 +5,8 @@ using AutoEncodeServer.Managers;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models;
 using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeServer.Utilities;
+using AutoEncodeServer.Utilities.Interfaces;
 using AutoEncodeUtilities.Logger;
 using Castle.Facilities.TypedFactory;
 using Castle.MicroKernel.Registration;
@@ -55,6 +57,10 @@ internal partial class AutoEncodeServer
 
         container.Register(Component.For<IEncodingJobModel>()
             .ImplementedBy<EncodingJobModel>()
+            .LifestyleTransient());
+
+        container.Register(Component.For<IEncodingCommandArgumentsBuilder>()
+            .ImplementedBy<EncodingCommandArgumentsBuilder>()
             .LifestyleTransient());
 
         container.Register(Component.For<IEncodingJobManager>()

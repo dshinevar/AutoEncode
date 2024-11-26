@@ -665,6 +665,8 @@
                                         </Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0"
@@ -675,6 +677,26 @@
                                                    Style="{StaticResource ColonLabelStyle}"/>
                                         <TextBlock Grid.Row="0" Grid.Column="2"
                                                    Text="{Binding Forced}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                                   Text="Commentary"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                                   Text=":"
+                                                   Style="{StaticResource ColonLabelStyle}"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2"
+                                                   Text="{Binding Commentary}"
+                                                   Style="{StaticResource EncodingJobDataStyle}"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                                   Text="Hearing Impaired"
+                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1"
+                                                   Text=":"
+                                                   Style="{StaticResource ColonLabelStyle}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2"
+                                                   Text="{Binding HearingImpaired}"
                                                    Style="{StaticResource EncodingJobDataStyle}"/>
                                     </Grid>
                                 </Grid>
