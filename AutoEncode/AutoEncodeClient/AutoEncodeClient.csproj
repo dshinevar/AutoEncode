@@ -9,6 +9,7 @@
     <PackageIcon>AutoEncode.png</PackageIcon>
     <ApplicationIcon>Resources\AE.ico</ApplicationIcon>
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+	<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>

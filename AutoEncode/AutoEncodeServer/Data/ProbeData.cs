@@ -198,7 +198,8 @@ public class ProbeData
                     Channels = stream.channels,
                     Language = stream.tags.language,
                     Descriptor = string.IsNullOrWhiteSpace(stream.profile) ? stream.codec_long_name : stream.profile,
-                    Title = stream.tags.title
+                    Title = stream.tags.title,
+                    Commentary = stream.disposition.comment == 1 || stream.tags.title.Contains("Commentary")
                 };
 
                 if (string.IsNullOrWhiteSpace(stream.channel_layout) is false)
@@ -227,11 +228,6 @@ public class ProbeData
                     throw new Exception($"Unable to determine audio codec name for stream index {stream.index}");
                 }
 
-                if (stream.disposition.comment == 1 || stream.tags.title.Contains("Commentary"))
-                {
-                    audioStream.Commentary = true;
-                }
-
                 audioStreams ??= [];
                 audioStreams.Add(audioStream);
                 audioIndex++;
@@ -245,6 +241,8 @@ public class ProbeData
                     Descriptor = stream.codec_name,
                     Language = stream.tags.language,
                     Forced = stream.disposition.forced == 1,
+                    Commentary = stream.disposition.comment == 1,
+                    HearingImpaired = stream.disposition.hearing_impaired == 1,
                     Title = stream.tags.title ?? string.Empty
                 };
 

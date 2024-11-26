@@ -50,18 +50,18 @@ public class Logger : ILogger
     }
 
     #region Log Functions
-    public string LogInfo(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogInfo([msg], threadName, callingMemberName);
-    public string LogInfo(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, threadName, callingMemberName);
+    public string LogInfo(string msg, string moduleName = "", [CallerMemberName] string callingMemberName = "") => LogInfo([msg], moduleName, callingMemberName);
+    public string LogInfo(IList<string> messages, string moduleName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.INFO, messages, moduleName, callingMemberName);
 
-    public string LogWarning(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => LogWarning([msg], threadName, callingMemberName);
-    public string LogWarning(IList<string> messages, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, messages, threadName, callingMemberName);
+    public string LogWarning(string msg, string moduleName = "", [CallerMemberName] string callingMemberName = "") => LogWarning([msg], moduleName, callingMemberName);
+    public string LogWarning(IList<string> messages, string moduleName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.WARNING, messages, moduleName, callingMemberName);
 
-    public string LogError(string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => LogError([msg], threadName, details, callingMemberName);
-    public string LogError(IList<string> messages, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, threadName, details, callingMemberName);
+    public string LogError(string msg, string moduleName = "", object details = null, [CallerMemberName] string callingMemberName = "") => LogError([msg], moduleName, details, callingMemberName);
+    public string LogError(IList<string> messages, string moduleName = "", object details = null, [CallerMemberName] string callingMemberName = "") => Log(Severity.ERROR, messages, moduleName, details, callingMemberName);
 
-    public string LogFatal(string msg, string threadName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, [msg], threadName, callingMemberName);
+    public string LogFatal(string msg, string moduleName = "", [CallerMemberName] string callingMemberName = "") => Log(Severity.FATAL, [msg], moduleName, callingMemberName);
 
-    public string LogException(Exception ex, string msg, string threadName = "", object details = null, [CallerMemberName] string callingMemberName = "")
+    public string LogException(Exception ex, string msg, string moduleName = "", object details = null, [CallerMemberName] string callingMemberName = "")
     {
         List<string> messages = [msg];
         messages.Add($"Exception: {ex.Message}");
@@ -74,17 +74,17 @@ public class Logger : ILogger
         }
 
         messages.AddRange(ex.StackTrace.Split(Environment.NewLine));
-        return Log(Severity.ERROR, messages, threadName, details, callingMemberName);
+        return Log(Severity.ERROR, messages, moduleName, details, callingMemberName);
     }
 
     /// <summary>Base log method that handles additional details; Returns first string from list for usage elsewhere if needed. </summary>
     /// <param name="severity"><see cref="Severity"/></param>
     /// <param name="messages">List of messages to log</param>
-    /// <param name="threadName">Thread calling log</param>
+    /// <param name="moduleName">Module calling log</param>
     /// <param name="details">Additional details to log</param>
     /// <param name="callingMemberName">Calling function</param>
     /// <returns>Returns first string from list for usage elsewhere if needed.</returns>
-    private string Log(Severity severity, IList<string> messages, string threadName = "", object details = null, string callingMemberName = "")
+    private string Log(Severity severity, IList<string> messages, string moduleName = "", object details = null, string callingMemberName = "")
     {
         if (details is not null)
         {
@@ -97,7 +97,7 @@ public class Logger : ILogger
             }
         }
 
-        return Log(severity, messages, threadName, callingMemberName);
+        return Log(severity, messages, moduleName, callingMemberName);
     }
 
     private static List<string> GenerateDetailsMessages(string name, object details, int padding = 0)
@@ -152,10 +152,10 @@ public class Logger : ILogger
     /// <summary>Base log method; Returns first string from list for usage elsewhere if needed. </summary>
     /// <param name="severity"><see cref="Severity"/></param>
     /// <param name="messages">List of messages to log</param>
-    /// <param name="threadName">Thread calling log</param>
+    /// <param name="moduleName">Module calling log</param>
     /// <param name="callingMemberName">Calling function</param>
     /// <returns>Returns first string from list for usage elsewhere if needed.</returns>
-    private string Log(Severity severity, IList<string> messages, string threadName = "", string callingMemberName = "")
+    private string Log(Severity severity, IList<string> messages, string moduleName = "", string callingMemberName = "")
     {
         if (_initialized is false) throw new Exception("Logger not initialized");
 
@@ -165,7 +165,7 @@ public class Logger : ILogger
 
         sbLogMsg.Append($"[{DateTime.Now:MM/dd/yyyy HH:mm:ss}] - [{Enum.GetName(typeof(Severity), (int)severity)}]");
 
-        string threadAndCallingMemberName = HelperMethods.JoinFilterWrap(string.Empty, "[", "]", threadName, callingMemberName);
+        string threadAndCallingMemberName = HelperMethods.JoinFilterWrap(string.Empty, "[", "]", moduleName, callingMemberName);
 
         if (string.IsNullOrWhiteSpace(threadAndCallingMemberName) is false)
         {

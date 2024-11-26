@@ -161,6 +161,8 @@ public partial class EncodingJobManager : IEncodingJobManager
             {
                 job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
                 job?.Resume();
+
+                _encodingJobManagerMRE.Set();
             }
         }
         catch (Exception ex)

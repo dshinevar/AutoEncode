@@ -2,6 +2,7 @@
 using AutoEncodeServer.Communication.Interfaces;
 using AutoEncodeServer.Models.Data;
 using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeServer.Utilities.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Base;
 using AutoEncodeUtilities.Communication.Data;
@@ -22,6 +23,8 @@ public partial class EncodingJobModel :
 {
     #region Dependencies
     public ILogger Logger { get; set; }
+
+    public IEncodingCommandArgumentsBuilder EncodingCommandArgumentsBuilder { get; set; }
 
     public IClientUpdatePublisher ClientUpdatePublisher { get; set; }
     #endregion Dependencies
