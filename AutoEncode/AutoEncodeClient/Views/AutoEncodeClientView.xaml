@@ -89,7 +89,7 @@
                     BorderBrush="{StaticResource SideBarPressedBrush}"
                     Background="{StaticResource BackgroundBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
                               CanContentScroll="False"
                               PreviewMouseWheel="ScrollViewer_PreviewMouseWheel"
                               MaxWidth="450">

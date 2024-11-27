@@ -174,6 +174,14 @@ public partial class EncodingJobManager :
         }
     }
 
+    private bool ExistsBySourceFileGuid(Guid sourceFileGuid)
+    {
+        lock (_lock)
+        {
+            return _encodingJobQueue.Any(_ => _.SourceFileGuid == sourceFileGuid);
+        }
+    }
+
     /// <summary> Gets first EncodingJobModel (not paused or in error) from list with the given status. </summary>
     /// <param name="status"><see cref="EncodingJobStatus"/></param>
     /// <returns><see cref="IEncodingJobModel"/></returns>

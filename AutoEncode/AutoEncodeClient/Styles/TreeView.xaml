@@ -39,8 +39,8 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition />
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -104,10 +104,11 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalAlignment}">
                             <ContentPresenter x:Name="PART_Header"
                                               ContentSource="Header"
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                              HorizontalAlignment="{TemplateBinding HorizontalAlignment}"/>
                         </Border>
                         <ItemsPresenter x:Name="ItemsHost"
                                         Grid.Row="1"
@@ -161,6 +162,8 @@
         <Setter Property="ItemContainerStyle"
                 Value="{StaticResource SourceFilesTreeViewItemStyle}"/>
         <Setter Property="HorizontalContentAlignment"
+                Value="Stretch"/>
+        <Setter Property="HorizontalAlignment"
                 Value="Stretch"/>
         <Setter Property="Margin"
                 Value="5,2"/>

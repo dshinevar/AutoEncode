@@ -68,17 +68,11 @@ public class SourceFilesDirectoryViewModel :
         _initialized = true;
     }
 
-    public void AddSourceFile(SourceFileData sourceFile)
+    public void AddSourceFile(SourceFileData sourceFileData)
     {
-        string pathWithoutSourceAndFilename = sourceFile.FullPath.Replace(sourceFile.SourceDirectory, "").Replace(sourceFile.Filename, "");
+        string[] subPathParts = GetSubPathPartsForSourceFile(sourceFileData);
 
-        char directorySeparator = System.IO.Path.DirectorySeparatorChar;
-        if (pathWithoutSourceAndFilename.Contains(System.IO.Path.AltDirectorySeparatorChar))
-            directorySeparator = System.IO.Path.AltDirectorySeparatorChar;
-
-        string[] subPathParts = pathWithoutSourceAndFilename.Split(directorySeparator, StringSplitOptions.RemoveEmptyEntries);
-
-        ISourceFileClientModel sourceFileModel = SourceFileFactory.Create(sourceFile);
+        ISourceFileClientModel sourceFileModel = SourceFileFactory.Create(sourceFileData);
         ISourceFileViewModel sourceFileViewModel = SourceFileFactory.Create(sourceFileModel);
 
         // If no sub path parts, just add to list of files
@@ -115,13 +109,7 @@ public class SourceFilesDirectoryViewModel :
             return true;
         }
 
-        string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, "").Replace(sourceFileData.Filename, "");
-
-        char directorySeparator = System.IO.Path.DirectorySeparatorChar;
-        if (pathWithoutSourceAndFilename.Contains(System.IO.Path.AltDirectorySeparatorChar))
-            directorySeparator = System.IO.Path.AltDirectorySeparatorChar;
-
-        string[] subPathParts = pathWithoutSourceAndFilename.Split(directorySeparator, StringSplitOptions.RemoveEmptyEntries);
+        string[] subPathParts = GetSubPathPartsForSourceFile(sourceFileData);
 
         // Already checked files -- find subdirectory
         if (subPathParts.Length > 0)
@@ -160,8 +148,7 @@ public class SourceFilesDirectoryViewModel :
             return true;
         }
 
-        string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, "").Replace(sourceFileData.Filename, "");
-        string[] subPathParts = pathWithoutSourceAndFilename.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        string[] subPathParts = GetSubPathPartsForSourceFile(sourceFileData);
 
         if (subPathParts.Length > 0)
         {
@@ -172,4 +159,17 @@ public class SourceFilesDirectoryViewModel :
 
         return false;
     }
+
+    #region Private Methods
+    private static string[] GetSubPathPartsForSourceFile(SourceFileData sourceFileData)
+    {
+        string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, string.Empty).Replace(sourceFileData.Filename, string.Empty);
+
+        char directorySeparator = System.IO.Path.DirectorySeparatorChar;
+        if (pathWithoutSourceAndFilename.Contains(System.IO.Path.AltDirectorySeparatorChar))
+            directorySeparator = System.IO.Path.AltDirectorySeparatorChar;
+
+        return pathWithoutSourceAndFilename.Split(directorySeparator, StringSplitOptions.RemoveEmptyEntries);
+    }
+    #endregion Private Methods
 }

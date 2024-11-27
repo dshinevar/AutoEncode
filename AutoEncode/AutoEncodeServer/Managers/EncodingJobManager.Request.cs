@@ -21,7 +21,7 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             if (Count < State.MaxNumberOfJobsInQueue)
             {
-                if ((ExistsByFileName(sourceFile.Filename) is false) && (IsFileReady(sourceFile.FullPath) is true))
+                if ((ExistsBySourceFileGuid(sourceFile.Guid) is false) && (IsFileReady(sourceFile.FullPath) is true))
                 {
                     PostProcessingSettings postProcessingSettings = State.Directories[sourceFile.SearchDirectoryName].PostProcessing;
                     // Prep Data for creating job
@@ -50,6 +50,8 @@ public partial class EncodingJobManager : IEncodingJobManager
                         _encodingJobQueue.Add(newEncodingJob);
                     }
 
+                    _sourceFileManager.AddUpdateSourceFileEncodingStatusRequest(sourceFile.Guid, newEncodingJob.Status);
+
                     Logger.LogInfo($"{newEncodingJob} added to encoding job queue.", nameof(EncodingJobManager));
                 }
             }
@@ -60,26 +62,26 @@ public partial class EncodingJobManager : IEncodingJobManager
         }
     }
 
-    /// <summary>Check if file ready. Attempts to open a stream for the file. Retries 3 times.</summary>
+    /// <summary>Check if file ready. Attempts to open a stream for the file.</summary>
     /// <param name="filePath">Path to the file</param>
     /// <returns>True if file is ready; False, otherwise</returns>
     private static bool IsFileReady(string filePath)
     {
-        FileInfo fileInfo = new(filePath);
-        const int retries = 3;
-        int retryCount = 0;
-        bool ready = false;
+        const int attempts = 5;
 
-        while ((ready is false) && (retryCount < retries))
+        FileInfo fileInfo = new(filePath);
+        bool ready = true;
+    
+        for (int i = 0; i < attempts; i++)
         {
             try
             {
                 using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None);
-                ready = true;
             }
-            catch (IOException)
+            catch (IOException) 
             {
-                retryCount++;
+                ready = false;
+                break;
             }
         }
 
@@ -107,7 +109,7 @@ public partial class EncodingJobManager : IEncodingJobManager
 
                     if (_encodingJobQueue.Remove(job) is true)
                     {
-                        Logger.LogInfo($"({reason.GetDescription()}) Job [{job}] was removed from queue.", nameof(EncodingJobManager));
+                        Logger.LogInfo($"Job {job} was removed from queue. [Reason: {reason.GetDescription()}]", nameof(EncodingJobManager));
                     }
                 }
             }

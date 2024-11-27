@@ -28,12 +28,9 @@ public partial class SourceFileManager : ISourceFileManager
 
     private readonly ConcurrentDictionary<Guid, ISourceFileModel> _sourceFiles = [];
 
-    private readonly ConcurrentBag<ISourceFileModel> _potentialNewEncodingJobs = [];
-
     protected override void Process()
     {
         CancellationToken shutdownToken = ShutdownCancellationTokenSource.Token;
-        _potentialNewEncodingJobs.Clear();
 
         while (shutdownToken.IsCancellationRequested is false)
         {
@@ -42,7 +39,8 @@ public partial class SourceFileManager : ISourceFileManager
                 IEnumerable<SourceFile> foundSourceFiles = BuildSourceFiles();
 
                 _updatingSourceFilesMRE.Reset();
-                IEnumerable<SourceFileUpdateData> sourceFileUpdates = UpdateSourceFiles(foundSourceFiles);
+                (IEnumerable<SourceFileUpdateData> sourceFileUpdates, IEnumerable<ISourceFileModel> potentialNewEncodingJobs) 
+                    = UpdateSourceFiles(foundSourceFiles);
                 _updatingSourceFilesMRE.Set();
 
                 shutdownToken.ThrowIfCancellationRequested();
@@ -55,11 +53,10 @@ public partial class SourceFileManager : ISourceFileManager
                 }
 
                 // Add request to encode all potential encoding jobs
-                foreach (ISourceFileModel sourceFile in _potentialNewEncodingJobs.OrderBy(sf => sf.FullPath))
+                foreach (ISourceFileModel sourceFile in potentialNewEncodingJobs.OrderBy(sf => sf.FullPath))
                 {
                     _encodingJobManager.AddCreateEncodingJobRequest(sourceFile);
                 }
-                _potentialNewEncodingJobs.Clear();
             }
             catch (OperationCanceledException)
             {
@@ -102,17 +99,17 @@ public partial class SourceFileManager : ISourceFileManager
                     {
                         foreach (string sourceFilePath in sourceFilePaths)
                         {
-                            if (File.Exists(sourceFilePath) is false) continue;
-
+                            string filename = Path.GetFileName(sourceFilePath);
                             SourceFile sourceFile = new()
                             {
+                                Filename = filename,
                                 FullPath = sourceFilePath,
                                 DestinationFullPath = sourceFilePath.Replace(entry.Value.Source, entry.Value.Destination),
                                 SearchDirectoryName = searchDirectoryName,
                                 SourceDirectory = searchDirectory.Source,
-                                IsEpisode = searchDirectory.EpisodeNaming
+                                IsEpisode = searchDirectory.EpisodeNaming,
+                                EncodingStatus = DetermineSourceFileEncodingStatus(filename, destinationFiles)
                             };
-                            sourceFile.EncodingStatus = DetermineSourceFileEncodingStatus(sourceFile.Filename, destinationFiles);
 
                             foundSourceFiles.Add(sourceFile);
                         }
@@ -134,9 +131,10 @@ public partial class SourceFileManager : ISourceFileManager
         return foundSourceFiles;
     }
 
-    private IEnumerable<SourceFileUpdateData> UpdateSourceFiles(IEnumerable<SourceFile> newSourceFiles)
+    private (IEnumerable<SourceFileUpdateData>, IEnumerable<ISourceFileModel>) UpdateSourceFiles(IEnumerable<SourceFile> newSourceFiles)
     {
         List<SourceFileUpdateData> sourceFileUpdates = [];
+        List<ISourceFileModel> potentialNewEncodingJobs = [];
 
         // Remove Source Files
         IEnumerable<ISourceFileModel> sourceFilesToRemove = _sourceFiles.Values.Except(newSourceFiles, (s, n) => string.Equals(s.FullPath, n.FullPath, StringComparison.OrdinalIgnoreCase));
@@ -152,7 +150,7 @@ public partial class SourceFileManager : ISourceFileManager
         // Update / Add from new
         foreach (SourceFile newSourceFile in newSourceFiles)
         {
-            ISourceFileModel model = _sourceFiles.Values.FirstOrDefault(f => f.FullPath.Equals(newSourceFile.FullPath));
+            ISourceFileModel model = _sourceFiles.Values.FirstOrDefault(f => f.FullPath.Equals(newSourceFile.FullPath, StringComparison.OrdinalIgnoreCase));
             if (model is not null)
             {
                 if (model.UpdateEncodingStatus(newSourceFile.EncodingStatus) is true)
@@ -181,11 +179,11 @@ public partial class SourceFileManager : ISourceFileManager
                 (searchDirectory.Automated is true) &&
                 (model.EncodingStatus is SourceFileEncodingStatus.NOT_ENCODED))
             {
-                _potentialNewEncodingJobs.Add(model);
+                potentialNewEncodingJobs.Add(model);
             }
         }
 
-        return sourceFileUpdates;
+        return (sourceFileUpdates, potentialNewEncodingJobs);
     }
 
     /// <summary> Checks if a file is valid for being considered a source file.
@@ -221,21 +219,19 @@ public partial class SourceFileManager : ISourceFileManager
         EncodingJobStatus? encodingJobStatus = _encodingJobManager.GetEncodingJobStatusByFileName(sourceFileFilename);
         bool destinationFileExists = destinationFiles.Contains(Path.GetFileNameWithoutExtension(sourceFileFilename));
 
-        if (destinationFileExists)
+        // Means it's in queue -- determine actual status
+        if (encodingJobStatus.HasValue)
         {
-            if (encodingJobStatus.HasValue)
-            {
-                return TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus.Value);
-            }
-            else
-            {
-                return SourceFileEncodingStatus.ENCODED;
-            }
+            return TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus.Value);
         }
-        else
+        // Not in queue but we see a destination file -- assume it's encoded
+        else if (destinationFileExists is true)
         {
-            return SourceFileEncodingStatus.NOT_ENCODED;
+            return SourceFileEncodingStatus.ENCODED;
         }
+
+        // Otherwise, not encoded
+        return SourceFileEncodingStatus.NOT_ENCODED;
     }
 
     private static SourceFileEncodingStatus TranslateEncodingJobStatusToSourceFileEncodingStatus(EncodingJobStatus encodingJobStatus)

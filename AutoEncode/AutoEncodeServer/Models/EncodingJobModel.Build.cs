@@ -236,7 +236,7 @@ public partial class EncodingJobModel :
         }
         catch (OperationCanceledException)
         {
-            Logger.LogWarning($"Build was cancelled for {this} - Build Step: {BuildingStatus.GetDescription()}", nameof(EncodingJobModel));
+            Logger.LogWarning($"Build was cancelled for {this} (Build Step: {BuildingStatus.GetDescription()})", nameof(EncodingJobModel));
             return;
         }
         catch (Exception ex)
