@@ -14,7 +14,7 @@ public class SourceFileModel : ISourceFileModel
     #region Properties
     public Guid Guid { get; set; }
     public string FullPath { get; set; }
-    public string Filename => Path.GetFileName(FullPath);
+    public string Filename { get; set; }
     public string DestinationFullPath { get; set; }
     public SourceFileEncodingStatus EncodingStatus { get; set; }
 

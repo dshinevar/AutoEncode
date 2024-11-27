@@ -82,14 +82,15 @@
                 Visibility="{Binding Converter={StaticResource IsNullVisibilityConverter}}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="60"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
 
                 <!-- Title Bar / Controls / Progress -->
                 <Grid Grid.Row="0"
-                      Margin="0,0,0,10">
+                      Margin="0,0,0,10"
+                      VerticalAlignment="Stretch">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>

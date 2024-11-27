@@ -20,6 +20,8 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
         EncodingJobData encodingJobData1 = new()
         {
             Id = 1,
+            Name = "Very Evil Alive (2025)",
+            Title = "Very Evil Alive (2025)",
             SourceFullPath = "M:\\Movies\\Very Evil Alive (2025).mkv",
             DestinationFullPath = "M:\\Movies (Encoded)\\Very Evil Alive (2025).mkv",
             Status = EncodingJobStatus.ENCODING,
@@ -28,6 +30,8 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
         EncodingJobData encodingJobData2 = new()
         {
             Id = 2,
+            Name = "Big Big Big Little Big Explosion (2050)",
+            Title = "Big Big Big Little Big Explosion (2050)",
             SourceFullPath = "M:\\Movies\\Big Big Big Little Big Explosion (2050).mkv",
             DestinationFullPath = "M:\\Movies (Encoded)\\Big Big Big Little Big Explosion (2050).mkv",
             Status = EncodingJobStatus.ENCODED,
@@ -120,8 +124,31 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
             EncodingProgress = 0
         };
 
-        var encodingJobClientModel1 = new EncodingJobClientModel(encodingJobData1);
-        var encodingJobClientModel2 = new EncodingJobClientModel(encodingJobData2);
+        var encodingJobClientModel1 = new EncodingJobClientModel(encodingJobData1)
+        {
+            Id = encodingJobData1.Id,
+            Name = encodingJobData1.Name,
+            SourceFullPath = encodingJobData1.SourceFullPath,
+            DestinationFullPath = encodingJobData1.DestinationFullPath,
+            Status = encodingJobData1.Status,
+            EncodingProgress = encodingJobData1.EncodingProgress,
+        };
+        var encodingJobClientModel2 = new EncodingJobClientModel(encodingJobData2)
+        {
+            Id = encodingJobData2.Id,
+            SourceFullPath = encodingJobData2.SourceFullPath,
+            DestinationFullPath = encodingJobData2.DestinationFullPath,
+            Status = encodingJobData2.Status,
+            EncodingProgress = encodingJobData2.EncodingProgress,
+            ElapsedEncodingTime = encodingJobData2.ElapsedEncodingTime,
+            CompletedEncodingDateTime = encodingJobData2.CompletedEncodingDateTime,
+            Complete = encodingJobData2.Complete,
+            HasError = encodingJobData2.HasError,
+            ErrorMessage = encodingJobData2.ErrorMessage,
+            ErrorTime = encodingJobData2.ErrorTime,
+            SourceStreamData = encodingJobData2.SourceStreamData,
+            EncodingCommandArguments = encodingJobData2.EncodingCommandArguments,
+        };
         var encodingJobClientModel4 = new EncodingJobClientModel(encodingJobData4);
         var encodingJobClientModel3 = new EncodingJobClientModel(encodingJobData3);
 
