@@ -77,7 +77,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            HelperMethods.DebugLog($"({startupStep}) Error loading config from {Lookups.ConfigFileLocation}{Environment.NewLine}{ex.Message}", LOG_STARTUP_NAME);
+            string errorMsg = $"({startupStep}) Error loading config from {Lookups.ConfigFileLocation}{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace}";
+            MessageBox.Show(errorMsg, "Error Loading Config", MessageBoxButton.OK, MessageBoxImage.Error);
+            HelperMethods.DebugLog(errorMsg, LOG_STARTUP_NAME);
             Environment.Exit((int)startupStep);
         }
 
@@ -93,7 +95,9 @@ public partial class App : Application
             // If initialization failed for logger, attempt backup logger location
             if (Logger.Initialize(Lookups.LogBackupFileLocation, LOG_FILENAME, State.LoggerSettings.MaxFileSizeInBytes, State.LoggerSettings.BackupFileCount) is false)
             {
-                HelperMethods.DebugLog($"({startupStep}) Failed to initialize logger. Shutting down.", LOG_STARTUP_NAME);
+                string errorMsg = $"({startupStep}) Failed to initialize logger. Shutting down.";
+                MessageBox.Show(errorMsg, "Logger Failed To Initialize", MessageBoxButton.OK, MessageBoxImage.Error);
+                HelperMethods.DebugLog(errorMsg, LOG_STARTUP_NAME);
                 Environment.Exit((int)startupStep);
             }
         }
@@ -101,7 +105,9 @@ public partial class App : Application
         if (Logger.CheckAndDoRollover() is false)
         {
             // If rollover fails, just exit
-            HelperMethods.DebugLog($"({startupStep}) Error occurred when checking log file for rollover. Exiting as logging will not function.", LOG_STARTUP_NAME);
+            string errorMsg = $"({startupStep}) Error occurred when checking log file for rollover. Exiting as logging will not function.";
+            MessageBox.Show(errorMsg, "Logger Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            HelperMethods.DebugLog(errorMsg, LOG_STARTUP_NAME);
             Environment.Exit((int)startupStep);
         }
 
@@ -127,7 +133,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"({startupStep}) Failed to startup application / show view.", Lookups.LoggerThreadName);
+            string errorMsg = $"({startupStep}) Failed to startup application / show view.";
+            MessageBox.Show($"{errorMsg}{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace}", "Startup Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.LogException(ex, errorMsg, Lookups.LoggerThreadName);
             Application.Current.Shutdown((int)startupStep);
         }
     }
@@ -145,7 +153,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Logger?.LogException(ex, "Error on AutoEncodeClient exit.", Lookups.LoggerThreadName);
+            string errorMsg = "Error on AutoEncodeClient exit.";
+            MessageBox.Show($"{errorMsg}{Environment.NewLine}{ex.Message}{Environment.NewLine}{ex.StackTrace}", "Error During Shutdown", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger?.LogException(ex, errorMsg, Lookups.LoggerThreadName);
             Environment.Exit(-99);
         }
     }
