@@ -32,9 +32,9 @@ public class EncodingJobClientModel :
     {
         IEnumerable<string> topics =
         [
-            $"{nameof(ClientUpdateType.EncodingJobStatus)}-{Id}",
-            $"{nameof(ClientUpdateType.EncodingJobProcessingData)}-{Id}",
-            $"{nameof(ClientUpdateType.EncodingJobEncodingProgress)}-{Id}"
+            $"{Id}-{nameof(ClientUpdateType.EncodingJobStatus)}",
+            $"{Id}-{nameof(ClientUpdateType.EncodingJobProcessingData)}",
+            $"{Id}-{nameof(ClientUpdateType.EncodingJobEncodingProgress)}"
         ];
 
         ClientUpdateSubscriber.Initialize();

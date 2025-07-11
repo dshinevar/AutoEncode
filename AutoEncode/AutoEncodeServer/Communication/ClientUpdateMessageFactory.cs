@@ -16,21 +16,21 @@ public static class ClientUpdateMessageFactory
 
     public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobStatusUpdate(ulong jobId, EncodingJobStatusUpdateData data)
     {
-        string topic = $"{nameof(ClientUpdateType.EncodingJobStatus)}-{jobId}";
+        string topic = $"{jobId}-{nameof(ClientUpdateType.EncodingJobStatus)}";
         CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobStatus, data);
         return (topic, message);
     }
 
     public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobProcessingDataUpdate(ulong jobId, EncodingJobProcessingDataUpdateData data)
     {
-        string topic = $"{nameof(ClientUpdateType.EncodingJobProcessingData)}-{jobId}";
+        string topic = $"{jobId}-{nameof(ClientUpdateType.EncodingJobProcessingData)}";
         CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobProcessingData, data);
         return (topic, message);
     }
 
     public static (string, CommunicationMessage<ClientUpdateType>) CreateEncodingJobEncodingProgressUpdate(ulong jobId, EncodingJobEncodingProgressUpdateData data)
     {
-        string topic = $"{nameof(ClientUpdateType.EncodingJobEncodingProgress)}-{jobId}";
+        string topic = $"{jobId}-{nameof(ClientUpdateType.EncodingJobEncodingProgress)}";
         CommunicationMessage<ClientUpdateType> message = new(ClientUpdateType.EncodingJobEncodingProgress, data);
         return (topic, message);
     }
