@@ -8,9 +8,6 @@ namespace AutoEncodeClient.Models.Interfaces;
 
 public interface IEncodingJobClientModel : INotifyPropertyChanged
 {
-    /// <summary>Initializes model </summary>
-    void Initialize();
-
     /// <summary>Unique job identifier </summary>
     ulong Id { get; }
 

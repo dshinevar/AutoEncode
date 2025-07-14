@@ -11,6 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoEncodeUtilities", "Auto
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config Templates", "Config Templates", "{DDC47033-6E35-456B-9234-26E3D1EA470D}"
 	ProjectSection(SolutionItems) = preProject
+		AEClientConfigTemplate.yaml = AEClientConfigTemplate.yaml
 		AEServerConfigTemplate.yaml = AEServerConfigTemplate.yaml
 	EndProjectSection
 EndProject
