@@ -1,0 +1,12 @@
+# AutoEncodeClient Config Template
+---
+
+LoggerSettings:
+    LogFileDirectory: '\\path\to\log\file\directory'
+    MaxFileSizeInBytes: 102400
+    BackupFileCount: 3
+
+ConnectionSettings:
+    IPAddress: '192.168.0.1'    # IP Address of server to connect to
+    ClientUpdatePort: 39000
+    CommunicationPort: 39001

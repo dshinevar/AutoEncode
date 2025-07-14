@@ -55,8 +55,8 @@ public partial class EncodingJobModel :
 
                 if (probeData is not null)
                 {
-                    SourceStreamData = probeData.ToSourceStreamData();
                     Title = probeData.GetTitle();
+                    SourceStreamData = probeData.ToSourceStreamData();
                 }
                 else
                 {

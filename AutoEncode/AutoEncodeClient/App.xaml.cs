@@ -219,7 +219,11 @@ public partial class App : Application
         container.Register(Component.For<IEncodingJobClientModel>()
             .ImplementedBy<EncodingJobClientModel>()
             .LifestyleTransient()
-            .OnCreate(model => model.Initialize()));
+            .OnCreate(model =>
+            {
+                if (model is EncodingJobClientModel concreteModel)
+                    concreteModel.Initialize();
+            }));
 
         container.Register(Component.For<IEncodingJobViewModel>()
             .ImplementedBy<EncodingJobViewModel>()
