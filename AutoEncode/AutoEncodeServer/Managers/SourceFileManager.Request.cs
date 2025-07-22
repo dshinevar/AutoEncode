@@ -45,7 +45,7 @@ public partial class SourceFileManager : ISourceFileManager
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, "Error occured requesting an encoding job for a source file.", nameof(SourceFileManager), new { SourceFile = sourceFileModel?.Filename });
+            Logger.LogException(ex, "Error occured requesting an encoding job for a source file.", nameof(SourceFileManager), new { SourceFile = sourceFileModel?.FileName });
         }
     }
 

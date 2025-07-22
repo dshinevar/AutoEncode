@@ -60,7 +60,7 @@ public class SourceFilesSubdirectoryViewModel :
         SubdirectoriesView.SortDescriptions.Add(new(nameof(ISourceFilesSubdirectoryViewModel.Name), ListSortDirection.Ascending));
 
         FilesView = CollectionViewSource.GetDefaultView(_files);
-        FilesView.SortDescriptions.Add(new(nameof(ISourceFileViewModel.Filename), ListSortDirection.Ascending));
+        FilesView.SortDescriptions.Add(new(nameof(ISourceFileViewModel.FileNameWithoutExtension), ListSortDirection.Ascending));
 
         SubdirectoriesAndFiles = new CompositeCollection()
         {
@@ -75,7 +75,7 @@ public class SourceFilesSubdirectoryViewModel :
 
     public IEnumerable<Guid> GetSourceFileGuids()
     {
-        List<Guid> sourceFileGuids = _files.OrderBy(f => f.Filename).Select(f => f.Guid).ToList();
+        List<Guid> sourceFileGuids = _files.OrderBy(f => f.FileNameWithoutExtension).Select(f => f.Guid).ToList();
 
         foreach (ISourceFilesSubdirectoryViewModel subdirectory in _subdirectories)
         {

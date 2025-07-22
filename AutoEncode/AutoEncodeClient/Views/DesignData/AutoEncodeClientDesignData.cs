@@ -17,7 +17,7 @@ namespace AutoEncodeClient.Views.DesignData
             ObservableCollection<SourceFileViewModel> files = [];
             files.Add(new(new SourceFileClientModel(new SourceFileData()
             {
-                Filename = "Test Source File Movie 1.mkv"
+                FileName = "Test Source File Movie 1.mkv"
             })));
 
             SourceFilesViewModel = new SourceFilesViewModel();

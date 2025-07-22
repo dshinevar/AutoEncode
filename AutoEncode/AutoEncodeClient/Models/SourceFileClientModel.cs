@@ -22,7 +22,8 @@ public class SourceFileClientModel :
 
     #region Properties
     public Guid Guid { get; set; }
-    public string Filename { get; set; }
+    public string FileName { get; set; }
+    public string FileNameWithoutExtension { get; set; }
     public string FullPath { get; set; }
     public string DestinationFullPath { get; set; }
 

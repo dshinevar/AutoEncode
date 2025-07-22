@@ -8,7 +8,9 @@ public interface ISourceFileClientModel
 {
     Guid Guid { get; }
 
-    string Filename { get; }
+    string FileName { get; }
+
+    string FileNameWithoutExtension { get; }
 
     string FullPath { get; }
 

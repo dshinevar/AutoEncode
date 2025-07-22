@@ -6,10 +6,4 @@
     <Description>Common data and functions for AutoEncode Server/Client.</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Json\**" />
-    <EmbeddedResource Remove="Json\**" />
-    <None Remove="Json\**" />
-  </ItemGroup>
-
 </Project>
