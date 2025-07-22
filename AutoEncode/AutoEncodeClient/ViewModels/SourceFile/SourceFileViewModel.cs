@@ -15,7 +15,9 @@ public class SourceFileViewModel :
     #region Properties
     public Guid Guid => Model.Guid;
 
-    public string Filename => Model.Filename;
+    public string FileName => Model.FileName;
+
+    public string FileNameWithoutExtension => Model.FileNameWithoutExtension;
 
     public string FullPath => Model.FullPath;
 
@@ -58,7 +60,7 @@ public class SourceFileViewModel :
 
         if (result is false)
         {
-            ShowErrorDialog($"Failed to add a request to encode {Filename}.", "Encode Request Failed");
+            ShowErrorDialog($"Failed to add a request to encode {FileName}.", "Encode Request Failed");
         }
 
         RequestingEncode = false;

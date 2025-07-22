@@ -14,7 +14,8 @@ public class SourceFileModel : ISourceFileModel
     #region Properties
     public Guid Guid { get; set; }
     public string FullPath { get; set; }
-    public string Filename { get; set; }
+    public string FileName { get; set; }
+    public string FileNameWithoutExtension { get; set; }
     public string DestinationFullPath { get; set; }
     public SourceFileEncodingStatus EncodingStatus { get; set; }
 
@@ -72,7 +73,7 @@ public class SourceFileModel : ISourceFileModel
         try
         {
             // [0] should be ShowName | [1] should be sXXeXX | [2] should be episode name (if exists)
-            string[] fileNameParts = Path.GetFileNameWithoutExtension(Filename).Split(" - ", 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            string[] fileNameParts = Path.GetFileNameWithoutExtension(FileName).Split(" - ", 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < fileNameParts.Length; i++)
             {
                 switch (i)

@@ -37,12 +37,13 @@ public partial class EncodingJobManager : IEncodingJobManager
                     {
                         EncodingJobBuilderCancellationToken = new CancellationTokenSource();
 
-                        EncodingJobBuilderTask = Task.Run(() => jobToBuild.Build(EncodingJobBuilderCancellationToken), EncodingJobBuilderCancellationToken.Token)
-                                                        .ContinueWith(t =>
-                                                        {
-                                                            jobToBuild.CleanupJob();
-                                                            _encodingJobManagerMRE.Set();
-                                                        });
+                        EncodingJobBuilderTask = Task.Run(() =>
+                        {
+                            jobToBuild.Build(EncodingJobBuilderCancellationToken);
+                            jobToBuild.CleanupJob();
+                            _encodingJobManagerMRE.Set();
+
+                        }, EncodingJobBuilderCancellationToken.Token);
                     }
                 }
 
@@ -53,12 +54,13 @@ public partial class EncodingJobManager : IEncodingJobManager
                     {
                         EncodingCancellationToken = new CancellationTokenSource();
 
-                        EncodingTask = Task.Run(() => jobToEncode.Encode(EncodingCancellationToken), EncodingCancellationToken.Token)
-                                            .ContinueWith(t =>
-                                            {
-                                                jobToEncode.CleanupJob();
-                                                _encodingJobManagerMRE.Set();
-                                            });
+                        EncodingTask = Task.Run(() =>
+                        {
+                            jobToEncode.Encode(EncodingCancellationToken);
+                            jobToEncode.CleanupJob();
+                            _encodingJobManagerMRE.Set();
+
+                        }, EncodingCancellationToken.Token);
                     }
                 }
 
@@ -69,12 +71,13 @@ public partial class EncodingJobManager : IEncodingJobManager
                     {
                         EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
 
-                        EncodingJobPostProcessingTask = Task.Run(() => jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken), EncodingJobPostProcessingCancellationToken.Token)
-                                                            .ContinueWith(t =>
-                                                            {
-                                                                jobToPostProcess.CleanupJob();
-                                                                _encodingJobManagerMRE.Set();
-                                                            });
+                        EncodingJobPostProcessingTask = Task.Run(() =>
+                        {
+                            jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken);
+                            jobToPostProcess.CleanupJob();
+                            _encodingJobManagerMRE.Set();
+
+                        }, EncodingJobPostProcessingCancellationToken.Token);
                     }
                 }
 

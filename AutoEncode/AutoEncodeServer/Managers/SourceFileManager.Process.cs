@@ -102,7 +102,8 @@ public partial class SourceFileManager : ISourceFileManager
                             string filename = Path.GetFileName(sourceFilePath);
                             SourceFile sourceFile = new()
                             {
-                                Filename = filename,
+                                FileName = filename,
+                                FileNameWithoutExtension = Path.GetFileNameWithoutExtension(filename),
                                 FullPath = sourceFilePath,
                                 DestinationFullPath = sourceFilePath.Replace(entry.Value.Source, entry.Value.Destination),
                                 SearchDirectoryName = searchDirectoryName,

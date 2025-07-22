@@ -9,7 +9,8 @@ public interface ISourceFileModel
     #region Properties
     Guid Guid { get; }
     string FullPath { get; }
-    string Filename { get; }
+    string FileName { get; }
+    string FileNameWithoutExtension { get; }
     string DestinationFullPath { get; }
     SourceFileEncodingStatus EncodingStatus { get; }
 

@@ -46,7 +46,7 @@ public class SourceFilesDirectoryViewModel :
         SubdirectoriesView.SortDescriptions.Add(new(nameof(ISourceFilesSubdirectoryViewModel.Name), ListSortDirection.Ascending));
 
         FilesView = CollectionViewSource.GetDefaultView(_files);
-        FilesView.SortDescriptions.Add(new(nameof(ISourceFileViewModel.Filename), ListSortDirection.Ascending));
+        FilesView.SortDescriptions.Add(new(nameof(ISourceFileViewModel.FileNameWithoutExtension), ListSortDirection.Ascending));
 
         SubdirectoriesAndFiles = new CompositeCollection()
         {
@@ -163,7 +163,7 @@ public class SourceFilesDirectoryViewModel :
     #region Private Methods
     private static string[] GetSubPathPartsForSourceFile(SourceFileData sourceFileData)
     {
-        string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, string.Empty).Replace(sourceFileData.Filename, string.Empty);
+        string pathWithoutSourceAndFilename = sourceFileData.FullPath.Replace(sourceFileData.SourceDirectory, string.Empty).Replace(sourceFileData.FileName, string.Empty);
 
         char directorySeparator = System.IO.Path.DirectorySeparatorChar;
         if (pathWithoutSourceAndFilename.Contains(System.IO.Path.AltDirectorySeparatorChar))
