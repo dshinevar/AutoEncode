@@ -70,7 +70,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0"
-                                       Text="{Binding Filename}"
+                                       Text="{Binding FileName}"
                                        FontSize="12"
                                        FontWeight="DemiBold"
                                        TextWrapping="Wrap"
