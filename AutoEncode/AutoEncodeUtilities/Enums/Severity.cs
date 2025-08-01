@@ -18,7 +18,7 @@ public enum Severity
     WARNING,
 
     [Description("Error")]
-    [Display(Name = "Error", ShortName = "Error+", Description = "Error")]
+    [Display(Name = "Error", ShortName = "Error", Description = "Error")]
     ERROR = 3,
 
     [Description("Fatal")]

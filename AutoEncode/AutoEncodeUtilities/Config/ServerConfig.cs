@@ -5,19 +5,7 @@ namespace AutoEncodeUtilities.Config;
 
 public class ServerConfig
 {
-    public string FFmpegDirectory { get; set; } = string.Empty;
-
-    public string X265FullPath { get; set; } = string.Empty;
-
-    public string HDR10PlusExtractorFullPath { get; set; } = string.Empty;
-
-    public string DolbyVisionExtractorFullPath { get; set; } = string.Empty;
-
-    public bool DolbyVisionEncodingEnabled { get; set; } = true;
-
-    public string MkvMergeFullPath { get; set; } = string.Empty;
-
-    public int MaxNumberOfJobsInQueue { get; set; } = 20;
+    public int MaxNumberOfJobsInQueue { get; set; } = 50;
 
     public int HoursCompletedUntilRemoval { get; set; } = 1;
 
@@ -27,9 +15,15 @@ public class ServerConfig
 
     public string SecondarySkipExtension { get; set; } = "skip";
 
-    public LoggerSettings LoggerSettings { get; set; }
+    public FfmpegSettings Ffmpeg { get; set; }
 
-    public ConnectionSettings ConnectionSettings { get; set; }
+    public Hdr10PlusSettings Hdr10Plus { get; set; }
+
+    public DolbyVisionSettings DolbyVision { get; set; }
+
+    public LoggerSettings Logger { get; set; }
+
+    public ServerConnectionSettings Connection { get; set; }
 
     public Dictionary<string, SearchDirectory> Directories { get; set; }
 }

@@ -6,17 +6,11 @@ namespace AutoEncodeServer;
 
 public static class State
 {
-    public static string FFmpegDirectory { get; private set; } = string.Empty;
+    public static FfmpegSettings Ffmpeg { get; private set; }
 
-    public static string X265FullPath { get; private set; } = string.Empty;
+    public static Hdr10PlusSettings Hdr10Plus { get; private set; }
 
-    public static string HDR10PlusExtractorFullPath { get; private set; } = string.Empty;
-
-    public static string DolbyVisionExtractorFullPath { get; private set; } = string.Empty;
-
-    public static bool DolbyVisionEncodingEnabled { get; private set; } = true;
-
-    public static string MkvMergeFullPath { get; private set; } = string.Empty;
+    public static DolbyVisionSettings DolbyVision { get; private set; }
 
     public static int MaxNumberOfJobsInQueue { get; private set; } = 20;
 
@@ -30,27 +24,27 @@ public static class State
 
     public static LoggerSettings LoggerSettings { get; private set; }
 
-    public static ConnectionSettings ConnectionSettings { get; private set; }
+    public static ServerConnectionSettings ConnectionSettings { get; private set; }
 
     public static Dictionary<string, SearchDirectory> Directories { get; private set; }
 
-    internal static void DisableDolbyVision() => DolbyVisionEncodingEnabled = false;
+    internal static void DisableHdr10Plus() => Hdr10Plus.Enabled = false;
+    internal static void EnableHdr10Plus() => Hdr10Plus.Enabled = true;
+    internal static void DisableDolbyVision() => DolbyVision.Enabled = false;
+    internal static void EnableDolbyVision() => DolbyVision.Enabled = true;
 
     internal static void LoadFromConfig(ServerConfig config)
     {
-        FFmpegDirectory = config.FFmpegDirectory;
-        X265FullPath = config.X265FullPath;
-        HDR10PlusExtractorFullPath = config.HDR10PlusExtractorFullPath;
-        DolbyVisionExtractorFullPath = config.DolbyVisionExtractorFullPath;
-        DolbyVisionEncodingEnabled = config.DolbyVisionEncodingEnabled;
-        MkvMergeFullPath = config.MkvMergeFullPath;
+        Ffmpeg = config.Ffmpeg ?? new();
+        Hdr10Plus = config.Hdr10Plus ?? new();
+        DolbyVision = config.DolbyVision ?? new();
         MaxNumberOfJobsInQueue = config.MaxNumberOfJobsInQueue;
         HoursCompletedUntilRemoval = config.HoursCompletedUntilRemoval;
         HoursErroredUntilRemoval = config.HoursErroredUntilRemoval;
         VideoFileExtensions = config.VideoFileExtensions;
         SecondarySkipExtension = config.SecondarySkipExtension;
-        LoggerSettings = config.LoggerSettings;
-        ConnectionSettings = config.ConnectionSettings;
+        LoggerSettings = config.Logger;
+        ConnectionSettings = config.Connection;
         Directories = config.Directories;
     }
 }

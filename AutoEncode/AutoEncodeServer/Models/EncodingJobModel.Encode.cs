@@ -52,7 +52,7 @@ public partial class EncodingJobModel :
 
 
         // Do the encode
-        if (State.DolbyVisionEncodingEnabled is true && EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision is true)
+        if (State.DolbyVision.Enabled is true && EncodingInstructions.VideoStreamEncodingInstructions.HasDolbyVision is true)
         {
             InternalEncodeWithDolbyVision();
         }
@@ -79,7 +79,7 @@ public partial class EncodingJobModel :
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = Path.Combine(State.FFmpegDirectory, "ffmpeg"),
+                    FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, "ffmpeg"),
                     Arguments = EncodingCommandArguments.CommandArguments[0],
                     UseShellExecute = false,
                     RedirectStandardError = true
@@ -124,7 +124,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error encoding {this}.", nameof(EncodingJobModel), details: new { Id, Name, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error encoding {this}.", nameof(EncodingJobModel), details: new { Id, Name, State.Ffmpeg.FfmpegDirectory }), ex);
             }
 
             stopwatch.Stop();
@@ -238,7 +238,7 @@ public partial class EncodingJobModel :
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = Path.Combine(State.FFmpegDirectory, "ffmpeg"),
+                    FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, "ffmpeg"),
                     Arguments = EncodingCommandArguments.CommandArguments[1],
                     //RedirectStandardError = true,
                     UseShellExecute = false
@@ -402,7 +402,7 @@ public partial class EncodingJobModel :
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = string.IsNullOrWhiteSpace(State.MkvMergeFullPath) ? "mkvmerge" : State.MkvMergeFullPath,
+                    FileName = string.IsNullOrWhiteSpace(State.DolbyVision.MkvMergeFullPath) ? "mkvmerge" : State.DolbyVision.MkvMergeFullPath,
                     Arguments = EncodingCommandArguments.CommandArguments[2],
                     RedirectStandardOutput = true,
                     UseShellExecute = false
@@ -453,7 +453,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error merging {this}.", nameof(EncodingJobModel), new { Id, Name, State.MkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }), ex);
+                SetError(Logger.LogException(ex, $"Error merging {this}.", nameof(EncodingJobModel), new { Id, Name, State.DolbyVision.MkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName }), ex);
                 mergeProcess?.Kill(true);
             }
 

@@ -19,6 +19,8 @@ public abstract class StreamData
 {
     public short StreamIndex { get; set; } = -1;
     public string Title { get; set; }
+    public string CodecName { get; set; }
+    public string CodecLongName { get; set; }
 }
 
 public class VideoStreamData :
@@ -27,7 +29,6 @@ public class VideoStreamData :
     public HDRData HDRData { get; set; }
     public bool HasHDR => (!HDRData?.HDRFlags.Equals(HDRFlags.NONE)) ?? false;
     public bool HasDynamicHDR => HasHDR && (HDRData?.IsDynamic ?? false);
-    public string CodecName { get; set; }
     public string PixelFormat { get; set; }
     /// <summary> Crop string should be in this format as it allows it to be dropped into the ffmpeg command: XXXX:YYYY:AA:BB </summary>
     public string Crop { get; set; }
@@ -56,9 +57,25 @@ public class HDRData : IUpdateable<HDRData>
     public string MinLuminance { get; set; }
     public string MaxLuminance { get; set; }
     public string MaxCLL { get; set; }
-    public Dictionary<HDRFlags, string> DynamicMetadataFullPaths { get; set; }
+
     public bool IsDynamic => HDRFlags.HasFlag(HDRFlags.HDR10PLUS) || HDRFlags.HasFlag(HDRFlags.DOLBY_VISION);
+    public DolbyVisionInfo DolbyVisionInfo { get; set; }
+    public Dictionary<HDRFlags, string> DynamicMetadataFullPaths { get; set; }
+
     public void Update(HDRData data) => data.CopyProperties(this);
+}
+
+public class DolbyVisionInfo
+{
+    public string Version { get; set; }
+
+    public string Profile { get; set; }
+
+    public bool RPUPresent { get; set; }
+
+    public bool ELPresent { get; set; }
+
+    public bool BLPresent { get; set; }
 }
 
 public class AudioStreamData :
@@ -66,11 +83,11 @@ public class AudioStreamData :
     IUpdateable<AudioStreamData>
 {
     public short AudioIndex { get; set; } = -1;
-    public string CodecName { get; set; }
-    public string Descriptor { get; set; }
     public short Channels { get; set; }
     public string ChannelLayout { get; set; }
+    public string Profile { get; set; }
     public string Language { get; set; }
+    public bool HasDolbyAtmos { get; set; }
     public bool Commentary { get; set; }
     public void Update(AudioStreamData data) => data.CopyProperties(this);
     public override bool Equals(object obj)
@@ -94,7 +111,6 @@ public class SubtitleStreamData :
 {
     public short SubtitleIndex { get; set; } = -1;
     public string Language { get; set; }
-    public string Descriptor { get; set; }
     public bool Forced { get; set; }
     public bool Commentary { get; set; }
     public bool HearingImpaired { get; set; }

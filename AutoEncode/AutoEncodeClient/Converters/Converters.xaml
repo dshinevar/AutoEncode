@@ -21,5 +21,7 @@
     <converters:IsEqualToConverter x:Key="IsEqualToConverter"/>
     <converters:DataTypeConverter x:Key="DataTypeConverter"/>
     <converters:SourceFileEncodingStatusToBrushConverter x:Key="SourceFileEncodingStatusToBrushConverter"/>
+    <converters:HDRFlagToVisibilityConverter x:Key="HDRFlagToVisibilityConverter"/>
+    <converters:DolbyVisionInfoConverter x:Key="DolbyVisionInfoConverter"/>
 
 </ResourceDictionary>

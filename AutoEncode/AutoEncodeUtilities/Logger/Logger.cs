@@ -157,9 +157,11 @@ public class Logger : ILogger
     /// <returns>Returns first string from list for usage elsewhere if needed.</returns>
     private string Log(Severity severity, IList<string> messages, string moduleName = "", string callingMemberName = "")
     {
-        if (_initialized is false) throw new Exception("Logger not initialized");
+        if (_initialized is false) 
+            throw new Exception("Logger not initialized");
 
-        if (messages.Any() is false) return string.Empty;
+        if (messages.Any() is false) 
+            return string.Empty;
 
         StringBuilder sbLogMsg = new();
 
@@ -178,7 +180,8 @@ public class Logger : ILogger
 
         for (int i = 1; i < messages.Count; i++)
         {
-            sbLogMsg.Append(' ', spacing).AppendLine($"{messages[i]}");
+            sbLogMsg.Append(' ', spacing)
+                    .AppendLine($"{messages[i].TrimEnd('\r', '\n')}");
         }
 
         Debug.Write(sbLogMsg.ToString());
