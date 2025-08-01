@@ -113,9 +113,9 @@ public class SourceFileProbingProcessor : ISourceFileProbingProcessor
                             Language = stream.Tags.Language,
                             CodecName = stream.CodecName,
                             CodecLongName = stream.CodecLongName,
-                            Profile = stream.Profile,
+                            Profile = stream.Profile ?? string.Empty,
                             Title = stream.Tags.Title,
-                            HasDolbyAtmos = stream.Profile.Contains("Atmos", StringComparison.OrdinalIgnoreCase),
+                            HasDolbyAtmos = stream.Profile?.Contains("Atmos", StringComparison.OrdinalIgnoreCase) ?? false,
                             Commentary = stream.Disposition.Commentary || stream.Tags.Title.Contains("Commentary", StringComparison.OrdinalIgnoreCase)
                         };
 
