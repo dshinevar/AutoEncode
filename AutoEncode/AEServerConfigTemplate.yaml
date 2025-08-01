@@ -1,25 +1,32 @@
-# AutoEncodeServer Config Template
+# AutoEncodeServer Config Template (v3.5)
 ---
 
-FFmpegDirectory: ''
-X265FullPath: ''
-HDR10PlusExtractorFullPath: ''
-DolbyVisionExtractorFullPath: ''
-DolbyVisionEncodingEnabled: True
-MkvMergeFullPath: ''
 MaxNumberOfJobsInQueue: 30
 HoursCompletedUntilRemoval: 1
 HoursErroredUntilRemoval: 2
 VideoFileExtensions: ['.mkv', '.m4v', '.avi']
 SecondarySkipExtension: 'skip'
 
-LoggerSettings:
-    LogFileLocation: ''
+Ffmpeg:
+    FfmpegDirectory: '\\ffmpeg\dir'
+    FfprobeDirectory: '\\ffprobe\dir'
+
+Hdr10Plus:
+    Enabled: True
+    Hdr10PlusToolFullPath: '\\path\to\hdr10plus_tool'
+
+DolbyVision:
+    Enabled: True
+    DoviToolFullPath: '\\path\to\dovi_tool'
+    X265FullPath: '\\path\to\x265'
+    MkvMergeFullPath: '\\path\to\mkvmerge'
+
+Logger:
+    LogFileDirectory: ''
     MaxFileSizeInBytes: 102400
     BackupFileCount: 3
 
-ConnectionSettings:
-    IPAddress: '127.0.0.1'  # Unused by server
+Connection:
     ClientUpdatePort: 39000
     CommunicationPort: 39001
 

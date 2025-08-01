@@ -94,6 +94,9 @@ public static class ExtensionMethods
         }
     }
 
+    public static string Indent(this string s, int indent)
+        => s.PadLeft(indent + s.Length, ' ');
+
     /// <summary>Get all flags from enum (excluding flag 0 if exists). Assumes enum is backed by an int.</summary>
     /// <param name="e">Flag enum</param>
     /// <returns>IEnumerable of Enums of all the flags</returns>

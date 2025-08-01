@@ -26,6 +26,10 @@ public partial class EncodingJobModel :
 
     public IEncodingCommandArgumentsBuilder EncodingCommandArgumentsBuilder { get; set; }
 
+    public IHdrMetadataExtractor HdrMetadataExtractor { get; set; }
+
+    public ISourceFileProbingProcessor SourceFileProbingProcessor { get; set; }
+
     public IClientUpdatePublisher ClientUpdatePublisher { get; set; }
     #endregion Dependencies
 

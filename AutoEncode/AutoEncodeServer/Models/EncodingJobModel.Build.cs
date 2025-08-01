@@ -1,19 +1,16 @@
-﻿using AutoEncodeServer.Data;
-using AutoEncodeServer.Models.Interfaces;
+﻿using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeServer.Utilities.Data;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Base;
-using AutoEncodeUtilities.Communication;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
-using AutoEncodeUtilities.Interfaces;
+using AutoEncodeUtilities.Process;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -51,23 +48,24 @@ public partial class EncodingJobModel :
             try
             {
                 BuildingStatus = EncodingJobBuildingStatus.PROBING;
-                ProbeData probeData = GetProbeData();
 
-                if (probeData is not null)
+                ProcessResult<SourceFileProbeResultData> probeResult = SourceFileProbingProcessor.Probe(SourceFullPath);
+
+                if (probeResult.Status.Equals(ProcessResultStatus.Success))
                 {
-                    Title = probeData.GetTitle();
-                    SourceStreamData = probeData.ToSourceStreamData();
+                    Title = probeResult.Data.TitleOfSourceFile;
+                    SourceStreamData = probeResult.Data.SourceStreamData;
                 }
                 else
                 {
                     // Set error and end
-                    SetError(Logger.LogError($"Failed to get probe data for {Filename}", nameof(EncodingJobModel), new { SourceFullPath }));
+                    SetError(probeResult.Message);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error getting probe or source file data for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error getting probe or source file data for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfprobeDirectory }), ex);
                 return;
             }
 
@@ -81,7 +79,7 @@ public partial class EncodingJobModel :
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
-                    SetError(Logger.LogError($"Failed to determine VideoScanType for {this}.", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }));
+                    SetError(Logger.LogError($"Failed to determine VideoScanType for {this}.", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }));
                     return;
                 }
                 else
@@ -95,7 +93,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining VideoScanType for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error determining VideoScanType for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }), ex);
                 return;
             }
 
@@ -109,7 +107,7 @@ public partial class EncodingJobModel :
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
-                    SetError(Logger.LogError($"Failed to determine crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }));
+                    SetError(Logger.LogError($"Failed to determine crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }));
                 }
                 else
                 {
@@ -122,7 +120,7 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.FFmpegDirectory }), ex);
+                SetError(Logger.LogException(ex, $"Error determining crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }), ex);
                 return;
             }
 
@@ -135,37 +133,29 @@ public partial class EncodingJobModel :
                 {
                     BuildingStatus = EncodingJobBuildingStatus.DYNAMIC_HDR;
                     HDRData hdrData = SourceStreamData.VideoStream.HDRData;
-                    if (hdrData.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
+                    if (State.Hdr10Plus.Enabled && hdrData.HDRFlags.HasFlag(HDRFlags.HDR10PLUS))
                     {
-                        // If we aren't given a path, skip this step;  It will be treated as HDR10
-                        if (string.IsNullOrWhiteSpace(State.HDR10PlusExtractorFullPath) is false)
+                        ProcessResult<string> extractResult = HdrMetadataExtractor.Extract(SourceFullPath, HDRFlags.HDR10PLUS, cancellationToken);
+                        if (extractResult.Status == ProcessResultStatus.Success)
                         {
-                            string filePath = CreateHDRMetadataFile(HDRFlags.HDR10PLUS, cancellationToken);
-                            if (string.IsNullOrWhiteSpace(filePath) is false)
-                            {
-                                AddSourceHDRMetadataFilePath(HDRFlags.HDR10PLUS, filePath);
-                            }
+                            AddSourceHDRMetadataFilePath(HDRFlags.HDR10PLUS, extractResult.Data);
                         }
                         else
                         {
-                            Logger.LogWarning($"No HDR10+ Metadata Extractor given. Will not use HDR10+ for {Name}.", nameof(EncodingJobModel));
+                            throw new Exception(extractResult.Message);
                         }
                     }
 
-                    if (hdrData.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION) && State.DolbyVisionEncodingEnabled is true)
+                    if (State.DolbyVision.Enabled && hdrData.HDRFlags.HasFlag(HDRFlags.DOLBY_VISION))
                     {
-                        // If we aren't given a path, skip this step;  It will be treated as HDR10
-                        if (!string.IsNullOrWhiteSpace(State.DolbyVisionExtractorFullPath))
+                        ProcessResult<string> extractResult = HdrMetadataExtractor.Extract(SourceFullPath, HDRFlags.DOLBY_VISION, cancellationToken);
+                        if (extractResult.Status == ProcessResultStatus.Success)
                         {
-                            string filePath = CreateHDRMetadataFile(HDRFlags.DOLBY_VISION, cancellationToken);
-                            if (string.IsNullOrWhiteSpace(filePath) is false)
-                            {
-                                AddSourceHDRMetadataFilePath(HDRFlags.DOLBY_VISION, filePath);
-                            }
+                            AddSourceHDRMetadataFilePath(HDRFlags.DOLBY_VISION, extractResult.Data);
                         }
                         else
                         {
-                            Logger.LogWarning($"No DolbyVision Metadata Extractor given. Will not use DolbyVision for {Name}.", nameof(EncodingJobModel));
+                            throw new Exception(extractResult.Message);
                         }
                     }
                 }
@@ -177,7 +167,7 @@ public partial class EncodingJobModel :
             catch (Exception ex)
             {
                 SetError(Logger.LogException(ex, $"Error creating HDR metadata file for {this}", nameof(EncodingJobModel),
-                    new { Id, Name, DynamicHDR = SourceStreamData.VideoStream.HasDynamicHDR, State.DolbyVisionEncodingEnabled, State.DolbyVisionExtractorFullPath, State.HDR10PlusExtractorFullPath }), ex);
+                    new { Id, Name, DynamicHDR = SourceStreamData.VideoStream.HasDynamicHDR, DVEnabled = State.DolbyVision.Enabled, State.DolbyVision.DoviToolFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath }), ex);
                 return;
             }
 
@@ -250,43 +240,6 @@ public partial class EncodingJobModel :
         Logger.LogInfo($"Successfully built {this} encoding job.", nameof(EncodingJobModel));
 
         #region Local Functions
-        ProbeData GetProbeData()
-        {
-            string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{SourceFullPath}\"";
-
-            ProcessStartInfo startInfo = new()
-            {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                FileName = Path.Combine(State.FFmpegDirectory, "ffprobe"),
-                Arguments = ffprobeArgs,
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            };
-
-            StringBuilder sbFfprobeOutput = new();
-
-            using (Process ffprobeProcess = new())
-            {
-                ffprobeProcess.StartInfo = startInfo;
-                ffprobeProcess.OutputDataReceived += (sender, e) =>
-                {
-                    if (e.Data != null) sbFfprobeOutput.AppendLine(e.Data);
-                };
-                ffprobeProcess.Start();
-                ffprobeProcess.BeginOutputReadLine();
-                ffprobeProcess.WaitForExit();
-            }
-
-            string stringProbeOutput = sbFfprobeOutput.ToString().Trim();
-
-            if (stringProbeOutput.IsValidJson() is true)
-            {
-                return JsonSerializer.Deserialize<ProbeData>(stringProbeOutput, CommunicationConstants.SerializerOptions);
-            }
-
-            return null;
-        }
 
         // Returns string of crop in this format: "XXXX:YYYY:AA:BB"
         string GetCrop(CancellationToken cancellationToken)
@@ -302,7 +255,7 @@ public partial class EncodingJobModel :
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = Path.Combine(State.FFmpegDirectory, "ffmpeg"),
+                FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable),
                 Arguments = ffmpegArgs,
                 UseShellExecute = false,
                 RedirectStandardError = true
@@ -342,7 +295,7 @@ public partial class EncodingJobModel :
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                FileName = Path.Combine(State.FFmpegDirectory, "ffmpeg"),
+                FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable),
                 Arguments = ffmpegArgs,
                 UseShellExecute = false,
                 RedirectStandardError = true
@@ -390,71 +343,6 @@ public partial class EncodingJobModel :
             return (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
         }
 
-        // Creates the Dynamic HDR Metadata file (.json or .bin) for ffmpeg to ingest when encoding
-        string CreateHDRMetadataFile(HDRFlags hdrFlag, CancellationToken cancellationToken)
-        {
-            string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(SourceFullPath).Replace('\'', ' ')}{(hdrFlag.Equals(HDRFlags.HDR10PLUS) ? ".json" : ".RPU.bin")}";
-            Process hdrMetadataProcess = null;
-            CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
-            {
-                hdrMetadataProcess?.Kill(true);
-            });
-
-            string ffmpegArgs;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                string extractorArgs = hdrFlag.Equals(HDRFlags.HDR10PLUS) ? $"'{State.HDR10PlusExtractorFullPath}' extract -o '{metadataOutputFile}' - " :
-                                                                            $"'{State.DolbyVisionExtractorFullPath}' extract-rpu - -o '{metadataOutputFile}'";
-
-                ffmpegArgs = $"-c \"{Path.Combine(State.FFmpegDirectory, "ffmpeg")} -nostdin -i '{SourceFullPath.Replace("'", "'\\''")}' -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
-            }
-            else
-            {
-                string extractorArgs = hdrFlag.Equals(HDRFlags.HDR10PLUS) ? $"\"{State.HDR10PlusExtractorFullPath}\" extract -o \"{metadataOutputFile}\" - " :
-                                                                            $"\"{State.DolbyVisionExtractorFullPath}\" extract-rpu - -o \"{metadataOutputFile}\"";
-
-                ffmpegArgs = $"/C \"\"{Path.Combine(State.FFmpegDirectory, "ffmpeg")}\" -i \"{SourceFullPath}\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
-            }
-
-            ProcessStartInfo startInfo = new()
-            {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
-                Arguments = ffmpegArgs,
-                UseShellExecute = false
-            };
-
-            using (hdrMetadataProcess = new())
-            {
-                hdrMetadataProcess.StartInfo = startInfo;
-                hdrMetadataProcess.Start();
-                hdrMetadataProcess.WaitForExit();
-            }
-
-            tokenRegistration.Unregister();
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (File.Exists(metadataOutputFile))
-            {
-                FileInfo metadataFileInfo = new(metadataOutputFile);
-
-                if (metadataFileInfo.Length > 0)
-                {
-                    return metadataOutputFile;
-                }
-                else
-                {
-                    throw new Exception("HDR Metadata file was created but is empty.");
-                }
-            }
-            else
-            {
-                throw new Exception("HDR Metadata file was not created/does not exist.");
-            }
-        }
-
         void DetermineEncodingInstructions()
         {
             SourceStreamData streamData = SourceStreamData;
@@ -470,7 +358,7 @@ public partial class EncodingJobModel :
 
             if (streamData.VideoStream.HasDynamicHDR)
             {
-                if (State.DolbyVisionEncodingEnabled is true)
+                if (State.DolbyVision.Enabled is true)
                 {
                     instructions.DolbyVisionEncoding = true;
                 }

@@ -18,6 +18,22 @@ public static class Lookups
                                 $"{Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)}\\AEServer";
 
     public static string PreviouslyEncodingTempFile => $"{Path.GetTempPath()}aeserver.tmp";
+
+    public static string FFmpegExecutable => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                                "ffmpeg" :
+                                                "ffmpeg.exe";
+
+    public static string FFprobeExecutable => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                                "ffprobe" :
+                                                "ffprobe.exe";
+
+    public static string HDR10PlusToolExecutable => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                                    "hdr10plus_tool" :
+                                                    "hdr10plus_tool.exe";
+
+    public static string DoviToolExecutable => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ?
+                                                "dovi_tool" :
+                                                "dovi_tool.exe";
     #endregion LINUX VS WINDOWS
 
     /// <summary> 

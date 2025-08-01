@@ -50,10 +50,9 @@
                                 <Grid MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Border}}"
                                       Margin="5,2">
                                     <Grid.RowDefinitions>
-                                        <RowDefinition MinHeight="10"/>
-                                        <RowDefinition Height="2*"/>
-                                        <RowDefinition MinHeight="10"
-                                                       Height="*"/>
+                                        <RowDefinition Height="25"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="25"/>
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>

@@ -204,8 +204,9 @@
                             </TextBlock>
                         </DockPanel>
                         <ProgressBar Value="{Binding EncodingProgress, Mode=OneWay}"
-                                         Margin="0,5"
-                                         BorderThickness="1.5">
+                                     Margin="0,5"
+                                     BorderThickness="1.5"
+                                     Height="25">
                             <ProgressBar.Style>
                                 <Style TargetType="ProgressBar"
                                            BasedOn="{StaticResource ProgressBarBaseStyle}">

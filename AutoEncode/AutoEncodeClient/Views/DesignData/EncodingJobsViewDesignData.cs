@@ -60,9 +60,17 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
 
                 HDRData = new HDRData()
                 {
-                    HDRFlags = HDRFlags.HDR10 | HDRFlags.DOLBY_VISION,
+                    HDRFlags = HDRFlags.HDR10 | HDRFlags.DOLBY_VISION | HDRFlags.HDR10PLUS,
                     Red_X = "100",
-                    Red_Y = "1000000"
+                    Red_Y = "1000000",
+                    DolbyVisionInfo = new()
+                    {
+                        Version = "1.0",
+                        Profile = "7.6",
+                        BLPresent = true,
+                        ELPresent = true,
+                        RPUPresent = true,
+                    }
                 }
             },
             [
@@ -76,7 +84,7 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
                         Language = "eng",
                         CodecName = "dts-hd",
                         ChannelLayout = "5.1",
-                        Descriptor = "Audio Descriptor"
+                        HasDolbyAtmos = true
                     },
                     new()
                     {
@@ -84,11 +92,10 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
                         Title = "Audio",
                         AudioIndex = 1,
                         Channels = 2,
-                        Commentary = false,
+                        Commentary = true,
                         Language = "jn",
                         CodecName = "dts",
                         ChannelLayout = "5",
-                        Descriptor = "Audio Descriptor"
                     }
             ],
             [
@@ -99,7 +106,8 @@ public class EncodingJobsViewDesignData : ViewModelBase, IEncodingJobQueueViewMo
                         SubtitleIndex = 0,
                         Forced = true,
                         Language = "eng",
-                        Descriptor = "Subtitle Descriptor"
+                        HearingImpaired = true,
+                        Commentary = true
                     }
             ]),
             EncodingCommandArguments = new EncodingCommandArguments(true)

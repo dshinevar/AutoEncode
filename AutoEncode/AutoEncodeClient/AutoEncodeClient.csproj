@@ -13,13 +13,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\dolby_atmos_logo.png" />
+    <None Remove="Resources\dolby_vision_logo.png" />
+    <None Remove="Resources\HDR10+_logo.png" />
+    <None Remove="Resources\HDR10_logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\AE.ico" />
     <Resource Include="Resources\AE.png" />
+    <Resource Include="Resources\dolby_atmos_logo.png" />
+    <Resource Include="Resources\dolby_vision_logo.png" />
+    <Resource Include="Resources\HDR10+_logo.png" />
+    <Resource Include="Resources\HDR10_logo.png" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Castle.Windsor" Version="6.0.0" />
-    <PackageReference Include="MahApps.Metro.IconPacks.MaterialDesign" Version="5.1.0" />
+    <PackageReference Include="MahApps.Metro.IconPacks.MaterialDesign" Version="6.0.0" />
     <PackageReference Include="NetMQ" Version="4.0.2.1" />
     <PackageReference Include="System.Text.Json" Version="8.0.6" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />

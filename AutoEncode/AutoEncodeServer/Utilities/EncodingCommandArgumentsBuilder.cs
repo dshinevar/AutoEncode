@@ -142,9 +142,9 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            ffmpegFormatted = $"'{Path.Combine(State.FFmpegDirectory, "ffmpeg")}'";
+            ffmpegFormatted = $"'{Path.Combine(State.Ffmpeg.FfmpegDirectory, "ffmpeg")}'";
             sourceFormatted = $"'{sourceFullPath.Replace("'", "'\\''")}'";
-            x265Formatted = $"'{State.X265FullPath}'";
+            x265Formatted = $"'{State.DolbyVision.X265FullPath}'";
             outputFormatted = $"'{encodedVideoFullPath}'";
             masterDisplayFormatted = $"'G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})'";
             maxCLLFormatted = $"'{streamData.VideoStream.HDRData.MaxCLL}'";
@@ -152,9 +152,9 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
         }
         else
         {
-            ffmpegFormatted = $"\"{Path.Combine(State.FFmpegDirectory, "ffmpeg")}\"";
+            ffmpegFormatted = $"\"{Path.Combine(State.Ffmpeg.FfmpegDirectory, "ffmpeg")}\"";
             sourceFormatted = $"\"{sourceFullPath}\"";
-            x265Formatted = $"\"{State.X265FullPath}\"";
+            x265Formatted = $"\"{State.DolbyVision.X265FullPath}\"";
             outputFormatted = $"\"{encodedVideoFullPath}\"";
             masterDisplayFormatted = $"\"G({hdr.Green_X},{hdr.Green_Y})B({hdr.Blue_X},{hdr.Blue_Y})R({hdr.Red_X},{hdr.Red_Y})WP({hdr.WhitePoint_X},{hdr.WhitePoint_Y})L({hdr.MaxLuminance},{hdr.MinLuminance})\"";
             maxCLLFormatted = $"\"{streamData.VideoStream.HDRData.MaxCLL}\"";

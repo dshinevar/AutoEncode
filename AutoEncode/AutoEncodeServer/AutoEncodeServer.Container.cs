@@ -61,8 +61,16 @@ internal partial class AutoEncodeServer
 
         container.Register(Component.For<IEncodingCommandArgumentsBuilder>()
             .ImplementedBy<EncodingCommandArgumentsBuilder>()
-            .LifestyleTransient());
+            .LifestyleSingleton());
 
+        container.Register(Component.For<IHdrMetadataExtractor>()
+            .ImplementedBy<HdrMetadataExtractor>()
+            .LifestyleSingleton());
+
+        container.Register(Component.For<ISourceFileProbingProcessor>()
+            .ImplementedBy<SourceFileProbingProcessor>()
+            .LifestyleSingleton());
+            
         container.Register(Component.For<IEncodingJobManager>()
             .ImplementedBy<EncodingJobManager>()
             .LifestyleSingleton());
