@@ -9,6 +9,8 @@
                 Value="Bottom"/>
         <Setter Property="HorizontalAlignment"
                 Value="Left"/>
+        <Setter Property="TextTrimming"
+                Value="CharacterEllipsis"/>
 
     </Style>
 
