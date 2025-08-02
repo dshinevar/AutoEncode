@@ -32,6 +32,17 @@
                         <Setter Property="Margin"
                                 Value="5,0"/>
                     </Style>
+                    <Style x:Key="DataLabelIconStyle"
+                           TargetType="{x:Type icon:PackIconMaterialDesign}">
+                        <Setter Property="Foreground"
+                                Value="Black"/>
+                        <Setter Property="VerticalAlignment"
+                                Value="Bottom"/>
+                        <Setter Property="Width"
+                                Value="15"/>
+                        <Setter Property="Margin"
+                                Value="5,0,0,0"/>
+                    </Style>
                 </Grid.Resources>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -124,11 +135,11 @@
                                     </Style>
                                 </StackPanel.Resources>
                                 <Image Source="/Resources/dolby_vision_logo.png"
-                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.DOLBY_VISION}}"/>
+                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.DOLBY_VISION}, FallbackValue=Collapsed}"/>
                                 <Image Source="/Resources/HDR10+_logo.png"
-                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.HDR10PLUS}}"/>
+                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.HDR10PLUS}, FallbackValue=Collapsed}"/>
                                 <Image Source="/Resources/HDR10_logo.png"
-                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.HDR10}}"/>
+                                       Visibility="{Binding HDRData.HDRFlags, Converter={StaticResource HDRFlagToVisibilityConverter}, ConverterParameter={x:Static utilEnum:HDRFlags.HDR10}, FallbackValue=Collapsed}"/>
                             </StackPanel>
                         </Grid>
                     </Expander.Header>
@@ -489,8 +500,7 @@
                                                    Visibility="{Binding HasDolbyAtmos, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                             <icon:PackIconMaterialDesign Kind="Comment"
                                                                          Visibility="{Binding Commentary, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                         Foreground="Black"
-                                                                         ToolTip="Commentary Track"/>
+                                                                         Foreground="Black"/>
                                         </StackPanel>
                                     </Grid>
                                 </Expander.Header>
@@ -604,9 +614,19 @@
                                                    Text="{Binding Profile}"
                                                    Style="{StaticResource EncodingJobDataStyle}"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Text="Commentary"
-                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <Grid Grid.Row="2" Grid.Column="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="Commentary"
+                                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                            <icon:PackIconMaterialDesign Grid.Column="1"
+                                                                         Kind="Comment"
+                                                                         Style="{StaticResource DataLabelIconStyle}"
+                                                                         ToolTip="Commentary Track"/>
+                                        </Grid>
                                         <TextBlock Grid.Row="2" Grid.Column="1"
                                                    Text=":"
                                                    Style="{StaticResource ColonLabelStyle}"/>
@@ -772,9 +792,19 @@
                                                    Text="{Binding Forced}"
                                                    Style="{StaticResource EncodingJobDataStyle}"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="Commentary"
-                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <Grid Grid.Row="1" Grid.Column="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="Commentary"
+                                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                            <icon:PackIconMaterialDesign Grid.Column="1"
+                                                                         Kind="Comment"
+                                                                         Style="{StaticResource DataLabelIconStyle}"
+                                                                         ToolTip="Commentary Track" />
+                                        </Grid>
                                         <TextBlock Grid.Row="1" Grid.Column="1"
                                                    Text=":"
                                                    Style="{StaticResource ColonLabelStyle}"/>
@@ -782,9 +812,19 @@
                                                    Text="{Binding Commentary}"
                                                    Style="{StaticResource EncodingJobDataStyle}"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Text="Hearing Impaired"
-                                                   Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                        <Grid Grid.Row="2" Grid.Column="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="Hearing Impaired"
+                                                       Style="{StaticResource EncodingJobDataLabelStyle}"/>
+                                            <icon:PackIconMaterialDesign Grid.Column="1"
+                                                                         Kind="HearingDisabled"
+                                                                         Style="{StaticResource DataLabelIconStyle}"
+                                                                         ToolTip="Hearing Impaired (SDH)"/>
+                                        </Grid>
                                         <TextBlock Grid.Row="2" Grid.Column="1"
                                                    Text=":"
                                                    Style="{StaticResource ColonLabelStyle}"/>
