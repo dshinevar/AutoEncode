@@ -140,7 +140,7 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
         HDRData hdr = streamData.VideoStream.HDRData;
         videoInstructions.DynamicHDRMetadataFullPaths.TryGetValue(HDRFlags.DOLBY_VISION, out string dolbyVisionMetadataPath);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (State.IsLinuxEnvironment)
         {
             ffmpegFormatted = $"'{Path.Combine(State.Ffmpeg.FfmpegDirectory, "ffmpeg")}'";
             sourceFormatted = $"'{sourceFullPath.Replace("'", "'\\''")}'";
@@ -161,7 +161,7 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
             dolbyVisionPathFormatted = $"\"{dolbyVisionMetadataPath}\"";
         }
 
-        sbVideo.AppendFormat(format, $"{(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "-c" : "/C")}")
+        sbVideo.AppendFormat(format, $"{(State.IsLinuxEnvironment ? "-c" : "/C")}")
             .AppendFormat(format, $"\"{ffmpegFormatted} -y -hide_banner -loglevel error -nostdin -i {sourceFormatted}");
 
         if (videoInstructions.Crop is true) sbVideo.AppendFormat(format, $"-vf crop={streamData.VideoStream.Crop}");

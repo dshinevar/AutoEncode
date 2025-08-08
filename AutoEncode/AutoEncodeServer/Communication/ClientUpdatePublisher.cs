@@ -1,5 +1,4 @@
 ﻿using AutoEncodeServer.Communication.Interfaces;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication;
 using AutoEncodeUtilities.Communication.Data;
 using AutoEncodeUtilities.Communication.Enums;
@@ -26,11 +25,8 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     public ILogger Logger { get; set; }
     #endregion Dependencies
 
-    private bool _initialized = false;
     private readonly PublisherSocket _publisherSocket = new();
     private readonly BlockingCollection<ClientUpdateRequest> _requests = [];
-    private Task _requestHandlerTask = null;
-    private ManualResetEvent _shutdownMRE;
     private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
 
     #region Properties
@@ -39,40 +35,28 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     #endregion Properties
 
     /// <summary>Default Constructor</summary>
-    public ClientUpdatePublisher() { }
-
-    #region Initialize / Start / Shutdown
-    public void Initialize(ManualResetEvent shutdownMRE)
+    public ClientUpdatePublisher()
     {
-        if (_initialized is false)
-        {
-            _shutdownMRE = shutdownMRE;
-            _shutdownMRE.Reset();
-            Port = State.ConnectionSettings.ClientUpdatePort;
-        }
-
-        _initialized = true;
-        HelperMethods.DebugLog($"{nameof(ClientUpdatePublisher)} Initialized", nameof(ClientUpdatePublisher));
+        Port = State.ConnectionSettings.ClientUpdatePort;
     }
 
-    public void Start()
+    #region Run / Shutdown
+    public Task Run()
     {
         try
         {
-            if (_initialized is false)
-                throw new InvalidOperationException($"{nameof(ClientUpdatePublisher)} is not initialized.");
-
             _publisherSocket.Bind(ConnectionString);
 
-            _requestHandlerTask = StartRequestHandler();
+            Logger.LogInfo($"{nameof(ClientUpdatePublisher)} binded to {ConnectionString} -- Request Thread started.", nameof(ClientUpdatePublisher));
+
+            return StartRequestHandler()
+                    .ContinueWith((task) => Logger.LogInfo($"{nameof(ClientUpdatePublisher)} unbound from {ConnectionString} -- Request Thread stopped.", nameof(ClientUpdatePublisher)));
         }
         catch (Exception ex)
         {
             Logger.LogException(ex, $"Failed to start {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher), new { ConnectionString });
             throw;
         }
-
-        Logger.LogInfo($"{nameof(ClientUpdatePublisher)} binded to {ConnectionString} -- Request Thread started.", nameof(ClientUpdatePublisher));
     }
 
     public void Stop()
@@ -81,21 +65,12 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         {
             // Stop adding and clear requests
             _requests.CompleteAdding();
-            while (_requests.TryTake(out _));
-
-            _shutdownCancellationTokenSource.Cancel();
+            while (_requests.TryTake(out _)) ;
 
             _publisherSocket?.Unbind(ConnectionString);
             _publisherSocket?.Close();
 
-            try
-            {
-                _requestHandlerTask?.Wait();
-            }
-            catch (OperationCanceledException) { }            
-
-            Logger.LogInfo($"{nameof(ClientUpdatePublisher)} unbound from {ConnectionString} -- Request Thread stopped.", nameof(ClientUpdatePublisher));
-            _shutdownMRE.Set();
+            _shutdownCancellationTokenSource.Cancel();
         }
         catch (Exception ex)
         {

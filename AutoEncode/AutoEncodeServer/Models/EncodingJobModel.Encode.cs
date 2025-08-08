@@ -229,7 +229,7 @@ public partial class EncodingJobModel :
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
+                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = EncodingCommandArguments.CommandArguments[0],
                     RedirectStandardError = true,
                     UseShellExecute = false

@@ -9,7 +9,6 @@ using NetMQ;
 using NetMQ.Sockets;
 using System;
 using System.Text.Json;
-using System.Threading;
 
 namespace AutoEncodeServer.Communication;
 
@@ -20,10 +19,8 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
     #endregion Dependencies
 
     #region Private Properties
-    private bool _initialized = false;
     private readonly RouterSocket _routerSocket = new();
     private readonly NetMQPoller _poller = null;
-    private ManualResetEvent _shutdownMRE;
     #endregion Private Properties
 
     #region Public Properties
@@ -36,31 +33,18 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
     public CommunicationMessageHandler()
     {
         _poller = [_routerSocket];
+        _routerSocket.ReceiveReady += RouterSocket_ReceiveReady;
+
+        Port = State.ConnectionSettings.CommunicationPort;
     }
 
-    #region Initialize / Start / Stop
-    public void Initialize(ManualResetEvent shutdownMRE)
-    {
-        if (_initialized is false)
-        {
-            _shutdownMRE = shutdownMRE;
-            _shutdownMRE.Reset();
-            Port = State.ConnectionSettings.CommunicationPort;
-            _routerSocket.ReceiveReady += RouterSocket_ReceiveReady;
-        }
-
-        _initialized = true;
-
-        HelperMethods.DebugLog($"{nameof(CommunicationMessageHandler)} Initialized", nameof(CommunicationMessageHandler));
-    }
-
-
+    #region Start / Stop
     public void Start()
     {
         try
         {
-            if (_initialized is false)
-                throw new InvalidOperationException($"{nameof(CommunicationMessageHandler)} is not initialized.");
+            if (MessageReceived is null)
+                throw new InvalidOperationException($"Attempted to start {nameof(CommunicationMessageHandler)} without subscribing.");
 
             _routerSocket.Bind(ConnectionString);
             _poller.RunAsync();
@@ -83,7 +67,6 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
             _routerSocket.Close();
 
             Logger.LogInfo($"{nameof(CommunicationMessageHandler)} unbound from {ConnectionString} -- Stopped listening.", nameof(CommunicationMessageHandler));
-            _shutdownMRE.Set();
         }
         catch (Exception ex)
         {

@@ -5,6 +5,7 @@ using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers.Interfaces;
 
@@ -19,11 +20,11 @@ public interface IEncodingJobManager
     /// <summary>Sets up the manager and client update publisher</summary>
     /// <param name="shutdownMRE"><see cref="ManualResetEvent"/> used to indicate when shut down</param>
     /// <exception cref="Exception">Rethrows exceptions.</exception>
-    void Initialize(ManualResetEvent shutdownMRE);
+    void Initialize();
 
     /// <summary>Starts up threads.</summary>
     /// <exception cref="Exception">Rethrows exceptions.</exception>
-    void Start();
+    Task Run();
 
     /// <summary>Stops threads.</summary>
     /// <exception cref="Exception">Rethrows exceptions.</exception>
@@ -34,15 +35,10 @@ public interface IEncodingJobManager
     /// <returns>List of <see cref="EncodingJobData"/></returns>
     IEnumerable<EncodingJobData> GetEncodingJobQueue();
 
-    /// <summary>Determines if a job exists by the given filename and is currently encoding.</summary>
-    /// <param name="filename"></param>
-    /// <returns>True if exists and encoding; False, otherwise.</returns>
-    bool IsEncodingByFileName(string filename);
-
-    /// <summary>Returns the status of the encoding job (if it exists) by filename lookup. </summary>
-    /// <param name="filename"></param>
+    /// <summary>Returns the status of the encoding job (if it exists) by Guid lookup. </summary>
+    /// <param name="sourceFileGuid">The guid of the source file used to try to find a linked encoding job.</param>
     /// <returns><see cref="EncodingJobStatus"/> of encoding job if found; Null, otherwise.</returns>
-    EncodingJobStatus? GetEncodingJobStatusByFileName(string filename);
+    EncodingJobStatus? GetEncodingJobStatusBySourceFileGuid(Guid sourceFileGuid);
     #endregion Get Requests
 
     #region Add Request Methods

@@ -20,24 +20,56 @@ public abstract class ManagerBase
 
 
     #region Properties / Fields
+    public bool Initialized { get; protected set; }
     protected readonly CancellationTokenSource ShutdownCancellationTokenSource = new();
-    protected ManualResetEvent ShutdownMRE = null;
     #endregion Properties / Fields
 
 
     #region Init / Start / Shutdown
-    public abstract void Initialize(ManualResetEvent shutdownMRE);
+    public virtual void Initialize() => Initialized = true;
 
-    public abstract void Start();
+    public virtual Task Run()
+    {
+        try
+        {
+            if (Initialized is false)
+                throw new InvalidOperationException($"{GetType().Name} is not initialized.");
 
-    public abstract void Shutdown();
+            StartManagerProcess();
+            StartRequestHandler();
+
+            Logger.LogInfo($"{GetType().Name} Started", GetType().Name);
+
+            return Task.WhenAll(ManagerProcessTask, RequestHandlerTask)
+                        .ContinueWith((task) => Logger.LogInfo($"{GetType().Name} Shutdown", GetType().Name));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Exception while running {GetType().Name}", GetType().Name);
+            throw;
+        }
+    }
+
+    public virtual void Shutdown()
+    {
+        try
+        {
+            Requests.CompleteAdding();                  // Stop Requests
+            ShutdownCancellationTokenSource.Cancel();   // Initiate shutdown by stopping processes
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex, $"Exception while shutting down {GetType().Name}", GetType().Name);
+            throw;
+        }
+    }
     #endregion Init / Start / Shutdown
 
 
     #region Manager Process
     protected Task ManagerProcessTask = null;
 
-    protected Task StartManagerProcess()
+    protected void StartManagerProcess()
         => ManagerProcessTask = Task.Run(Process, ShutdownCancellationTokenSource.Token);
 
     protected abstract void Process();
@@ -66,7 +98,7 @@ public abstract class ManagerBase
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogException(ex, "Error processing request.", this.GetType().Name);
+                        Logger.LogException(ex, "Error processing request.", GetType().Name);
                     }
                 }
             }

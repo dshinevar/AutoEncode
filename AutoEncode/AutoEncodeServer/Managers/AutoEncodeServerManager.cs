@@ -2,59 +2,38 @@
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeUtilities;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers;
 
 public partial class AutoEncodeServerManager :
     ManagerBase,
-    IAutoEncodeServerManager
+    IAutoEncodeServerManager,
+    ISourceFileManagerConnection,
+    IEncodingJobManagerConnection
 {
-    private bool _initialized = false;
-
-    // MREs are true by default -- initializers should reset the MRE
-    private readonly ManualResetEvent _sourceFileManagerShutdown = new(true);
-    private readonly ManualResetEvent _encodingJobManagerShutdown = new(true);
-    private readonly ManualResetEvent _clientUpdatePublisherShutdown = new(true);
-    private readonly ManualResetEvent _communicationMessageHandlerShutdown = new(true);
-
     #region Managers / Comms
-    private IEncodingJobManager _encodingJobManager;
+    private IEncodingJobManager EncodingJobManager;
 
-    private ISourceFileManager _sourceFileManager;
+    private ISourceFileManager SourceFileManager;
 
-    private IClientUpdatePublisher _clientUpdatePublisher;
-
-    private ICommunicationMessageHandler _communicationMessageHandler;
+    public ICommunicationMessageHandler CommunicationMessageHandler { get; set; }
     #endregion Managers / Comms
 
     /// <summary> Constructor </summary>
     public AutoEncodeServerManager() { }
 
     #region Init / Start / Shutdown
-    public override void Initialize(ManualResetEvent shutdown)
+    public override void Initialize()
     {
-        if (_initialized is false)
+        if (Initialized is false)
         {
             try
             {
-                ShutdownMRE = shutdown;
+                CommunicationMessageHandler.MessageReceived += CommunicationMessageHandler_MessageReceived;
 
-                // Initialize comms first
-                _clientUpdatePublisher = Container.Resolve<IClientUpdatePublisher>();
-                _clientUpdatePublisher.Initialize(_clientUpdatePublisherShutdown);
-
-                _communicationMessageHandler = Container.Resolve<ICommunicationMessageHandler>();
-                _communicationMessageHandler.Initialize(_communicationMessageHandlerShutdown);
-                _communicationMessageHandler.MessageReceived += CommunicationMessageHandler_MessageReceived;
-
-                // Create managers
-                _sourceFileManager = Container.Resolve<ISourceFileManager>();
-                _encodingJobManager = Container.Resolve<IEncodingJobManager>();
-
-                _sourceFileManager.Initialize(_sourceFileManagerShutdown);
-                _encodingJobManager.Initialize(_encodingJobManagerShutdown);
+                SourceFileManager = Container.Resolve<ISourceFileManager>();
+                EncodingJobManager = Container.Resolve<IEncodingJobManager>();
             }
             catch (Exception ex)
             {
@@ -62,37 +41,37 @@ public partial class AutoEncodeServerManager :
                 throw;
             }
 
-            _initialized = true;
+            Initialized = true;
             HelperMethods.DebugLog($"{nameof(AutoEncodeServerManager)} Initialized", nameof(AutoEncodeServerManager));
         }
     }
 
-    public override void Start()
+    public override async Task Run()
     {
-        if (_initialized is false)
+        if (Initialized is false)
             throw new InvalidOperationException($"{nameof(AutoEncodeServerManager)} is not initialized.");
 
         HelperMethods.DebugLog($"{nameof(AutoEncodeServerManager)} Starting", nameof(AutoEncodeServerManager));
 
         try
         {
-            // Handle comms first
-            _clientUpdatePublisher.Start();
-            _communicationMessageHandler.Start();
+            Task clientUpdatePublisherTask = ClientUpdatePublisher.Run();
+            CommunicationMessageHandler.Start();
 
-            _sourceFileManager.Start();
-            _encodingJobManager.Start();
+            Task sourceFileManagerTask = SourceFileManager.Run();
+            Task encodingJobMangerTask = EncodingJobManager.Run();
 
-            // DO NOT CALL StartManagerProcess()
             StartRequestHandler();
+
+            Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Started", nameof(AutoEncodeServerManager));
+            await Task.WhenAll(sourceFileManagerTask, encodingJobMangerTask, clientUpdatePublisherTask, RequestHandlerTask);
+            Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Shutdown", nameof(AutoEncodeServerManager));
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Failed to start {nameof(AutoEncodeServerManager)}", nameof(AutoEncodeServerManager));
+            Logger.LogException(ex, $"Failed to start {nameof(AutoEncodeServerManager)}");
             throw;
         }
-
-        Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Started", nameof(AutoEncodeServerManager));
     }
 
     public override void Shutdown()
@@ -107,27 +86,12 @@ public partial class AutoEncodeServerManager :
             ShutdownCancellationTokenSource.Cancel();
 
             // Stop Comms
-            _clientUpdatePublisher?.Stop();
-            _communicationMessageHandler?.Stop();
+            CommunicationMessageHandler?.Stop();
+            ClientUpdatePublisher?.Stop();
 
             // Stop threads
-            _sourceFileManager?.Shutdown();
-            _encodingJobManager?.Shutdown();
-
-            // Wait for threads to stop
-            try
-            {
-                RequestHandlerTask?.Wait();
-            }
-            catch (OperationCanceledException) { }
-
-            _clientUpdatePublisherShutdown.WaitOne();
-            _communicationMessageHandlerShutdown.WaitOne();
-            _encodingJobManagerShutdown.WaitOne();
-            _sourceFileManagerShutdown.WaitOne();
-
-            Logger.LogInfo($"{nameof(AutoEncodeServerManager)} Shutdown", nameof(AutoEncodeServerManager));
-            ShutdownMRE.Set();
+            SourceFileManager?.Shutdown();
+            EncodingJobManager?.Shutdown();
         }
         catch (Exception ex)
         {

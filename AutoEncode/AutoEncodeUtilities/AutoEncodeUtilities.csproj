@@ -6,4 +6,8 @@
     <Description>Common data and functions for AutoEncode Server/Client.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.8" />
+  </ItemGroup>
+
 </Project>

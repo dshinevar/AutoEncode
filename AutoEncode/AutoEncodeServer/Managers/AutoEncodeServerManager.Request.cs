@@ -28,8 +28,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                 {
                     requestAction = () =>
                     {
-                        var sourceFiles = _sourceFileManager.RequestSourceFiles();
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateSourceFilesResponse(sourceFiles));
+                        var sourceFiles = SourceFileManager.RequestSourceFiles();
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateSourceFilesResponse(sourceFiles));
                     };
                     break;
                 }
@@ -38,8 +38,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         ulong jobId = message.UnpackData<ulong>();
-                        bool success = _encodingJobManager.AddCancelJobByIdRequest(jobId);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateCancelResponse(success));
+                        bool success = EncodingJobManager.AddCancelJobByIdRequest(jobId);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateCancelResponse(success));
                     };
                     break;
                 }
@@ -48,8 +48,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         ulong jobId = message.UnpackData<ulong>();
-                        bool success = _encodingJobManager.AddPauseJobByIdRequest(jobId);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseResponse(success));
+                        bool success = EncodingJobManager.AddPauseJobByIdRequest(jobId);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseResponse(success));
                     };
                     break;
                 }
@@ -58,8 +58,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         ulong jobId = message.UnpackData<ulong>();
-                        bool success = _encodingJobManager.AddResumeJobByIdRequest(jobId);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateResumeResponse(success));
+                        bool success = EncodingJobManager.AddResumeJobByIdRequest(jobId);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateResumeResponse(success));
                     };
 
                     break;
@@ -69,8 +69,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         ulong jobId = message.UnpackData<ulong>();
-                        bool success = _encodingJobManager.AddPauseAndCancelJobByIdRequest(jobId);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseAndCancelResponse(success));
+                        bool success = EncodingJobManager.AddPauseAndCancelJobByIdRequest(jobId);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreatePauseAndCancelResponse(success));
                     };
                     break;
                 }
@@ -79,8 +79,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         ulong jobId = message.UnpackData<ulong>();
-                        bool success = _encodingJobManager.AddRemoveEncodingJobByIdRequest(jobId, RemovedEncodingJobReason.UserRequested);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateRemoveJobResponse(success));
+                        bool success = EncodingJobManager.AddRemoveEncodingJobByIdRequest(jobId, RemovedEncodingJobReason.UserRequested);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateRemoveJobResponse(success));
                     };
                     break;
                 }
@@ -89,8 +89,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         Guid sourceFileGuid = message.UnpackData<Guid>();
-                        bool success = _sourceFileManager.AddRequestEncodingJobForSourceFileRequest(sourceFileGuid);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateEncodeResponse(success));
+                        bool success = SourceFileManager.AddRequestEncodingJobForSourceFileRequest(sourceFileGuid);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateEncodeResponse(success));
                     };
                     break;
                 }
@@ -99,8 +99,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                     requestAction = () =>
                     {
                         IEnumerable<Guid> sourceFileGuids = message.UnpackData<IEnumerable<Guid>>();
-                        bool success = _sourceFileManager.AddBulkRequestEncodingJobRequest(sourceFileGuids);
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateBulkEncodeResponse(success));
+                        bool success = SourceFileManager.AddBulkRequestEncodingJobRequest(sourceFileGuids);
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateBulkEncodeResponse(success));
                     };
                     break;
                 }
@@ -108,8 +108,8 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
                 {
                     requestAction = () =>
                     {
-                        IEnumerable<EncodingJobData> queue = _encodingJobManager.GetEncodingJobQueue();
-                        _communicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateJobQueueResponse(queue));
+                        IEnumerable<EncodingJobData> queue = EncodingJobManager.GetEncodingJobQueue();
+                        CommunicationMessageHandler.SendMessage(clientAddress, ResponseMessageFactory.CreateJobQueueResponse(queue));
                     };
                     break;
                 }

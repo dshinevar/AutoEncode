@@ -1,6 +1,6 @@
 ﻿using AutoEncodeUtilities.Communication.Data;
 using AutoEncodeUtilities.Communication.Enums;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Communication.Interfaces;
 
@@ -13,12 +13,8 @@ public interface IClientUpdatePublisher
     #endregion Properties
 
     #region Initialize / Start / Shutdown
-    /// <summary>Sets up the <see cref="ClientUpdatePublisher"/> </summary>
-    /// <param name="shutdownMRE"><see cref="ManualResetEvent"/> used to indicate when shut down</param>
-    void Initialize(ManualResetEvent shutdownMRE);
-
     /// <summary>Binds connection and starts up request thread.</summary>
-    void Start();
+    Task Run();
 
     /// <summary>Unbinds connection and stops threads. </summary>
     void Stop();

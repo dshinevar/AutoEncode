@@ -3,6 +3,7 @@ using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers.Interfaces;
 
@@ -13,10 +14,10 @@ public interface ISourceFileManager
     #region Init / Start / Stop
     /// <summary>Initializes the source file manager.</summary>
     /// <param name="shutdownMRE"><see cref="ManualResetEvent"/> used to signal when the source file manager has fully shutdown.</param>
-    void Initialize(ManualResetEvent shutdownMRE);
+    void Initialize();
 
     /// <summary>Starts all source file manager threads.</summary>
-    void Start();
+    Task Run();
 
     /// <summary>Stops all source file manager threads.</summary>
     void Shutdown();
@@ -29,9 +30,9 @@ public interface ISourceFileManager
 
     /// <summary>Adds a request to update the source file encoding status to the processing queue.</summary>
     /// <param name="sourceFileGuid"><see cref="Guid"/> for the source file.</param>
-    /// <param name="encodingJobStatus">Status of encoding job to be translated to <see cref="SourceFileEncodingStatus"/></param>
+    /// <param name="encodingJobStatus">Status of encoding job to be translated to <see cref="SourceFileEncodingStatus"/>; Null will assume job is not in queue.</param>
     /// <returns>True if added to process queue.</returns>
-    bool AddUpdateSourceFileEncodingStatusRequest(Guid sourceFileGuid, EncodingJobStatus encodingJobStatus);
+    bool AddUpdateSourceFileEncodingStatusRequest(Guid sourceFileGuid, EncodingJobStatus? encodingJobStatus);
 
     bool AddRequestEncodingJobForSourceFileRequest(Guid sourceFileGuid);
 

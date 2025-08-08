@@ -94,6 +94,11 @@ public partial class EncodingJobManager : IEncodingJobManager
                 _encodingJobManagerMRE.WaitOne();   // Wait until signalled -- either for shutdown or job added to queue
             }
         }
+
+        // Don't end main processing thread until other threads are done
+        EncodingJobBuilderTask?.Wait();
+        EncodingTask?.Wait();
+        EncodingJobPostProcessingTask?.Wait();
     }
 
     /// <summary>Adds jobs to request processing queue for removal.</summary>
