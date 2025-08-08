@@ -54,8 +54,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
             if (isMkvFile)
             {
-                string args = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"extract '{sourceFileFullPath}' -o '{metadataOutputFile}'"
-                                                                                : $"extract \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
+                string args = State.IsLinuxEnvironment ? $"extract '{sourceFileFullPath}' -o '{metadataOutputFile}'"
+                                                        : $"extract \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
 
                 ProcessStartInfo startInfo = new()
                 {
@@ -76,7 +76,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string ffmpegArgs;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (State.IsLinuxEnvironment)
                 {
                     string extractorArgs = $"'{hdr10PlusToolProcessFileName}' extract -o '{metadataOutputFile}' - ";
 
@@ -93,7 +93,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
+                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = ffmpegArgs,
                     UseShellExecute = false
                 };
@@ -156,7 +156,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
             if (isMkvFile)
             {
-                string args = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'"
+                string args = State.IsLinuxEnvironment ? $"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'"
                                                                                 : $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
 
                 ProcessStartInfo startInfo = new()
@@ -178,7 +178,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string ffmpegArgs;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (State.IsLinuxEnvironment)
                 {
                     string extractorArgs = $"'{doviToolProcessFileName}' extract-rpu -o '{metadataOutputFile}' - ";
 
@@ -195,7 +195,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/bin/bash" : "cmd",
+                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = ffmpegArgs,
                     UseShellExecute = false
                 };

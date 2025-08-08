@@ -1,11 +1,22 @@
 ﻿using AutoEncodeUtilities.Config;
 using AutoEncodeUtilities.Data;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace AutoEncodeServer;
 
 public static class State
 {
+    static State()
+    {
+        IsLinuxEnvironment = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        IsWindowsEnvironment = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    }
+
+    public static bool IsLinuxEnvironment { get; }
+
+    public static bool IsWindowsEnvironment { get; }
+
     public static FfmpegSettings Ffmpeg { get; private set; }
 
     public static Hdr10PlusSettings Hdr10Plus { get; private set; }

@@ -2,7 +2,6 @@
 using AutoEncodeServer.Factories;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
-using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication.Data;
 using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Enums;
@@ -11,7 +10,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Threading;
 
 namespace AutoEncodeServer.Managers;
 
@@ -23,7 +21,7 @@ public partial class EncodingJobManager :
     #region Dependencies
     public IEncodingJobModelFactory EncodingJobModelFactory { get; set; }
 
-    private ISourceFileManager _sourceFileManager;
+    public ISourceFileManagerConnection SourceFileManagerConnection { get; set; }
     #endregion Dependencies
 
     #region Private Properties
@@ -43,7 +41,6 @@ public partial class EncodingJobManager :
     #endregion Private Properties
 
     #region Public Properties
-    public bool Initialized { get; private set; } = false;
     public int Count => _encodingJobQueue.Count;
     #endregion Public Properties
 
@@ -54,74 +51,20 @@ public partial class EncodingJobManager :
     }
 
     #region Initialize / Start / Shutdown
-    public override void Initialize(ManualResetEvent shutdownMRE)
-    {
-        if (Initialized is false)
-        {
-            try
-            {
-                ShutdownMRE = shutdownMRE;
-                ShutdownMRE.Reset();
-
-                _sourceFileManager = Container.Resolve<ISourceFileManager>();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex, $"Failed to initialize {nameof(EncodingJobManager)}", nameof(EncodingJobManager));
-                throw;
-            }
-
-            Initialized = true;
-            HelperMethods.DebugLog($"{nameof(EncodingJobManager)} Initialized", nameof(EncodingJobManager));
-        }
-    }
-
-    public override void Start()
-    {
-        try
-        {
-            if (Initialized is false)
-                throw new InvalidOperationException($"{nameof(EncodingJobManager)} is not initialized");
-
-            StartManagerProcess();
-            StartRequestHandler();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex, $"Failed to start {nameof(EncodingJobManager)}", nameof(EncodingJobManager));
-            throw;
-        }
-
-        Logger.LogInfo($"{nameof(EncodingJobManager)} Started", nameof(EncodingJobManager));
-    }
-
     public override void Shutdown()
     {
         try
         {
-            Requests.CompleteAdding();
+            base.Shutdown();
 
             _encodingJobManagerMRE.Set();
-
-            ShutdownCancellationTokenSource.Cancel();
             EncodingJobBuilderCancellationToken?.Cancel();
             EncodingCancellationToken?.Cancel();
             EncodingJobPostProcessingCancellationToken?.Cancel();
-
-            EncodingJobBuilderTask?.Wait();
-            EncodingTask?.Wait();
-            EncodingJobPostProcessingTask?.Wait();
-
-            ManagerProcessTask?.Wait();
-            RequestHandlerTask?.Wait();
-
-            Logger.LogInfo($"{nameof(EncodingJobManager)} Shutdown", nameof(EncodingJobManager));
-
-            ShutdownMRE.Set();
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Failed to shutdown {nameof(EncodingJobManager)}", nameof(EncodingJobManager));
+            Logger.LogException(ex, $"Exception while shutting down {nameof(EncodingJobManager)}");
             throw;
         }
     }
@@ -162,7 +105,7 @@ public partial class EncodingJobManager :
     {
         if (sender is IEncodingJobModel encodingJob)
         {
-            _sourceFileManager.AddUpdateSourceFileEncodingStatusRequest(encodingJob.SourceFileGuid, e.Status);
+            SourceFileManagerConnection.UpdateSourceFileEncodingStatus(encodingJob.SourceFileGuid, e.Status);
         }
     }
 

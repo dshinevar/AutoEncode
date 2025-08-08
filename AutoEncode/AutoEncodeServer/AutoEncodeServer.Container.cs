@@ -50,7 +50,8 @@ internal partial class AutoEncodeServer
 
         container.Register(Component.For<ISourceFileManager>()
             .ImplementedBy<SourceFileManager>()
-            .LifestyleSingleton());
+            .LifestyleSingleton()
+            .OnCreate(sfm => sfm.Initialize()));
 
         container.Register(Component.For<IEncodingJobModelFactory>()
             .AsFactory());
@@ -73,9 +74,11 @@ internal partial class AutoEncodeServer
             
         container.Register(Component.For<IEncodingJobManager>()
             .ImplementedBy<EncodingJobManager>()
-            .LifestyleSingleton());
+            .LifestyleSingleton()
+            .OnCreate(ejm => ejm.Initialize()));
 
-        container.Register(Component.For<IAutoEncodeServerManager>()
+        container.Register(
+            Component.For<IAutoEncodeServerManager, ISourceFileManagerConnection, IEncodingJobManagerConnection>()
             .ImplementedBy<AutoEncodeServerManager>()
             .LifestyleSingleton());
     }

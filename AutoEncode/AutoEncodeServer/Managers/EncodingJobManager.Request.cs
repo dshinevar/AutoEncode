@@ -1,4 +1,5 @@
-﻿using AutoEncodeServer.Enums;
+﻿using AutoEncodeServer.Data;
+using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities;
@@ -50,7 +51,7 @@ public partial class EncodingJobManager : IEncodingJobManager
                         _encodingJobQueue.Add(newEncodingJob);
                     }
 
-                    _sourceFileManager.AddUpdateSourceFileEncodingStatusRequest(sourceFile.Guid, newEncodingJob.Status);
+                    SourceFileManagerConnection.UpdateSourceFileEncodingStatus(sourceFile.Guid, newEncodingJob.Status);
 
                     Logger.LogInfo($"{newEncodingJob} added to encoding job queue.", nameof(EncodingJobManager));
                 }
@@ -110,6 +111,7 @@ public partial class EncodingJobManager : IEncodingJobManager
                     if (_encodingJobQueue.Remove(job) is true)
                     {
                         Logger.LogInfo($"Job {job} was removed from queue. [Reason: {reason.GetDescription()}]", nameof(EncodingJobManager));
+                        SourceFileManagerConnection.UpdateSourceFileEncodingStatus(job.SourceFileGuid, null);
                     }
                 }
             }
@@ -204,19 +206,11 @@ public partial class EncodingJobManager : IEncodingJobManager
         }
     }
 
-    public bool IsEncodingByFileName(string filename)
+    public EncodingJobStatus? GetEncodingJobStatusBySourceFileGuid(Guid sourceFileGuid)
     {
         lock (_lock)
         {
-            return _encodingJobQueue.FirstOrDefault(x => x.Filename.Equals(filename))?.Status.Equals(EncodingJobStatus.ENCODING) ?? false;
-        }
-    }
-
-    public EncodingJobStatus? GetEncodingJobStatusByFileName(string filename)
-    {
-        lock (_lock)
-        {
-            return _encodingJobQueue.FirstOrDefault(x => x.Filename.Equals(filename))?.Status;
+            return _encodingJobQueue.FirstOrDefault(ej => ej.SourceFileGuid == sourceFileGuid)?.Status;
         }
     }
     #endregion Get Requests

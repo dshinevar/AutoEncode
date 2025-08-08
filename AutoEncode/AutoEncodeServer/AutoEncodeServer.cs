@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -28,12 +29,12 @@ internal partial class AutoEncodeServer
         Hdr10PlusCheck = -5,
         DolbyVisionCheck = -6,
         UnfinishedJobCheck = -7,
-        ServerStart = -8
+        ServerRun = -8
     }
 
     private const string LOG_FILENAME = "aeserver.log";
 
-    static void Main()
+    static async Task Main()
     {
         const string LOG_STARTUP = "STARTUP";
         StartupStep startupStep = StartupStep.Startup;
@@ -50,7 +51,7 @@ internal partial class AutoEncodeServer
         RegisterContainerComponents(container);
 
         ManualResetEvent shutdownMRE = new(false);
-        AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(sender, e, serverManager, shutdownMRE, container, logger);
+        AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(serverManager, logger, shutdownMRE);
 
         HelperMethods.DebugLog("AutoEncodeServer Starting Up.", GetStartupLogName());
         // LOAD CONFIG FILE
@@ -343,40 +344,40 @@ internal partial class AutoEncodeServer
         }
 
         // SERVER STARTUP
-        startupStep = StartupStep.ServerStart;
+        startupStep = StartupStep.ServerRun;
         try
         {
             serverManager = container.Resolve<IAutoEncodeServerManager>();
-            serverManager.Initialize(shutdownMRE);
-            serverManager.Start();
-
-            shutdownMRE.WaitOne();
+            serverManager.Initialize();
+            await serverManager.Run();  // Runs the server -- OnApplicationExit should initiate shutdown gracefully
         }
         catch (Exception ex)
         {
-            logger?.LogException(ex, "Failed to Start AutoEncodeServer", GetStartupLogName());
+            logger?.LogException(ex, "Exception while running AutoEncodeServer", nameof(AutoEncodeServer));
 
             container.Release(serverManager);
             serverManager = null;
+
+            NetMQConfig.Cleanup();
+
             Environment.Exit((int)startupStep);
         }
 
+        // Final cleanup
         container.Release(serverManager);
         serverManager = null;
-    }
-
-    static void OnApplicationExit(object sender, EventArgs e, IAutoEncodeServerManager mainThread, ManualResetEvent shutdownMRE, WindsorContainer container, ILogger logger)
-    {
-        logger?.LogInfo("AutoEncodeServer Shutting Down.", "SHUTDOWN");
-
-        if (mainThread is not null)
-        {
-            mainThread.Shutdown();
-            shutdownMRE.WaitOne();
-        }
 
         NetMQConfig.Cleanup();
 
         ContainerCleanup(container);
+
+        shutdownMRE.Set();  // Lets OnApplicationExit complete -- helps ensure there isn't premature shutdown
+    }
+
+    static void OnApplicationExit(IAutoEncodeServerManager autoEncodeServerManager, ILogger logger, ManualResetEvent shutdownMRE)
+    {
+        logger?.LogInfo("AutoEncodeServer Shutdown Initiated.", "SHUTDOWN");
+        autoEncodeServerManager?.Shutdown();
+        shutdownMRE.WaitOne();  // Hold here to allow for the server to completely shutdown -- if this exits, the app will exit
     }
 }

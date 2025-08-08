@@ -39,7 +39,7 @@ public partial class SourceFileManager : ISourceFileManager
             {
                 if (_sourceFiles.TryGetValue(sourceFileGuid, out sourceFileModel) is true)
                 {
-                    _encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel);
+                    EncodingJobManagerConnection.CreateEncodingJob(sourceFileModel);
                 }
             }
         }
@@ -49,7 +49,7 @@ public partial class SourceFileManager : ISourceFileManager
         }
     }
 
-    public void BulkRequestEncodingJob(IEnumerable<Guid> sourceFileGuids)
+    private void BulkRequestEncodingJob(IEnumerable<Guid> sourceFileGuids)
     {
         try
         {
@@ -59,7 +59,7 @@ public partial class SourceFileManager : ISourceFileManager
                 {
                     if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFileModel) is true)
                     {
-                        _encodingJobManager.AddCreateEncodingJobRequest(sourceFileModel);
+                        EncodingJobManagerConnection.CreateEncodingJob(sourceFileModel);
                     }
                 }
             }
@@ -70,7 +70,7 @@ public partial class SourceFileManager : ISourceFileManager
         }
     }
 
-    private void UpdateSourceFileEncodingStatusFromEncodingJobStatus(Guid sourceFileGuid, EncodingJobStatus encodingJobStatus)
+    private void UpdateSourceFileEncodingStatusFromEncodingJobStatus(Guid sourceFileGuid, EncodingJobStatus? encodingJobStatus)
     {
         if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFile) is true)
         {
@@ -85,7 +85,7 @@ public partial class SourceFileManager : ISourceFileManager
     #endregion Request Processing
 
     #region Add Requests
-    public bool AddUpdateSourceFileEncodingStatusRequest(Guid sourceFileGuid, EncodingJobStatus encodingJobStatus)
+    public bool AddUpdateSourceFileEncodingStatusRequest(Guid sourceFileGuid, EncodingJobStatus? encodingJobStatus)
         => Requests.TryAdd(() => UpdateSourceFileEncodingStatusFromEncodingJobStatus(sourceFileGuid, encodingJobStatus));
 
     public bool AddRequestEncodingJobForSourceFileRequest(Guid sourceFileGuid)

@@ -16,9 +16,6 @@ public interface ICommunicationMessageHandler
     /// <summary>Fires when a message is received.</summary>
     event EventHandler<RequestMessageReceivedEventArgs> MessageReceived;
 
-    /// <summary>Sets up <see cref="CommunicationMessageHandler"/> </summary>
-    void Initialize(ManualResetEvent shutdownMRE);
-
     /// <summary>Opens connections and starts listening.</summary>
     void Start();
 
