@@ -36,7 +36,7 @@ public partial class SourceFileManager : ISourceFileManager
         {
             try
             {
-                IEnumerable<SourceFile> foundSourceFiles = BuildSourceFiles();
+                ConcurrentBag<SourceFile> foundSourceFiles = BuildSourceFiles();
 
                 shutdownToken.ThrowIfCancellationRequested();
 
@@ -80,7 +80,7 @@ public partial class SourceFileManager : ISourceFileManager
 
     /// <summary>Finds / builds all source files</summary>
     /// <returns>Returns list of <see cref="SourceFile"/></returns>
-    private IEnumerable<SourceFile> BuildSourceFiles()
+    private ConcurrentBag<SourceFile> BuildSourceFiles()
     {
         ConcurrentBag<SourceFile> foundSourceFiles = [];
 

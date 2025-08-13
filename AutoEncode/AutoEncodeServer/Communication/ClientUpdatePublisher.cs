@@ -15,18 +15,14 @@ namespace AutoEncodeServer.Communication;
 
 public class ClientUpdatePublisher : IClientUpdatePublisher
 {
-    private struct ClientUpdateRequest
-    {
-        public string Topic { get; set; }
-        public CommunicationMessage<ClientUpdateType> Message { get; set; }
-    }
+    private readonly record struct ClientUpdateRequest(string Topic, CommunicationMessage<ClientUpdateType> Message);
 
     #region Dependencies
     public ILogger Logger { get; set; }
     #endregion Dependencies
 
     private readonly PublisherSocket _publisherSocket = new();
-    private readonly BlockingCollection<ClientUpdateRequest> _requests = [];
+    private readonly BlockingCollection<ClientUpdateRequest> _updates = [];
     private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
 
     #region Properties
@@ -54,7 +50,7 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Failed to start {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher), new { ConnectionString });
+            Logger.LogException(ex, $"Failed to start {nameof(ClientUpdatePublisher)}", nameof(ClientUpdatePublisher), details: new { ConnectionString });
             throw;
         }
     }
@@ -64,8 +60,8 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         try
         {
             // Stop adding and clear requests
-            _requests.CompleteAdding();
-            while (_requests.TryTake(out _)) ;
+            _updates.CompleteAdding();
+            while (_updates.TryTake(out _));
 
             _publisherSocket?.Unbind(ConnectionString);
             _publisherSocket?.Close();
@@ -86,7 +82,7 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         {
             try
             {
-                foreach (ClientUpdateRequest request in _requests.GetConsumingEnumerable(_shutdownCancellationTokenSource.Token))
+                foreach (ClientUpdateRequest request in _updates.GetConsumingEnumerable(_shutdownCancellationTokenSource.Token))
                 {
                     SendUpdateToClients(request);
                 }
@@ -121,10 +117,6 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
     }
 
     public bool AddClientUpdateRequest(string topic, CommunicationMessage<ClientUpdateType> message)
-        => _requests.TryAdd(new ClientUpdateRequest()
-        {
-            Topic = topic,
-            Message = message
-        });
+        => _updates.TryAdd(new ClientUpdateRequest(topic, message));
     #endregion Request Handling
 }

@@ -34,7 +34,9 @@ public partial class EncodingJobModel :
 
         if (File.Exists(SourceFullPath) is false)
         {
-            SetError(Logger.LogError($"Source file no longer found for {this}", nameof(EncodingJobModel), new { SourceFullPath }));
+            string msg = $"Source file no longer found for {this}";
+            SetError(msg);
+            Logger.LogError(msg, nameof(EncodingJobModel), new { SourceFullPath });
             return;
         }
 
@@ -65,7 +67,9 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error getting probe or source file data for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfprobeDirectory }), ex);
+                string msg = $"Error getting probe or source file data for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfprobeDirectory });
                 return;
             }
 
@@ -79,7 +83,9 @@ public partial class EncodingJobModel :
 
                 if (scanType.Equals(VideoScanType.UNDETERMINED))
                 {
-                    SetError(Logger.LogError($"Failed to determine VideoScanType for {this}.", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }));
+                    string msg = $"Failed to determine VideoScanType for {this}.";
+                    SetError(msg);
+                    Logger.LogError(msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
                     return;
                 }
                 else
@@ -93,7 +99,9 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining VideoScanType for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }), ex);
+                string msg = $"Error determining VideoScanType for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
                 return;
             }
 
@@ -107,7 +115,9 @@ public partial class EncodingJobModel :
 
                 if (string.IsNullOrWhiteSpace(crop))
                 {
-                    SetError(Logger.LogError($"Failed to determine crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }));
+                    string msg = $"Failed to determine crop for {this}";
+                    SetError(msg);
+                    Logger.LogError(msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
                 }
                 else
                 {
@@ -120,7 +130,9 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error determining crop for {this}", nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory }), ex);
+                string msg = $"Error determining crop for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
                 return;
             }
 
@@ -166,8 +178,10 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error creating HDR metadata file for {this}", nameof(EncodingJobModel),
-                    new { Id, Name, DynamicHDR = SourceStreamData.VideoStream.HasDynamicHDR, DVEnabled = State.DolbyVision.Enabled, State.DolbyVision.DoviToolFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath }), ex);
+                string msg = $"Error creating HDR metadata file for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel),
+                    new { Id, Name, DynamicHDR = SourceStreamData.VideoStream.HasDynamicHDR, DVEnabled = State.DolbyVision.Enabled, State.DolbyVision.DoviToolFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath });
                 return;
             }
 
@@ -184,7 +198,9 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error building encoding instructions for {this}", nameof(EncodingJobModel), new { Id, Name }), ex);
+                string msg = $"Error building encoding instructions for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name });
                 return;
             }
 
@@ -219,7 +235,9 @@ public partial class EncodingJobModel :
             }
             catch (Exception ex)
             {
-                SetError(Logger.LogException(ex, $"Error building FFmpeg command for {this}", nameof(EncodingJobModel), new { Id, Name }), ex);
+                string msg = $"Error building FFmpeg command for {this}";
+                SetError(msg, ex);
+                Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name });
                 return;
             }
 
@@ -231,7 +249,9 @@ public partial class EncodingJobModel :
         }
         catch (Exception ex)
         {
-            SetError(Logger.LogException(ex, $"Error building encoding job for {this}", nameof(EncodingJobModel), new { Id, Name, BuildingStatus }), ex);
+            string msg = $"Error building encoding job for {this}";
+            SetError(msg, ex);
+            Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name, BuildingStatus });
             return;
         }
 
@@ -403,19 +423,34 @@ public partial class EncodingJobModel :
             IEnumerable<IGrouping<string, AudioStreamData>> streamsByLanguage = streamData.AudioStreams.GroupBy(x => x.Language);
             foreach (IGrouping<string, AudioStreamData> audioData in streamsByLanguage)
             {
-                AudioStreamData bestQualityAudioStream = audioData.Where(x => x.Commentary is false).MaxBy(x => Lookups.AudioCodecPriority.IndexOf(x.CodecName.ToLower()));
-                IEnumerable<AudioStreamData> commentaryAudioStreams = audioData.Where(x => x.Commentary is true);
+                AudioStreamData bestQualityAudioStream = audioData.Where(ad => ad.Commentary is false).MaxBy(ad => Lookups.AudioCodecPriority.IndexOf(ad.CodecName.ToLower()));
+                IEnumerable<AudioStreamData> commentaryAudioStreams = audioData.Where(ad => ad.Commentary is true);
 
-                if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) && bestQualityAudioStream.Channels < 2)
+                if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) ||
+                    bestQualityAudioStream.CodecName.Equals("aac", StringComparison.OrdinalIgnoreCase))
                 {
                     // If ac3 and mono, go ahead and convert to AAC
-                    audioInstructions.Add(new()
+                    if (bestQualityAudioStream.Channels < 2)
                     {
-                        SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.AAC,
-                        Language = bestQualityAudioStream.Language,
-                        Title = bestQualityAudioStream.Title
-                    });
+                        audioInstructions.Add(new()
+                        {
+                            SourceIndex = bestQualityAudioStream.AudioIndex,
+                            AudioCodec = AudioCodec.AAC,
+                            Language = bestQualityAudioStream.Language,
+                            Title = bestQualityAudioStream.Title
+                        });
+                    }
+                    // Otherwise just copy -- low enough quality not worth having multiple audio
+                    else
+                    {
+                        audioInstructions.Add(new()
+                        {
+                            SourceIndex = bestQualityAudioStream.AudioIndex,
+                            AudioCodec = AudioCodec.COPY,
+                            Language = bestQualityAudioStream.Language,
+                            Title = bestQualityAudioStream.Title
+                        });
+                    }
                 }
                 else
                 {
@@ -451,9 +486,9 @@ public partial class EncodingJobModel :
             }
 
             instructions.AudioStreamEncodingInstructions = [.. audioInstructions.OrderBy(x => x.Commentary) // Put commentaries at the end
-            .ThenBy(x => x.Language.Equals(Lookups.PrimaryLanguage, StringComparison.OrdinalIgnoreCase)) // Put non-primary languages first
-            .ThenBy(x => x.Language) // Not sure if needed? Make sure languages are together
-            .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY))];
+                .ThenBy(x => x.Language.Equals(Lookups.PrimaryLanguage, StringComparison.OrdinalIgnoreCase)) // Put non-primary languages first
+                .ThenBy(x => x.Language) // Not sure if needed? Make sure languages are together
+                .ThenByDescending(x => x.AudioCodec.Equals(AudioCodec.COPY))];
 
             List<SubtitleStreamEncodingInstructions> subtitleInstructions = [];
             if (streamData.SubtitleStreams?.Any() ?? false)
@@ -471,7 +506,7 @@ public partial class EncodingJobModel :
                 }
             }
 
-            instructions.SubtitleStreamEncodingInstructions = subtitleInstructions.OrderBy(x => x.Forced).ToList();
+            instructions.SubtitleStreamEncodingInstructions = [.. subtitleInstructions.OrderBy(x => x.Forced)];
 
             EncodingInstructions = instructions;
         }

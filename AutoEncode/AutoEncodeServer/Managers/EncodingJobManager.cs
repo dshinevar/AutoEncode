@@ -113,7 +113,7 @@ public partial class EncodingJobManager :
     {
         lock (_lock)
         {
-            return _encodingJobQueue.Any(x => x.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase));
+            return _encodingJobQueue.Any(jobModel => jobModel.FileName.Equals(filename, StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -142,10 +142,10 @@ public partial class EncodingJobManager :
     {
         lock (_lock)
         {
-            return _encodingJobQueue.FirstOrDefault(x => x.Status.Equals(EncodingJobStatus.ENCODED) &&
-                                        x.CompletedEncodingDateTime.HasValue &&
-                                        x.NeedsPostProcessing &&
-                                        (x.Paused is false) && (x.HasError is false));
+            return _encodingJobQueue.FirstOrDefault(ej => ej.Status.Equals(EncodingJobStatus.ENCODED) &&
+                                        ej.CompletedEncodingDateTime.HasValue &&
+                                        ej.NeedsPostProcessing &&
+                                        (ej.Paused is false) && (ej.HasError is false));
         }
     }
 
@@ -155,9 +155,9 @@ public partial class EncodingJobManager :
     {
         lock (_lock)
         {
-            return _encodingJobQueue.Where(x => x.Status.Equals(EncodingJobStatus.ENCODED) &&
-                                            x.CompletedEncodingDateTime.HasValue &&
-                                            x.NeedsPostProcessing is false).ToList();
+            return _encodingJobQueue.Where(ej => ej.Status.Equals(EncodingJobStatus.ENCODED) &&
+                                            ej.CompletedEncodingDateTime.HasValue &&
+                                            ej.NeedsPostProcessing is false).ToList();
         }
     }
 
@@ -167,8 +167,8 @@ public partial class EncodingJobManager :
     {
         lock (_lock)
         {
-            return _encodingJobQueue.Where(x => x.Status.Equals(EncodingJobStatus.POST_PROCESSED) &&
-                                            x.CompletedPostProcessingTime.HasValue).ToList();
+            return _encodingJobQueue.Where(ej => ej.Status.Equals(EncodingJobStatus.POST_PROCESSED) &&
+                                            ej.CompletedPostProcessingTime.HasValue).ToList();
         }
     }
 
@@ -176,7 +176,7 @@ public partial class EncodingJobManager :
     {
         lock (_lock)
         {
-            return _encodingJobQueue.Where(x => x.HasError).ToList();
+            return _encodingJobQueue.Where(ej => ej.HasError).ToList();
         }
     }
 

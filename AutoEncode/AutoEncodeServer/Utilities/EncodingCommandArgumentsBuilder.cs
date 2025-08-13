@@ -215,7 +215,7 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
         // Merging
         StringBuilder sbMerge = new();
         sbMerge.AppendFormat(format, $"-o \"{encodingJobData.DestinationFullPath}\" --compression -1:none \"{encodedVideoFullPath}\" --compression -1:none \"{encodingJobData.EncodingInstructions.EncodedAudioSubsFullPath}\"")
-            .Append($"--title \"{encodingJobData.Title}\"");
+                .Append($"--title \"{encodingJobData.Title}\"");
         mergeCommandArguments = sbMerge.ToString();
 
         return new EncodingCommandArguments(true, videoEncodingCommandArguments, audioSubEncodingCommandArguments, mergeCommandArguments);
@@ -234,80 +234,14 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
         else
         {
             sbAudio.AppendFormat(format, $"-c:a:{index} {audioInstructions.AudioCodec.GetDescription()}")
-                .AppendFormat(format, $"-ac:a:{index} 2 -b:a:{index} 192k -filter:a:{index} \"aresample=matrix_encoding=dplii\"")
-                .AppendFormat(format, $"-metadata:s:a:{index} title=\"Stereo ({audioInstructions.AudioCodec.GetDescription()})\"")
-                .AppendFormat(format, $"-metadata:s:a:{index} language=\"{audioInstructions.Language}\"");
+                    .AppendFormat(format, $"-ac:a:{index} 2 -b:a:{index} 192k -filter:a:{index} \"aresample=matrix_encoding=dplii\"")
+                    .AppendFormat(format, $"-metadata:s:a:{index} title=\"Stereo ({audioInstructions.AudioCodec.GetDescription()})\"")
+                    .AppendFormat(format, $"-metadata:s:a:{index} language=\"{audioInstructions.Language}\"");
         }
-
-        /*
-        StringBuilder sbDisposition = null;
-
-        if (audioInstructions.Commentary is true)
-        {
-            if (sbDisposition is null)
-            {
-                sbDisposition = new($"-disposition:a:{index} comment");
-            }
-            else
-            {
-                sbDisposition.Append("+comment");
-            }
-        }
-
-        if (sbDisposition is not null)
-        {
-            sbAudio.AppendFormat(format, sbDisposition.ToString());
-        }
-        */
     }
 
     private static void BuildSubtitleStreamArguments(StringBuilder sbSubtitle, int index, SubtitleStreamEncodingInstructions subtitleInstructions)
     {
         sbSubtitle.AppendFormat(format, $"-c:s:{index} copy");
-
-        /*
-        StringBuilder sbDisposition = null;
-
-        if (subtitleInstructions.Forced is true)
-        {
-            if (sbDisposition is null)
-            {
-                sbDisposition = new($"-disposition:s:{index} forced");
-            }
-            else
-            {
-                sbDisposition.Append("+forced");
-            }
-        }
-
-        if (subtitleInstructions.Commentary)
-        {
-            if (sbDisposition is null)
-            {
-                sbDisposition = new($"-disposition:s:{index} comment");
-            }
-            else
-            {
-                sbDisposition.Append("+comment");
-            }
-        }
-
-        if (subtitleInstructions.HearingImpaired)
-        {
-            if (sbDisposition is null)
-            {
-                sbDisposition = new($"-disposition:s:{index} hearing_impaired");
-            }
-            else
-            {
-                sbDisposition.Append("+hearing_impaired");
-            }
-        }
-
-        if (sbDisposition is not null)
-        {
-            sbSubtitle.AppendFormat(format, sbDisposition.ToString());
-        }
-        */
     }
 }

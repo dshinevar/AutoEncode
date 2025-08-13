@@ -21,6 +21,7 @@ using NetMQ;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -43,6 +44,7 @@ public partial class App : Application
     private const string LOG_STARTUP_NAME = "STARTUP";
     private const string LOG_FILENAME = "aeclient.log";
     private ILogger Logger = null;
+    private Task loggerTask = null;
     private WindsorContainer _container;
 
     private IAutoEncodeClientViewModel _clientViewModel;
@@ -102,14 +104,7 @@ public partial class App : Application
             }
         }
 
-        if (Logger.CheckAndDoRollover() is false)
-        {
-            // If rollover fails, just exit
-            string errorMsg = $"({startupStep}) Error occurred when checking log file for rollover. Exiting as logging will not function.";
-            MessageBox.Show(errorMsg, "Logger Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            HelperMethods.DebugLog(errorMsg, LOG_STARTUP_NAME);
-            Environment.Exit((int)startupStep);
-        }
+        loggerTask = Logger.Run();
 
         Current.Dispatcher.UnhandledException += Dispatcher_UnhandledException;
 
@@ -150,6 +145,9 @@ public partial class App : Application
 
             // Do final cleanup of networking
             NetMQConfig.Cleanup(false);
+
+            Logger.Stop();
+            loggerTask.Wait(10000);
         }
         catch (Exception ex)
         {

@@ -43,6 +43,7 @@ internal partial class AutoEncodeServer
             => $"{LOG_STARTUP}-{startupStep}";
 
         ILogger logger = null;
+        Task loggerTask = null;
         IAutoEncodeServerManager serverManager = null;
 
         // Container Standup
@@ -88,11 +89,7 @@ internal partial class AutoEncodeServer
             }
         }
 
-        if (logger.CheckAndDoRollover() is false)
-        {
-            HelperMethods.DebugLog("FATAL: Error occurred when checking log file for rollover. Exiting as logging will not function.", GetStartupLogName());
-            Environment.Exit((int)startupStep);
-        }
+        loggerTask = logger.Run();
 
         // CHECK FOR FFMPEG/FFPROBE
         startupStep = StartupStep.FfmpegCheck;
@@ -116,7 +113,7 @@ internal partial class AutoEncodeServer
         catch (Exception ex)
         {
             HelperMethods.DebugLog($"FATAL: ffmpeg not found/failed to call. Exiting. Exception: {ex.Message}", GetStartupLogName());
-            logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", GetStartupLogName(), new { State.Ffmpeg.FfmpegDirectory });
+            logger.LogException(ex, "ffmpeg not found/failed to call. Exiting.", GetStartupLogName(), details: new { State.Ffmpeg.FfmpegDirectory });
             Environment.Exit((int)startupStep);
         }
 
@@ -147,7 +144,7 @@ internal partial class AutoEncodeServer
         catch (Exception ex)
         {
             HelperMethods.DebugLog($"FATAL: ffprobe not found/failed to call. Exiting. Exception: {ex.Message}", GetStartupLogName());
-            logger.LogException(ex, "ffprobe not found/failed to call. Exiting.", GetStartupLogName(), new { State.Ffmpeg.FfprobeDirectory, State.Ffmpeg.FfmpegDirectory });
+            logger.LogException(ex, "ffprobe not found/failed to call. Exiting.", GetStartupLogName(), details: new { State.Ffmpeg.FfprobeDirectory, State.Ffmpeg.FfmpegDirectory });
             Environment.Exit((int)startupStep);
         }
 
@@ -354,11 +351,13 @@ internal partial class AutoEncodeServer
         catch (Exception ex)
         {
             logger?.LogException(ex, "Exception while running AutoEncodeServer", nameof(AutoEncodeServer));
-
             container.Release(serverManager);
             serverManager = null;
 
             NetMQConfig.Cleanup();
+
+            logger.Stop();
+            loggerTask.Wait(10000);
 
             Environment.Exit((int)startupStep);
         }
@@ -368,6 +367,9 @@ internal partial class AutoEncodeServer
         serverManager = null;
 
         NetMQConfig.Cleanup();
+
+        logger.Stop();
+        loggerTask.Wait(10000);
 
         ContainerCleanup(container);
 

@@ -1,5 +1,4 @@
-﻿using AutoEncodeServer.Data;
-using AutoEncodeServer.Enums;
+﻿using AutoEncodeServer.Enums;
 using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities;
@@ -72,14 +71,14 @@ public partial class EncodingJobManager : IEncodingJobManager
 
         FileInfo fileInfo = new(filePath);
         bool ready = true;
-    
+
         for (int i = 0; i < attempts; i++)
         {
             try
             {
                 using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None);
             }
-            catch (IOException) 
+            catch (IOException)
             {
                 ready = false;
                 break;
@@ -99,7 +98,7 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             lock (_lock)
             {
-                job = _encodingJobQueue.SingleOrDefault(x => x.Id == id);
+                job = _encodingJobQueue.SingleOrDefault(encodingJob => encodingJob.Id == id);
                 if (job is not null)
                 {
                     if (job.IsProcessing)
@@ -112,13 +111,14 @@ public partial class EncodingJobManager : IEncodingJobManager
                     {
                         Logger.LogInfo($"Job {job} was removed from queue. [Reason: {reason.GetDescription()}]", nameof(EncodingJobManager));
                         SourceFileManagerConnection.UpdateSourceFileEncodingStatus(job.SourceFileGuid, null);
+                        EncodingJobModelFactory.Release(job);
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error removing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, reason, job?.Filename });
+            Logger.LogException(ex, $"Error removing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, reason, job?.FileName });
         }
     }
 
@@ -129,13 +129,13 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             lock (_lock)
             {
-                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job = _encodingJobQueue.FirstOrDefault(encodingJob => encodingJob.Id == id);
                 job?.Cancel();
             }
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
+            Logger.LogException(ex, $"Error cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.FileName });
         }
     }
 
@@ -146,13 +146,13 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             lock (_lock)
             {
-                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job = _encodingJobQueue.FirstOrDefault(encodingJob => encodingJob.Id == id);
                 job?.Pause();
             }
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error pausing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
+            Logger.LogException(ex, $"Error pausing encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.FileName });
         }
     }
 
@@ -163,7 +163,7 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             lock (_lock)
             {
-                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job = _encodingJobQueue.FirstOrDefault(encodingJob => encodingJob.Id == id);
                 job?.Resume();
 
                 _encodingJobManagerMRE.Set();
@@ -171,7 +171,7 @@ public partial class EncodingJobManager : IEncodingJobManager
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error resuming encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
+            Logger.LogException(ex, $"Error resuming encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.FileName });
         }
     }
 
@@ -182,14 +182,14 @@ public partial class EncodingJobManager : IEncodingJobManager
         {
             lock (_lock)
             {
-                job = _encodingJobQueue.FirstOrDefault(x => x.Id == id);
+                job = _encodingJobQueue.FirstOrDefault(encodingJob => encodingJob.Id == id);
                 job?.Pause();
                 job?.Cancel();
             }
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, $"Error pausing and cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.Filename });
+            Logger.LogException(ex, $"Error pausing and cancelling encoding job with ID: {id}", nameof(EncodingJobManager), new { id, job?.FileName });
         }
     }
     #endregion Request Processing
@@ -202,7 +202,7 @@ public partial class EncodingJobManager : IEncodingJobManager
     {
         lock (_lock)
         {
-            return _encodingJobQueue.Select(x => x.ToEncodingJobData()).ToList();
+            return _encodingJobQueue.Select(encodingJob => encodingJob.ToEncodingJobData()).ToList();
         }
     }
 

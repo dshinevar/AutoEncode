@@ -10,7 +10,6 @@ public static class CommunicationConstants
         SerializerOptions = new()
         {
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
-            //IncludeFields = true,
             NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
     }

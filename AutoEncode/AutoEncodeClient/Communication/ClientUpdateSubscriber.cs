@@ -154,7 +154,7 @@ public class ClientUpdateSubscriber :
                     e.Socket.TryReceiveFrameString(TimeSpan.FromSeconds(10), out message);
                 }
 
-                if ((string.IsNullOrWhiteSpace(message) is false) && (message.IsValidJson() is true))
+                if (message.IsValidJson() is true)
                 {
                     CommunicationMessage<ClientUpdateType> updateMessage = JsonSerializer.Deserialize<CommunicationMessage<ClientUpdateType>>(message, CommunicationConstants.SerializerOptions);
                     ClientUpdateMessageReceived?.Invoke(this, updateMessage);
