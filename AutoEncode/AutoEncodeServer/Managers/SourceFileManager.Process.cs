@@ -206,17 +206,7 @@ public partial class SourceFileManager : ISourceFileManager
             EncodingJobStatus? encodingJobStatus = EncodingJobManagerConnection.GetEncodingJobStatusBySourceFileGuid(sourceFile.Guid);
 
             // Translate EncodingJobStatus to SourceFileEncodingStatus
-            SourceFileEncodingStatus sourceFileEncodingStatus = TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus);
-
-            // If status was determined to be NOT_ENCODED but we have a destination file,
-            // Mark as encoded
-            if (sourceFileEncodingStatus is SourceFileEncodingStatus.NOT_ENCODED &&
-                hasDestinationFile is true)
-            {
-                sourceFileEncodingStatus = SourceFileEncodingStatus.ENCODED;
-            }
-
-            return sourceFileEncodingStatus;
+            return TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus, hasDestinationFile);
         }
     }
 
@@ -248,21 +238,31 @@ public partial class SourceFileManager : ISourceFileManager
         return valid;
     }
 
-    private static SourceFileEncodingStatus TranslateEncodingJobStatusToSourceFileEncodingStatus(EncodingJobStatus? encodingJobStatus)
+    private static SourceFileEncodingStatus TranslateEncodingJobStatusToSourceFileEncodingStatus(EncodingJobStatus? encodingJobStatus, bool hasDestinationFile)
     {
+        SourceFileEncodingStatus sourceFileEncodingStatus = SourceFileEncodingStatus.NOT_ENCODED;
+
         if (encodingJobStatus.HasValue)
         {
             if (encodingJobStatus >= EncodingJobStatus.ENCODED)
             {
-                return SourceFileEncodingStatus.ENCODED;
+                sourceFileEncodingStatus = SourceFileEncodingStatus.ENCODED;
             }
             else
             {
-                return SourceFileEncodingStatus.IN_QUEUE;
+                sourceFileEncodingStatus = SourceFileEncodingStatus.IN_QUEUE;
             }
         }
 
-        return SourceFileEncodingStatus.NOT_ENCODED;
+        // If status was determined to be NOT_ENCODED but we have a destination file,
+        // Mark as encoded
+        if (sourceFileEncodingStatus is SourceFileEncodingStatus.NOT_ENCODED &&
+            hasDestinationFile is true)
+        {
+            sourceFileEncodingStatus = SourceFileEncodingStatus.ENCODED;
+        }
+
+        return sourceFileEncodingStatus;
     }
 
     private void Wake() => _sleepMRE.Set();

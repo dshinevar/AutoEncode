@@ -7,6 +7,7 @@ using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace AutoEncodeServer.Managers;
@@ -74,7 +75,10 @@ public partial class SourceFileManager : ISourceFileManager
     {
         if (_sourceFiles.TryGetValue(sourceFileGuid, out ISourceFileModel sourceFile) is true)
         {
-            if (sourceFile.UpdateEncodingStatus(TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus)) is true)
+            bool destinationFileExists = File.Exists(sourceFile.DestinationFullPath);
+            SourceFileEncodingStatus newSourceFileEncodingStatus = TranslateEncodingJobStatusToSourceFileEncodingStatus(encodingJobStatus, destinationFileExists);
+           
+            if (sourceFile.UpdateEncodingStatus(newSourceFileEncodingStatus) is true)
             {
                 SourceFileUpdateData update = new(SourceFileUpdateType.Update, sourceFile.ToData());
                 (string topic, CommunicationMessage<ClientUpdateType> message) = ClientUpdateMessageFactory.CreateSourceFileUpdate([update]);
