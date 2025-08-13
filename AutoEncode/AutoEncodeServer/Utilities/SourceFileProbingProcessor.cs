@@ -183,7 +183,7 @@ public class SourceFileProbingProcessor : ISourceFileProbingProcessor
                 videoStreamData.ChromaLocation ??= videoFrame.ChromaLocation;
 
                 // Usually should have some kind of side data
-                if ((videoFrame?.SideData.Count ?? -1) > 0)
+                if ((videoFrame?.SideData?.Count ?? -1) > 0)
                 {
                     SideData masteringDisplayMetadata = videoFrame.SideData
                                                                     .SingleOrDefault(sd => sd.SideDataType.Equals("Mastering display metadata", StringComparison.OrdinalIgnoreCase));
