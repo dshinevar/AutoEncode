@@ -173,6 +173,10 @@ public partial class SourceFileManager : ISourceFileManager
                 try
                 {
                     model = SourceFileModelFactory.Create(newSourceFile);
+
+                    SourceFileEncodingStatus status = DetermineSourceFileEncodingStatus(model, newSourceFile.HasDestinationFile);
+                    model.UpdateEncodingStatus(status);
+
                     if (_sourceFiles.TryAdd(model.Guid, model) is true)
                     {
                         sourceFileUpdates.Add(new(SourceFileUpdateType.Add, model.ToData()));
