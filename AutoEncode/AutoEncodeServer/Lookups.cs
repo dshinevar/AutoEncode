@@ -50,6 +50,7 @@ public static class Lookups
     public static readonly IList<string> AudioCodecPriority =
     [
         "ac3",
+        "aac",
         "dts",
         "dts-es",
         "dts-hd hra",

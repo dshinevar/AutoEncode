@@ -16,7 +16,9 @@
                     <Border Background="{TemplateBinding Background}"
                             CornerRadius="5"
                             Padding="4"
-                            Margin="1">
+                            Margin="1"
+                            VerticalAlignment="Top"
+                            Height="125">
                         <Border.ToolTip>
                             <ToolTip Placement="Bottom"
                                      Content="Click for details"/>

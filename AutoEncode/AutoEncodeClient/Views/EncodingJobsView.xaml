@@ -15,7 +15,8 @@
                 d:DesignHeight="600" d:DesignWidth="1000">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="150"/>
+            <RowDefinition Height="Auto"
+                           MinHeight="140"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 

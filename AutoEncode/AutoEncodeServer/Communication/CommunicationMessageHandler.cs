@@ -89,7 +89,7 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
                 {
                     string messageString = message[2].ConvertToString();
 
-                    if (string.IsNullOrWhiteSpace(messageString) is false && messageString.IsValidJson())
+                    if (messageString.IsValidJson())
                     {
                         CommunicationMessage<RequestMessageType> communicationMessage = JsonSerializer.Deserialize<CommunicationMessage<RequestMessageType>>(messageString, CommunicationConstants.SerializerOptions);
 

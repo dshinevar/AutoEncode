@@ -51,7 +51,7 @@ public partial class EncodingJobModel :
 
     public string Name { get; }
 
-    public string Filename { get; }
+    public string FileName { get; }
 
     public string SourceFullPath { get; }
 
@@ -161,8 +161,8 @@ public partial class EncodingJobModel :
         SourceFileGuid = sourceFileGuid;
         SourceFullPath = sourceFileFullPath;
         DestinationFullPath = destinationFileFullPath;
-        Filename = Path.GetFileName(sourceFileFullPath);
-        Name = Path.GetFileNameWithoutExtension(Filename);
+        FileName = Path.GetFileName(sourceFileFullPath);
+        Name = Path.GetFileNameWithoutExtension(FileName);
         PostProcessingSettings = postProcessingSettings;
         SetPostProcessingFlags();
     }
@@ -235,7 +235,7 @@ public partial class EncodingJobModel :
         return encodingJobData;
     }
 
-    public override string ToString() => $"({Id}) - {Filename}";
+    public override string ToString() => $"({Id}) - {FileName}";
     #endregion ===== Public Methods =====
 
     #region ===== Private Methods =====

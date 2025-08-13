@@ -20,8 +20,8 @@ public interface IEncodingJobData
     /// <summary>Name of job (FileName without extension) </summary>
     string Name { get; }
 
-    /// <summary>Filename of source file </summary>
-    string Filename { get; }
+    /// <summary>FileName of source file </summary>
+    string FileName { get; }
 
     /// <summary>Full Path of the job's Source File </summary>
     string SourceFullPath { get; }
