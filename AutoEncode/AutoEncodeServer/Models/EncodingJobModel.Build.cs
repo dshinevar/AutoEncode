@@ -118,6 +118,7 @@ public partial class EncodingJobModel :
                     string msg = $"Failed to determine crop for {this}";
                     SetError(msg);
                     Logger.LogError(msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
+                    return;
                 }
                 else
                 {
@@ -154,7 +155,10 @@ public partial class EncodingJobModel :
                         }
                         else
                         {
-                            throw new Exception(extractResult.Message);
+                            string errorMsg = $"Error creating HDR metadata file for {this}";
+                            SetError(errorMsg, extractResult.Message);
+                            Logger.LogError(errorMsg, nameof(EncodingJobModel), new { SourceFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath });
+                            return;
                         }
                     }
 
@@ -167,7 +171,10 @@ public partial class EncodingJobModel :
                         }
                         else
                         {
-                            throw new Exception(extractResult.Message);
+                            string errorMsg = $"Error creating HDR metadata file for {this}";
+                            SetError(errorMsg, extractResult.Message);
+                            Logger.LogError(errorMsg, nameof(EncodingJobModel), new { SourceFullPath, State.DolbyVision.DoviToolFullPath });
+                            return;
                         }
                     }
                 }

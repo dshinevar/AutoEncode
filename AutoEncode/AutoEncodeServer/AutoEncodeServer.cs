@@ -351,25 +351,26 @@ internal partial class AutoEncodeServer
         catch (Exception ex)
         {
             logger?.LogException(ex, "Exception while running AutoEncodeServer", nameof(AutoEncodeServer));
-            container.Release(serverManager);
-            serverManager = null;
 
             NetMQConfig.Cleanup();
 
             logger.Stop();
             loggerTask.Wait(10000);
 
+            container.Release(serverManager);
+            serverManager = null;
+
             Environment.Exit((int)startupStep);
         }
 
         // Final cleanup
-        container.Release(serverManager);
-        serverManager = null;
-
         NetMQConfig.Cleanup();
 
         logger.Stop();
         loggerTask.Wait(10000);
+
+        container.Release(serverManager);
+        serverManager = null;
 
         ContainerCleanup(container);
 
