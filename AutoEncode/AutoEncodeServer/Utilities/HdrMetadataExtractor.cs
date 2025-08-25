@@ -180,7 +180,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
                     hdrMetadataProcess.EnableRaisingEvents = true;
-                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
+                    hdrMetadataProcess.OutputDataReceived += (sender, e) =>
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
                             additionalLogs.Add(e.Data);
@@ -191,7 +191,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                             exitCode = proc.ExitCode;
                     };
                     processStarted = hdrMetadataProcess.Start();
-                    hdrMetadataProcess.BeginErrorReadLine();
+                    hdrMetadataProcess.BeginOutputReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
 
