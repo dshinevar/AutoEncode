@@ -148,6 +148,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
 
         Process hdrMetadataProcess = null;
         int? exitCode = null;
+        bool processStarted = false;
         CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
         {
             hdrMetadataProcess?.Kill(true);
@@ -167,9 +168,9 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = doviToolProcessFileName,
-                    Arguments = processArgs,
-                    UseShellExecute = true
+                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
+                    Arguments = $"{doviToolProcessFileName} {processArgs}",
+                    UseShellExecute = false
                 };
 
                 using (hdrMetadataProcess = new())
@@ -181,7 +182,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                         if (sender is Process proc)
                             exitCode = proc.ExitCode;
                     };
-                    hdrMetadataProcess.Start();
+                    processStarted = hdrMetadataProcess.Start();
                     hdrMetadataProcess.WaitForExit();
                 }
             }
@@ -247,7 +248,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
         else
         {
             string msg = "DolbyVision Metadata file was not created/does not exist.";
-            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode });
+            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
