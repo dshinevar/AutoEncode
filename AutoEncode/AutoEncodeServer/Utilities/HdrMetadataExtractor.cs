@@ -161,7 +161,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
             if (isMkvFile)
             {
-                processArgs = State.IsLinuxEnvironment ? $"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'"
+                processArgs = State.IsLinuxEnvironment ? $"extract-rpu -i '{sourceFileFullPath}' -o '{metadataOutputFile}'"
                                                                                 : $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
 
                 ProcessStartInfo startInfo = new()
@@ -241,7 +241,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "DolbyVision Metadata file was created but is empty.";
-                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode });
+                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
