@@ -169,8 +169,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
-                    Arguments = $"{doviToolProcessFileName} {processArgs}",
+                    FileName = doviToolProcessFileName,
+                    Arguments = processArgs,
                     UseShellExecute = false,
                     RedirectStandardError = true,
                 };
