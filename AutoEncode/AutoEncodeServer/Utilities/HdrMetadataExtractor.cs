@@ -3,6 +3,7 @@ using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Process;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -173,10 +174,17 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     UseShellExecute = false
                 };
 
+                List<string> additionalLogs = new List<string>();
+
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
                     hdrMetadataProcess.EnableRaisingEvents = true;
+                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                            additionalLogs.Add(e.Data);
+                    };
                     hdrMetadataProcess.Exited += (sender, e) =>
                     {
                         if (sender is Process proc)
@@ -185,6 +193,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     processStarted = hdrMetadataProcess.Start();
                     hdrMetadataProcess.WaitForExit();
                 }
+
+                Logger.LogInfo(additionalLogs, "TEMP");
             }
             else
             {
