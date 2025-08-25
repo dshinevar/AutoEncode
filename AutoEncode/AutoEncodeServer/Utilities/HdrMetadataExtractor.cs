@@ -162,7 +162,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
             if (isMkvFile)
             {
-                processArgs = State.IsLinuxEnvironment ? $"extract-rpu -i '{sourceFileFullPath}' -o '{metadataOutputFile}'"
+                processArgs = State.IsLinuxEnvironment ? $"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'"
                                                                                 : $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
 
                 ProcessStartInfo startInfo = new()
