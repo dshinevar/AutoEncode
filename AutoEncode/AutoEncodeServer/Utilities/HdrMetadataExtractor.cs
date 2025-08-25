@@ -171,7 +171,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     CreateNoWindow = true,
                     FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = $"{doviToolProcessFileName} {processArgs}",
-                    UseShellExecute = false
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
                 };
 
                 List<string> additionalLogs = new List<string>();
@@ -180,7 +181,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
                     hdrMetadataProcess.EnableRaisingEvents = true;
-                    hdrMetadataProcess.OutputDataReceived += (sender, e) =>
+                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
                             additionalLogs.Add(e.Data);
@@ -191,7 +192,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                             exitCode = proc.ExitCode;
                     };
                     processStarted = hdrMetadataProcess.Start();
-                    hdrMetadataProcess.BeginOutputReadLine();
+                    hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
 
