@@ -142,6 +142,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
     private ProcessResult<string> ExtractDolbyVisionMetadata(string sourceFileFullPath, CancellationToken cancellationToken)
     {
         string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFileFullPath).Replace('\'', ' ')}.RPU.bin";
+        string doviToolProcessFileName = string.IsNullOrWhiteSpace(State.DolbyVision.DoviToolFullPath) ? Lookups.DoviToolExecutable
+                                                                                                : State.DolbyVision.DoviToolFullPath;
         string processArgs;
 
         Process hdrMetadataProcess = null;
@@ -152,9 +154,6 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
 
         try
         {
-            string doviToolProcessFileName = string.IsNullOrWhiteSpace(State.DolbyVision.DoviToolFullPath) ? Lookups.DoviToolExecutable
-                                                                                                            : State.DolbyVision.DoviToolFullPath;
-
             // If source file is an .mkv file, we can do a simpler approach with dovi_tool
             // TODO: Investigate ffmpeg -dolby_vision 1 argument
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
@@ -234,14 +233,14 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "DolbyVision Metadata file was created but is empty.";
-                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs });
+                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = hdrMetadataProcess?.ExitCode });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
         else
         {
             string msg = "DolbyVision Metadata file was not created/does not exist.";
-            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs });
+            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = hdrMetadataProcess?.ExitCode });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
