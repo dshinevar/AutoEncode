@@ -147,6 +147,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
         string processArgs;
 
         Process hdrMetadataProcess = null;
+        int? exitCode = null;
         CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
         {
             hdrMetadataProcess?.Kill(true);
@@ -174,6 +175,12 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
+                    hdrMetadataProcess.EnableRaisingEvents = true;
+                    hdrMetadataProcess.Exited += (sender, e) =>
+                    {
+                        if (sender is Process proc)
+                            exitCode = proc.ExitCode;
+                    };
                     hdrMetadataProcess.Start();
                     hdrMetadataProcess.WaitForExit();
                 }
@@ -233,14 +240,14 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "DolbyVision Metadata file was created but is empty.";
-                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = hdrMetadataProcess?.ExitCode });
+                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
         else
         {
             string msg = "DolbyVision Metadata file was not created/does not exist.";
-            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = hdrMetadataProcess?.ExitCode });
+            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
