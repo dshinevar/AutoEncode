@@ -191,6 +191,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                             exitCode = proc.ExitCode;
                     };
                     processStarted = hdrMetadataProcess.Start();
+                    hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
 
