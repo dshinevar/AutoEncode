@@ -169,7 +169,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     CreateNoWindow = true,
                     FileName = doviToolProcessFileName,
                     Arguments = processArgs,
-                    UseShellExecute = false
+                    UseShellExecute = true
                 };
 
                 using (hdrMetadataProcess = new())

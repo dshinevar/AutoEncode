@@ -108,6 +108,8 @@ public partial class EncodingJobModel :
             cancellationToken.ThrowIfCancellationRequested();
 
             // STEP 3: Determine Crop
+            // TODO: REMOVE COMMENTED OUT CROP
+            /*
             try
             {
                 BuildingStatus = EncodingJobBuildingStatus.CROP;
@@ -136,6 +138,7 @@ public partial class EncodingJobModel :
                 Logger.LogException(ex, msg, nameof(EncodingJobModel), new { SourceFullPath, State.Ffmpeg.FfmpegDirectory });
                 return;
             }
+            */
 
             cancellationToken.ThrowIfCancellationRequested();
 
