@@ -247,6 +247,22 @@ public partial class EncodingJobModel :
         ResetStatus();
     }
 
+    private void SetError(params string[] errorMessages)
+    {
+        HasError = true;
+        ErrorTime = DateTime.Now;
+
+        StringBuilder sbError = new();
+        foreach (string error in errorMessages)
+        {
+            sbError.AppendLine(error);
+        }
+
+        ErrorMessage = sbError.ToString();
+
+        ResetStatus();
+    }
+
     private void SetError(string errorMessage, Exception ex = null)
     {
         HasError = true;
