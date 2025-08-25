@@ -38,9 +38,14 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
     private ProcessResult<string> ExtractHdr10PlusMetadata(string sourceFileFullPath, CancellationToken cancellationToken)
     {
         string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFileFullPath).Replace('\'', ' ')}.json";
+        string hdr10PlusToolProcessFileName = string.IsNullOrWhiteSpace(State.Hdr10Plus.Hdr10PlusToolFullPath) ? Lookups.HDR10PlusToolExecutable
+                                                                                                        : State.Hdr10Plus.Hdr10PlusToolFullPath;
         string processArgs;
 
         Process hdrMetadataProcess = null;
+        int? exitCode = null;
+        bool processStarted = false;
+        List<string> processErrorLogs = [];
         CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
         {
             hdrMetadataProcess?.Kill(true);
@@ -48,9 +53,6 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
 
         try
         {
-            string hdr10PlusToolProcessFileName = string.IsNullOrWhiteSpace(State.Hdr10Plus.Hdr10PlusToolFullPath) ? Lookups.HDR10PlusToolExecutable
-                                                                                                                    : State.Hdr10Plus.Hdr10PlusToolFullPath;
-
             // If source file is an .mkv file, we can do a simpler approach with hdr10plus_tool
             bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
             if (isMkvFile)
@@ -62,15 +64,28 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
-                    FileName = hdr10PlusToolProcessFileName,
-                    Arguments = processArgs,
-                    UseShellExecute = false
+                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
+                    Arguments = $"-c \"{hdr10PlusToolProcessFileName} {processArgs}\"",
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
                 };
 
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
-                    hdrMetadataProcess.Start();
+                    hdrMetadataProcess.EnableRaisingEvents = true;
+                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                            processErrorLogs.Add(e.Data);
+                    };
+                    hdrMetadataProcess.Exited += (sender, e) =>
+                    {
+                        if (sender is Process proc)
+                            exitCode = proc.ExitCode;
+                    };
+                    processStarted = hdrMetadataProcess.Start();
+                    hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
             }
@@ -95,13 +110,26 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     CreateNoWindow = true,
                     FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = processArgs,
-                    UseShellExecute = false
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
                 };
 
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
-                    hdrMetadataProcess.Start();
+                    hdrMetadataProcess.EnableRaisingEvents = true;
+                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                            processErrorLogs.Add(e.Data);
+                    };
+                    hdrMetadataProcess.Exited += (sender, e) =>
+                    {
+                        if (sender is Process proc)
+                            exitCode = proc.ExitCode;
+                    };
+                    processStarted = hdrMetadataProcess.Start();
+                    hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
             }
@@ -128,14 +156,16 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "HDR10+ Metadata file was created but is empty.";
-                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs });
+                processErrorLogs.Insert(0, msg);
+                Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
         else
         {
             string msg = "HDR10+ Metadata file was not created/does not exist.";
-            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs });
+            processErrorLogs.Insert(0, msg);
+            Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
@@ -150,6 +180,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
         Process hdrMetadataProcess = null;
         int? exitCode = null;
         bool processStarted = false;
+        List<string> processErrorLogs = [];
         CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
         {
             hdrMetadataProcess?.Kill(true);
@@ -175,8 +206,6 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     RedirectStandardError = true,
                 };
 
-                List<string> additionalLogs = new List<string>();
-
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
@@ -184,7 +213,7 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
                     {
                         if (string.IsNullOrWhiteSpace(e.Data) is false)
-                            additionalLogs.Add(e.Data);
+                            processErrorLogs.Add(e.Data);
                     };
                     hdrMetadataProcess.Exited += (sender, e) =>
                     {
@@ -195,8 +224,6 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
-
-                Logger.LogInfo(additionalLogs, "TEMP");
             }
             else
             {
@@ -219,13 +246,26 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
                     CreateNoWindow = true,
                     FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
                     Arguments = processArgs,
-                    UseShellExecute = false
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
                 };
 
                 using (hdrMetadataProcess = new())
                 {
                     hdrMetadataProcess.StartInfo = startInfo;
-                    hdrMetadataProcess.Start();
+                    hdrMetadataProcess.EnableRaisingEvents = true;
+                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
+                    {
+                        if (string.IsNullOrWhiteSpace(e.Data) is false)
+                            processErrorLogs.Add(e.Data);
+                    };
+                    hdrMetadataProcess.Exited += (sender, e) =>
+                    {
+                        if (sender is Process proc)
+                            exitCode = proc.ExitCode;
+                    };
+                    processStarted = hdrMetadataProcess.Start();
+                    hdrMetadataProcess.BeginErrorReadLine();
                     hdrMetadataProcess.WaitForExit();
                 }
             }
@@ -253,14 +293,16 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "DolbyVision Metadata file was created but is empty.";
-                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
+                processErrorLogs.Insert(0, msg);
+                Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
         else
         {
             string msg = "DolbyVision Metadata file was not created/does not exist.";
-            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
+            processErrorLogs.Insert(0, msg);
+            Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, doviToolProcessFileName, State.DolbyVision.DoviToolFullPath, metadataOutputFile, DoviToolArguments = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
