@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
 
 namespace AutoEncodeServer.Managers;
 
@@ -21,9 +22,11 @@ public partial class EncodingJobManager : IEncodingJobManager
     private Task EncodingJobPostProcessingTask { get; set; }
     private CancellationTokenSource EncodingJobPostProcessingCancellationToken { get; set; }
 
-    private readonly ManualResetEvent _encodingJobManagerMRE = new(false);
+    private Timer JobRemovalTimer { get; set; }
 
-    protected override void Process()
+    private readonly AsyncManualResetEvent _processMRE = new(false, true);
+
+    protected async override void Process()
     {
         while (ShutdownCancellationTokenSource.IsCancellationRequested is false)
         {
@@ -37,13 +40,16 @@ public partial class EncodingJobManager : IEncodingJobManager
                     {
                         EncodingJobBuilderCancellationToken = new CancellationTokenSource();
 
-                        EncodingJobBuilderTask = Task.Run(() =>
+                        EncodingJobBuilderTask = Task.Run(async () =>
                         {
-                            jobToBuild.Build(EncodingJobBuilderCancellationToken);
+                            await jobToBuild.Build(EncodingJobBuilderCancellationToken);
                             jobToBuild.CleanupJob();
-                            _encodingJobManagerMRE.Set();
+                            //_processMRE.Set();
 
                         }, EncodingJobBuilderCancellationToken.Token);
+
+                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                        _ = EncodingJobBuilderTask.ContinueWith(t => _processMRE.Set());
                     }
                 }
 
@@ -58,9 +64,12 @@ public partial class EncodingJobManager : IEncodingJobManager
                         {
                             jobToEncode.Encode(EncodingCancellationToken);
                             jobToEncode.CleanupJob();
-                            _encodingJobManagerMRE.Set();
+                            //_processMRE.Set();
 
                         }, EncodingCancellationToken.Token);
+
+                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                        _ = EncodingTask.ContinueWith(t => _processMRE.Set());
                     }
                 }
 
@@ -75,27 +84,30 @@ public partial class EncodingJobManager : IEncodingJobManager
                         {
                             jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken);
                             jobToPostProcess.CleanupJob();
-                            _encodingJobManagerMRE.Set();
+                            //_processMRE.Set();
 
                         }, EncodingJobPostProcessingCancellationToken.Token);
+
+                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                        _ = EncodingJobPostProcessingTask.ContinueWith(t => _processMRE.Set());
                     }
                 }
 
-                do
-                {
-                    ClearCompletedAndErroredJobs();
-                }
-                while (_encodingJobManagerMRE.WaitOne(TimeSpan.FromHours(1)) is false);
+                JobRemovalTimer ??= new((e) => ClearCompletedAndErroredJobs(), null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
 
-                _encodingJobManagerMRE.Reset();
+                await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);
+                _processMRE.Reset();
             }
             else
             {
-                _encodingJobManagerMRE.WaitOne();   // Wait until signalled -- either for shutdown or job added to queue
+                JobRemovalTimer?.Dispose();
+                JobRemovalTimer = null;
+                await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);   // Wait until signalled -- either for shutdown or job added to queue
             }
         }
 
         // Don't end main processing thread until other threads are done
+        JobRemovalTimer?.Dispose();
         EncodingJobBuilderTask?.Wait();
         EncodingTask?.Wait();
         EncodingJobPostProcessingTask?.Wait();

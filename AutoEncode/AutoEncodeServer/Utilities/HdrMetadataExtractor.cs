@@ -2,9 +2,6 @@
 using AutoEncodeUtilities.Enums;
 using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Process;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,113 +40,39 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
         string metadataOutputFile = $"{Path.GetTempPath()}{Path.GetFileNameWithoutExtension(sourceFileFullPath).Replace('\'', ' ')}.json";
         string hdr10PlusToolProcessFileName = string.IsNullOrWhiteSpace(State.Hdr10Plus.Hdr10PlusToolFullPath) ? Lookups.HDR10PlusToolExecutable
                                                                                                         : State.Hdr10Plus.Hdr10PlusToolFullPath;
+        string processFileName;
         string processArgs;
 
-        Process hdrMetadataProcess = null;
-        int? exitCode = null;
-        bool processStarted = false;
-        List<string> processErrorLogs = [];
-        CancellationTokenRegistration tokenRegistration = cancellationToken.Register(() =>
+        // If source file is an .mkv file, we can do a simpler approach with hdr10plus_tool
+        bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
+        if (isMkvFile)
         {
-            hdrMetadataProcess?.Kill(true);
-        });
-
-        try
+            processFileName = hdr10PlusToolProcessFileName;
+            processArgs = $"extract \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
+        }
+        else
         {
-            // If source file is an .mkv file, we can do a simpler approach with hdr10plus_tool
-            bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
-            if (isMkvFile)
+            if (State.IsLinuxEnvironment)
             {
-                //processArgs = State.IsLinuxEnvironment ? $"extract '{sourceFileFullPath}' -o '{metadataOutputFile}'"
-                //                                        : $"extract \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
+                processFileName = "/bin/bash";
 
-                processArgs = State.IsLinuxEnvironment ? $"extract '{sourceFileFullPath}' -o '{metadataOutputFile}'"
-                                        : $"extract \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = hdr10PlusToolProcessFileName,
-                    Arguments = processArgs,
-                    UseShellExecute = false,
-                    RedirectStandardError = true,
-                };
-
-                using (hdrMetadataProcess = new())
-                {
-                    hdrMetadataProcess.StartInfo = startInfo;
-                    hdrMetadataProcess.EnableRaisingEvents = true;
-                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (string.IsNullOrWhiteSpace(e.Data) is false)
-                            processErrorLogs.Add(e.Data);
-                    };
-                    hdrMetadataProcess.Exited += (sender, e) =>
-                    {
-                        if (sender is Process proc)
-                            exitCode = proc.ExitCode;
-                    };
-                    processStarted = hdrMetadataProcess.Start();
-                    hdrMetadataProcess.BeginErrorReadLine();
-                    await hdrMetadataProcess.WaitForExitAsync(cancellationToken);
-                }
+                string extractorArgs = $"'{hdr10PlusToolProcessFileName}' extract -o '{metadataOutputFile}' - ";
+                processArgs = $"-c \"{Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable)} -nostdin -i '{sourceFileFullPath.Replace("'", "'\\''")}' -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
             else
             {
-                if (State.IsLinuxEnvironment)
-                {
-                    string extractorArgs = $"'{hdr10PlusToolProcessFileName}' extract -o '{metadataOutputFile}' - ";
+                processFileName = "cmd";
 
-                    processArgs = $"-c \"{Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable)} -nostdin -i '{sourceFileFullPath.Replace("'", "'\\''")}' -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
-                }
-                else
-                {
-                    string extractorArgs = $"\"{hdr10PlusToolProcessFileName}\" extract -o \"{metadataOutputFile}\" - ";
-
-                    processArgs = $"/C \"\"{Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable)}\" -i \"{sourceFileFullPath}\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
-                }
-
-                ProcessStartInfo startInfo = new()
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    FileName = State.IsLinuxEnvironment ? "/bin/bash" : "cmd",
-                    Arguments = processArgs,
-                    UseShellExecute = false,
-                    RedirectStandardError = true,
-                };
-
-                using (hdrMetadataProcess = new())
-                {
-                    hdrMetadataProcess.StartInfo = startInfo;
-                    hdrMetadataProcess.EnableRaisingEvents = true;
-                    hdrMetadataProcess.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (string.IsNullOrWhiteSpace(e.Data) is false)
-                            processErrorLogs.Add(e.Data);
-                    };
-                    hdrMetadataProcess.Exited += (sender, e) =>
-                    {
-                        if (sender is Process proc)
-                            exitCode = proc.ExitCode;
-                    };
-                    processStarted = hdrMetadataProcess.Start();
-                    hdrMetadataProcess.BeginErrorReadLine();
-                    await hdrMetadataProcess.WaitForExitAsync(cancellationToken);
-                }
+                string extractorArgs = $"\"{hdr10PlusToolProcessFileName}\" extract -o \"{metadataOutputFile}\" - ";
+                processArgs = $"/C \"\"{Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable)}\" -i \"{sourceFileFullPath}\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc - | {extractorArgs}\"";
             }
         }
-        catch (Exception ex)
+
+        ProcessResult result = await ProcessExecutor.ExecuteAsync(new()
         {
-            Logger.LogException(ex, $"Error creating HDR10+ metadata file for {sourceFileFullPath}", details: new { State.Hdr10Plus.Hdr10PlusToolFullPath });
-            return new ProcessResult<string>(null, ProcessResultStatus.Failure, "Exception occurred while extracting HDR10+ metadata.");
-        }
-        finally
-        {
-            tokenRegistration.Unregister();
-            cancellationToken.ThrowIfCancellationRequested();
-        }
+            FileName = processFileName,
+            Arguments = processArgs,
+        }, cancellationToken);
 
         if (File.Exists(metadataOutputFile))
         {
@@ -162,16 +85,14 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             else
             {
                 string msg = "HDR10+ Metadata file was created but is empty.";
-                processErrorLogs.Insert(0, msg);
-                Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
+                Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs });
                 return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
             }
         }
         else
         {
             string msg = "HDR10+ Metadata file was not created/does not exist.";
-            processErrorLogs.Insert(0, msg);
-            Logger.LogError(processErrorLogs, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs, ProcessExitCode = exitCode, ProcessStarted = processStarted });
+            Logger.LogError(msg, nameof(HdrMetadataExtractor), new { sourceFileFullPath, hdr10PlusToolProcessFileName, State.Hdr10Plus.Hdr10PlusToolFullPath, metadataOutputFile, HDR10PlusProcessArgs = processArgs });
             return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
         }
     }
@@ -189,12 +110,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
         bool isMkvFile = sourceFileFullPath.EndsWith("mkv");
         if (isMkvFile)
         {
-            //processArgs = State.IsLinuxEnvironment ? $"-c \"{doviToolProcessFileName} extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'\""
-            //                                        : $"/C \"{doviToolProcessFileName} extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"\"";
-
             processFileName = doviToolProcessFileName;
-            processArgs = State.IsLinuxEnvironment ? $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\""
-                                                    : $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
+            processArgs = $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
         }
         else
         {

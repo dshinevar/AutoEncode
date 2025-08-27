@@ -57,7 +57,7 @@ public partial class EncodingJobManager :
         {
             base.Shutdown();
 
-            _encodingJobManagerMRE.Set();
+            _processMRE.Set();
             EncodingJobBuilderCancellationToken?.Cancel();
             EncodingCancellationToken?.Cancel();
             EncodingJobPostProcessingCancellationToken?.Cancel();
@@ -84,7 +84,7 @@ public partial class EncodingJobManager :
             }
 
             // If something was added, set MRE to make thread look to see if there is any processing to spin up
-            _encodingJobManagerMRE.Set();
+            _processMRE.Set();
         }
         else if (e.Action == NotifyCollectionChangedAction.Remove)
         {
