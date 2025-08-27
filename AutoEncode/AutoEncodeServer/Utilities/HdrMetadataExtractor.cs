@@ -193,8 +193,8 @@ public class HdrMetadataExtractor : IHdrMetadataExtractor
             //                                        : $"/C \"{doviToolProcessFileName} extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"\"";
 
             processFileName = doviToolProcessFileName;
-            processArgs = State.IsLinuxEnvironment ? $"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'"
-                                                    : $"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"";
+            processArgs = State.IsLinuxEnvironment ? $"\"extract-rpu '{sourceFileFullPath}' -o '{metadataOutputFile}'\""
+                                                    : $"\"extract-rpu \"{sourceFileFullPath}\" -o \"{metadataOutputFile}\"\"";
         }
         else
         {
