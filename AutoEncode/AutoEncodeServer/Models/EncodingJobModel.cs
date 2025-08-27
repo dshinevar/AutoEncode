@@ -28,7 +28,7 @@ public partial class EncodingJobModel :
 
     public IHdrMetadataExtractor HdrMetadataExtractor { get; set; }
 
-    public ISourceFileProbingProcessor SourceFileProbingProcessor { get; set; }
+    public ISourceFileProcessor SourceFileProcessor { get; set; }
 
     public IClientUpdatePublisher ClientUpdatePublisher { get; set; }
     #endregion Dependencies
@@ -248,6 +248,9 @@ public partial class EncodingJobModel :
     }
 
     private void SetError(params string[] errorMessages)
+        => SetError(null, errorMessages);
+
+    private void SetError(Exception ex, params string[] errorMessages)
     {
         HasError = true;
         ErrorTime = DateTime.Now;
@@ -258,31 +261,19 @@ public partial class EncodingJobModel :
             sbError.AppendLine(error);
         }
 
-        ErrorMessage = sbError.ToString();
-
-        ResetStatus();
-    }
-
-    private void SetError(string errorMessage, Exception ex = null)
-    {
-        HasError = true;
-        ErrorTime = DateTime.Now;
-
-        StringBuilder sb = new(errorMessage);
         if (ex is not null)
         {
-
-            sb.AppendLine().AppendLine(ex.Message);
+            sbError.AppendLine().AppendLine(ex.Message);
 
             Exception innerEx = ex.InnerException;
             while (innerEx is not null)
             {
-                sb.AppendLine(innerEx.Message);
+                sbError.AppendLine(innerEx.Message);
                 innerEx = innerEx.InnerException;
             }
         }
 
-        ErrorMessage = sb.ToString();
+        ErrorMessage = sbError.ToString();
 
         ResetStatus();
     }

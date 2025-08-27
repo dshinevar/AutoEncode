@@ -49,7 +49,7 @@ public partial class EncodingJobModel :
                 catch (Exception ex)
                 {
                     string msg = $"Error copying output file to other locations for {this}";
-                    SetError(msg, ex);
+                    SetError(ex, msg);
                     Logger.LogException(ex, msg,
                        nameof(EncodingJobModel), new { Id, Name, PostProcessingSettings.CopyFilePaths, DestinationFullPath });
                     return;
@@ -68,7 +68,7 @@ public partial class EncodingJobModel :
                 catch (Exception ex)
                 {
                     string msg = $"Error deleting source file for {this}";
-                    SetError(msg, ex);
+                    SetError(ex, msg);
                     Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name, SourceFullPath });
                     return;
                 }
@@ -82,7 +82,7 @@ public partial class EncodingJobModel :
         catch (Exception ex)
         {
             string msg = $"Error post-processing {this}";
-            SetError(msg, ex);
+            SetError(ex, msg);
             Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name, Status });
             return;
         }

@@ -49,7 +49,7 @@ public partial class EncodingJobModel :
         catch (Exception ex)
         {
             string msg = $"Failed PreEncodeVerification for {this}.";
-            SetError(msg, ex);
+            SetError(ex, msg);
             Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name, SourceFullPath, DestinationFullPath });
             return;
         }
@@ -129,7 +129,7 @@ public partial class EncodingJobModel :
             catch (Exception ex)
             {
                 string msg = $"Error encoding {this}.";
-                SetError(msg, ex);
+                SetError(ex, msg);
                 Logger.LogException(ex, msg, nameof(EncodingJobModel), details: new { Id, Name, State.Ffmpeg.FfmpegDirectory });
             }
 
@@ -349,7 +349,7 @@ public partial class EncodingJobModel :
             catch (Exception ex)
             {
                 string msg = $"Error encoding {this}.";
-                SetError(msg, ex);
+                SetError(ex, msg);
                 Logger.LogException(ex, msg, nameof(EncodingJobModel),
                     new { Id, Name, VideoEncodeProcess = videoEncodeProcess?.ProcessName, AudioSubEncodeProcess = audioSubEncodeProcess?.ProcessName });
                 if (videoEncodeExited is false)
@@ -474,7 +474,7 @@ public partial class EncodingJobModel :
             catch (Exception ex)
             {
                 string msg = $"Error merging {this}.";
-                SetError(msg, ex);
+                SetError(ex, msg);
                 Logger.LogException(ex, msg, nameof(EncodingJobModel), new { Id, Name, State.DolbyVision.MkvMergeFullPath, MergeProcess = mergeProcess?.ProcessName });
                 mergeProcess?.Kill(true);
             }
