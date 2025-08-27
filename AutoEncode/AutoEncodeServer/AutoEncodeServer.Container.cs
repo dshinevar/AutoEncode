@@ -33,6 +33,10 @@ internal partial class AutoEncodeServer
             .ImplementedBy<Logger>()
             .LifestyleSingleton());
 
+        container.Register(Component.For<IProcessExecutor>()
+            .ImplementedBy<ProcessExecutor>()
+            .LifestyleSingleton());
+
         container.Register(Component.For<ICommunicationMessageHandler>()
             .ImplementedBy<CommunicationMessageHandler>()
             .LifestyleSingleton());
@@ -68,8 +72,8 @@ internal partial class AutoEncodeServer
             .ImplementedBy<HdrMetadataExtractor>()
             .LifestyleSingleton());
 
-        container.Register(Component.For<ISourceFileProbingProcessor>()
-            .ImplementedBy<SourceFileProbingProcessor>()
+        container.Register(Component.For<ISourceFileProcessor>()
+            .ImplementedBy<SourceFileProcessor>()
             .LifestyleSingleton());
             
         container.Register(Component.For<IEncodingJobManager>()

@@ -9,26 +9,37 @@ using AutoEncodeUtilities.Logger;
 using AutoEncodeUtilities.Process;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Stream = AutoEncodeServer.Data.Stream;
 
 namespace AutoEncodeServer.Utilities;
 
-/// <summary>Probes a given source file utilizing ffprobe and produces <see cref="SourceStreamData"/></summary>
-public class SourceFileProbingProcessor : ISourceFileProbingProcessor
+/// <summary>Processor that is used to determine info about a source file.</summary>
+public partial class SourceFileProcessor : ISourceFileProcessor
 {
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex VideoScanRegex();
+
     public ILogger Logger { get; set; }
 
+    public IProcessExecutor ProcessExecutor { get; set; }
+
+    #region Probe
     public ProcessResult<SourceFileProbeResultData> Probe(string sourceFileFullPath)
     {
-        ProbeData probeData = FFProbe(sourceFileFullPath);
+        // FFprobe
+        (ProbeData probeData, string message) = FFProbe(sourceFileFullPath);
+
+        // If null, error occurred
         if (probeData is null)
         {
-            return new ProcessResult<SourceFileProbeResultData>(null, ProcessResultStatus.Failure, "Error occurred while probing source file.");
+            Logger.LogError(["Error occurred while probing source file.", message], nameof(SourceFileProcessor), new { sourceFileFullPath });
+            return new ProcessResult<SourceFileProbeResultData>(null, ProcessResultStatus.Failure, message);
         }
 
         int numberOfFrames = 0;
@@ -217,7 +228,7 @@ public class SourceFileProbingProcessor : ISourceFileProbingProcessor
                             if (dolbyVisionInfo is not null)
                                 hdrData.DolbyVisionInfo = dolbyVisionInfo;
                         }
-                            
+
                         if (videoFrame.SideData.Any(sd => sd.SideDataType.Contains("HDR Dynamic Metadata", StringComparison.OrdinalIgnoreCase) ||
                                                             sd.SideDataType.Contains("HDR10+", StringComparison.OrdinalIgnoreCase)))
                             hdrData.HDRFlags |= HDRFlags.HDR10PLUS;
@@ -250,53 +261,49 @@ public class SourceFileProbingProcessor : ISourceFileProbingProcessor
     /// <summary>FFprobe call and deserialization </summary>
     /// <param name="sourceFileFullPath">source file to be probed</param>
     /// <returns>ProbeData</returns>
-    private ProbeData FFProbe(string sourceFileFullPath)
+    private (ProbeData ProbeData, string Message) FFProbe(string sourceFileFullPath)
     {
+        ProbeData probeData = null;
+        string message = null;
         try
         {
             string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFileFullPath}\"";
 
-            ProcessStartInfo startInfo = new()
+            ProcessResult<string> ffprobeResult = ProcessExecutor.Execute(new()
             {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
                 FileName = Path.Combine(State.Ffmpeg.FfprobeDirectory, Lookups.FFprobeExecutable),
                 Arguments = ffprobeArgs,
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            };
+                ReturnStandardOutput = true,
+            });
 
-            StringBuilder sbFfprobeOutput = new();
-
-            using (Process ffprobeProcess = new())
+            if (ffprobeResult.Status == ProcessResultStatus.Success)
             {
-                ffprobeProcess.StartInfo = startInfo;
-                ffprobeProcess.OutputDataReceived += (sender, e) =>
+                string stringProbeOutput = ffprobeResult.Data.Trim();
+
+                if (stringProbeOutput.IsValidJson() is true)
                 {
-                    if (e.Data != null) sbFfprobeOutput.AppendLine(e.Data);
-                };
-                ffprobeProcess.Start();
-                ffprobeProcess.BeginOutputReadLine();
-                ffprobeProcess.WaitForExit();
+                    probeData = JsonSerializer.Deserialize<ProbeData>(stringProbeOutput, CommunicationConstants.SerializerOptions);
+                }
+                else
+                {
+                    message = "ffprobe returned invalid json.";
+                }
             }
-
-            string stringProbeOutput = sbFfprobeOutput.ToString().Trim();
-
-            if (stringProbeOutput.IsValidJson() is true)
-            {
-                return JsonSerializer.Deserialize<ProbeData>(stringProbeOutput, CommunicationConstants.SerializerOptions);
-            }
+            else
+                message = "Error occurred while probing source file.";
         }
         catch (JsonException jsonEx)
         {
-            Logger.LogException(jsonEx, "JsonException thrown when deserializing ffprobe output.", details: new { sourceFileFullPath });
+            message = "JsonException thrown when deserializing ffprobe output.";
+            Logger.LogException(jsonEx, message, details: new { sourceFileFullPath });
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, "Exception thrown while attempting to probe source file.", details: new { sourceFileFullPath });
+            message = "Exception thrown while attempting to probe source file.";
+            Logger.LogException(ex, message, details: new { sourceFileFullPath, State.Ffmpeg.FfprobeDirectory });
         }
 
-        return null;
+        return (probeData, message ?? "ffprobe success");
     }
 
     private static string ConvertNumberOfChannelsToLayout(short channels)
@@ -307,4 +314,110 @@ public class SourceFileProbingProcessor : ISourceFileProbingProcessor
             2 => "Stereo",
             _ => $"{channels}-channels"
         };
+
+    #endregion Probe
+
+
+    #region ScanType
+    public async Task<ProcessResult<VideoScanType>> DetermineVideoScanTypeAsync(string sourceFileFullPath, CancellationToken cancellationToken)
+    {
+        string ffmpegArgs = $"-filter:v idet -frames:v 10000 -an -f rawvideo -y {Lookups.NullLocation} -i \"{sourceFileFullPath}\"";
+
+        ProcessResult<string> scanTypeProcessResult = await ProcessExecutor.ExecuteAsync(new()
+        {
+            FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable),
+            Arguments = ffmpegArgs,
+            ReturnStandardError = true,
+            AdditionalOutputCheck = str => str.Contains("frame detection")
+        }, cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (scanTypeProcessResult.Status == ProcessResultStatus.Failure)
+        {
+            string msg = "Error occurred while determining video scan type.";
+            Logger.LogError(msg, nameof(SourceFileProcessor), new { sourceFileFullPath });
+            return new ProcessResult<VideoScanType>(VideoScanType.UNDETERMINED, ProcessResultStatus.Failure, msg);
+        }
+
+        VideoScanType determinedScanType;
+        try
+        {
+            IEnumerable<string> frameDetections = scanTypeProcessResult.Data.TrimEnd(Environment.NewLine.ToCharArray()).Split(Environment.NewLine);
+
+            List<(int tff, int bff, int prog, int undet)> scan = [];
+            foreach (string frame in frameDetections)
+            {
+                MatchCollection matches = VideoScanRegex().Matches(frame.Remove(0, 34));
+                scan.Add(new(Convert.ToInt32(matches[0].Value), Convert.ToInt32(matches[1].Value), Convert.ToInt32(matches[2].Value), Convert.ToInt32(matches[3].Value)));
+            }
+
+            int[] frame_totals = new int[4];
+
+            foreach ((int tff, int bff, int prog, int undet) in scan)
+            {
+                // Should always be the order of: TFF, BFF, PROG
+                frame_totals[(int)VideoScanType.INTERLACED_TFF] += tff;
+                frame_totals[(int)VideoScanType.INTERLACED_BFF] += bff;
+                frame_totals[(int)VideoScanType.PROGRESSIVE] += prog;
+                frame_totals[(int)VideoScanType.UNDETERMINED] += undet;
+            }
+
+            determinedScanType = (VideoScanType)Array.IndexOf(frame_totals, frame_totals.Max());
+        }
+        catch (Exception ex)
+        {
+            string msg = "Exception occurred while determining video scan type.";
+            Logger.LogException(ex, msg, nameof(SourceFileProcessor), new { sourceFileFullPath });
+            return new ProcessResult<VideoScanType>(VideoScanType.UNDETERMINED, ProcessResultStatus.Failure, msg);
+        }
+
+        if (determinedScanType == VideoScanType.UNDETERMINED)
+            return new ProcessResult<VideoScanType>(determinedScanType, ProcessResultStatus.Failure, "Unable to determine video scan type");
+        else
+            return new ProcessResult<VideoScanType>(determinedScanType, ProcessResultStatus.Success, "Successfully determined video scan type.");
+    }
+    #endregion ScanType
+
+
+    #region Crop
+    public async Task<ProcessResult<string>> DetermineCropAsync(string sourceFileFullPath, CancellationToken cancellationToken)
+    {
+        string ffmpegArgs = $"-i \"{sourceFileFullPath}\" -vf cropdetect -f null -";
+
+        ProcessResult<string> cropResult = await ProcessExecutor.ExecuteAsync(new()
+        {
+            FileName = Path.Combine(State.Ffmpeg.FfmpegDirectory, Lookups.FFmpegExecutable),
+            Arguments = ffmpegArgs,
+            ReturnStandardError = true,
+            AdditionalOutputCheck = str => str.Contains("crop="),
+            TakeLastOutputLine = true,
+        }, cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (cropResult.Status == ProcessResultStatus.Failure)
+        {
+            string msg = "Error occurred while determining video crop.";
+            Logger.LogError(msg, nameof(SourceFileProcessor), new { sourceFileFullPath });
+            return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
+        }
+
+        string crop;
+        try
+        {
+            string lastCropLine = cropResult.Data.TrimEnd(Environment.NewLine.ToCharArray());
+            const string cropText = "crop=";
+            crop = lastCropLine[(lastCropLine.IndexOf(cropText) + cropText.Length)..];
+        }
+        catch (Exception ex)
+        {
+            string msg = "Exception occurred while determining video crop.";
+            Logger.LogException(ex, msg, nameof(SourceFileProcessor), new { sourceFileFullPath });
+            return new ProcessResult<string>(null, ProcessResultStatus.Failure, msg);
+        }
+
+        return new ProcessResult<string>(crop, ProcessResultStatus.Success, "Successfully Determined Crop");
+    }
+    #endregion Crop
 }
