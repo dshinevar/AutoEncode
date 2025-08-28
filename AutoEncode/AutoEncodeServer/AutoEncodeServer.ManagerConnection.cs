@@ -1,14 +1,13 @@
-﻿using AutoEncodeServer.Managers.Interfaces;
-using AutoEncodeServer.Models.Interfaces;
+﻿using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities.Enums;
 using System;
 
-namespace AutoEncodeServer.Managers;
+namespace AutoEncodeServer;
 
 // MANAGER CONNECTION
 // Implements ISourceFileManagerConnection, IEncodingJobManagerConnection
 // and acts as the go between managers
-public partial class AutoEncodeServerManager :
+public partial class AutoEncodeServer :
     ISourceFileManagerConnection,
     IEncodingJobManagerConnection
 {

@@ -1,4 +1,5 @@
 ﻿using AutoEncodeServer.Models.Interfaces;
+using AutoEncodeServer.Utilities;
 using AutoEncodeServer.Utilities.Data;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Base;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Models;
 
@@ -18,7 +20,7 @@ public partial class EncodingJobModel :
     ModelBase,
     IEncodingJobModel
 {
-    public async void Build(CancellationTokenSource cancellationTokenSource)
+    public async Task Build(CancellationTokenSource cancellationTokenSource)
     {
         TaskCancellationTokenSource = cancellationTokenSource;
         Status = EncodingJobStatus.BUILDING;

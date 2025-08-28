@@ -2,7 +2,6 @@
 using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers.Interfaces;
@@ -13,7 +12,6 @@ public interface ISourceFileManager
 
     #region Init / Start / Stop
     /// <summary>Initializes the source file manager.</summary>
-    /// <param name="shutdownMRE"><see cref="ManualResetEvent"/> used to signal when the source file manager has fully shutdown.</param>
     void Initialize();
 
     /// <summary>Starts all source file manager threads.</summary>

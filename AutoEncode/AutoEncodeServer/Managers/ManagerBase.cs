@@ -72,7 +72,7 @@ public abstract class ManagerBase
     protected void StartManagerProcess()
         => ManagerProcessTask = Task.Run(Process, ShutdownCancellationTokenSource.Token);
 
-    protected abstract void Process();
+    protected virtual void Process() => throw new NotImplementedException("Not currently implemented.");
     #endregion Manager Process
 
 

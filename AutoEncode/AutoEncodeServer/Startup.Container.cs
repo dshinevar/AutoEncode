@@ -15,7 +15,7 @@ using Castle.Windsor.Installer;
 
 namespace AutoEncodeServer;
 
-internal partial class AutoEncodeServer
+internal partial class Startup
 {
     private static void RegisterContainerComponents(WindsorContainer container)
     {
@@ -82,8 +82,8 @@ internal partial class AutoEncodeServer
             .OnCreate(ejm => ejm.Initialize()));
 
         container.Register(
-            Component.For<IAutoEncodeServerManager, ISourceFileManagerConnection, IEncodingJobManagerConnection>()
-            .ImplementedBy<AutoEncodeServerManager>()
+            Component.For<IAutoEncodeServer, ISourceFileManagerConnection, IEncodingJobManagerConnection>()
+            .ImplementedBy<AutoEncodeServer>()
             .LifestyleSingleton());
     }
 

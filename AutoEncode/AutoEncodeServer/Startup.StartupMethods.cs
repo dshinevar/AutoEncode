@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using AutoEncodeServer.Utilities;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
 namespace AutoEncodeServer;
 
 // STARTUP HELPER METHODS
-internal partial class AutoEncodeServer
+internal partial class Startup
 {
     /// <summary>Gets FFmpeg version/Checks to make sure FFmpeg is accessible </summary>
     /// <param name="ffmpegDirectory">FFmpeg directory from config</param>

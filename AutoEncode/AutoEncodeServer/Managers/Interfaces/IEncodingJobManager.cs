@@ -4,7 +4,6 @@ using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace AutoEncodeServer.Managers.Interfaces;
@@ -18,7 +17,6 @@ public interface IEncodingJobManager
     int Count { get; }
 
     /// <summary>Sets up the manager and client update publisher</summary>
-    /// <param name="shutdownMRE"><see cref="ManualResetEvent"/> used to indicate when shut down</param>
     /// <exception cref="Exception">Rethrows exceptions.</exception>
     void Initialize();
 
