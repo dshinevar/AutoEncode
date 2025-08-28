@@ -24,7 +24,7 @@ public partial class EncodingJobManager : IEncodingJobManager
 
     private Timer JobRemovalTimer { get; set; }
 
-    private readonly AsyncManualResetEvent _processMRE = new(false, true);
+    private readonly AsyncManualResetEvent _processMRE = new(false);
 
     protected async override void Process()
     {

@@ -1,15 +1,16 @@
-﻿using AutoEncodeServer.Models.Interfaces;
+﻿using AutoEncodeServer.Managers;
+using AutoEncodeServer.Models.Interfaces;
 using AutoEncodeUtilities.Enums;
 using System;
 using System.Threading.Tasks;
 
-namespace AutoEncodeServer.Managers.Interfaces;
+namespace AutoEncodeServer;
 
 /// <summary>
-/// Interface for <see cref="AutoEncodeServerManager"/>.
-/// Should really only be used by <see cref="AutoEncodeServer"/>
+/// Interface for <see cref="AutoEncodeServer"/>.
+/// Should really only be used by <see cref="Startup"/>
 /// </summary>
-public interface IAutoEncodeServerManager
+public interface IAutoEncodeServer
 {
     void Initialize();
 

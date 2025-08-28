@@ -8,6 +8,7 @@ using AutoEncodeUtilities.Communication.Data;
 using AutoEncodeUtilities.Communication.Enums;
 using AutoEncodeUtilities.Data;
 using AutoEncodeUtilities.Enums;
+using Microsoft.VisualStudio.Threading;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,14 +22,14 @@ namespace AutoEncodeServer.Managers;
 // PROCESS
 public partial class SourceFileManager : ISourceFileManager
 {
-    private readonly ManualResetEvent _sleepMRE = new(false);
+    private readonly AsyncAutoResetEvent _sleepARE = new(false);
     private readonly ManualResetEvent _updatingSourceFilesMRE = new(false);
 
     private Dictionary<string, SearchDirectory> _searchDirectories;
 
     private readonly ConcurrentDictionary<Guid, ISourceFileModel> _sourceFiles = [];
 
-    protected override void Process()
+    protected override async void Process()
     {
         CancellationToken shutdownToken = ShutdownCancellationTokenSource.Token;
 
@@ -74,7 +75,7 @@ public partial class SourceFileManager : ISourceFileManager
                 _updatingSourceFilesMRE.Set();  // Go ahead and set this if an error occurred so other processes can proceed
             }
 
-            Sleep();
+            await Sleep();    
         }
     }
 
@@ -265,14 +266,19 @@ public partial class SourceFileManager : ISourceFileManager
         return sourceFileEncodingStatus;
     }
 
-    private void Wake() => _sleepMRE.Set();
+    private void Wake() => _sleepARE.Set();
 
-    private void Sleep()
+    private async Task Sleep()
     {
         if (ShutdownCancellationTokenSource.IsCancellationRequested is false)
         {
-            _sleepMRE.Reset();
-            _sleepMRE.WaitOne(TimeSpan.FromMinutes(1));
+            CancellationTokenSource sleepTokenSource = new();
+            sleepTokenSource.CancelAfter(TimeSpan.FromMinutes(1));  // Ensures wait stops after 1 minute
+            try
+            {
+                await _sleepARE.WaitAsync(sleepTokenSource.Token);
+            }
+            catch (OperationCanceledException) { } 
         }
     }
 }

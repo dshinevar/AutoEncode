@@ -1,7 +1,6 @@
 ﻿using AutoEncodeServer.Communication;
 using AutoEncodeServer.Communication.Data;
 using AutoEncodeServer.Enums;
-using AutoEncodeServer.Managers.Interfaces;
 using AutoEncodeUtilities;
 using AutoEncodeUtilities.Communication.Data;
 using AutoEncodeUtilities.Communication.Enums;
@@ -10,9 +9,9 @@ using NetMQ;
 using System;
 using System.Collections.Generic;
 
-namespace AutoEncodeServer.Managers;
+namespace AutoEncodeServer;
 
-public partial class AutoEncodeServerManager : IAutoEncodeServerManager
+public partial class AutoEncodeServer : IAutoEncodeServer
 {
     private void CommunicationMessageHandler_MessageReceived(object sender, RequestMessageReceivedEventArgs e)
     {
@@ -126,7 +125,7 @@ public partial class AutoEncodeServerManager : IAutoEncodeServerManager
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex, "Error handling received communication message.", nameof(AutoEncodeServerManager), new { EventArgs = e });
+            Logger.LogException(ex, "Error handling received communication message.", nameof(AutoEncodeServer), new { EventArgs = e });
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace AutoEncodeServer;
+namespace AutoEncodeServer.Utilities;
 
 public static class Lookups
 {
