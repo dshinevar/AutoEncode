@@ -43,7 +43,7 @@ public class ClientUpdatePublisher : IClientUpdatePublisher
         {
             _publisherSocket.Bind(ConnectionString);
 
-            Logger.LogInfo($"{nameof(ClientUpdatePublisher)} binded to {ConnectionString} -- Request Thread started.", nameof(ClientUpdatePublisher));
+            Logger.LogInfo($"{nameof(ClientUpdatePublisher)} bound to {ConnectionString} -- Request Thread started.", nameof(ClientUpdatePublisher));
 
             return StartRequestHandler()
                     .ContinueWith((task) => Logger.LogInfo($"{nameof(ClientUpdatePublisher)} unbound from {ConnectionString} -- Request Thread stopped.", nameof(ClientUpdatePublisher)));

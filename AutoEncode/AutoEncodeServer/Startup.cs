@@ -364,6 +364,7 @@ internal partial class Startup
             container.Release(server);
             server = null;
 
+            shutdownMRE.Set();
             Environment.Exit((int)startupStep);
         }
 
@@ -395,10 +396,13 @@ internal partial class Startup
             logger?.LogException(ex, "UNHANDLED EXCEPTION", "UNHANDLED EXCEPTION", new { e.IsTerminating });
         }
 
+        // If terminating, try to clean up as best as possible
         if (e.IsTerminating)
         {
             server?.Shutdown();
             logger?.Stop();
+
+            NetMQConfig.Cleanup();
         }
     }
 }
