@@ -54,6 +54,10 @@ internal partial class Startup
         ManualResetEvent shutdownMRE = new(false);
         AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationExit(server, logger, shutdownMRE);
 
+        // When not debugging (let them be unhandled when debugging) add a handler to capture and log issues
+        if (System.Diagnostics.Debugger.IsAttached is false)
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) => OnUnhandledException(e, server, logger);
+
         HelperMethods.DebugLog("AutoEncodeServer Starting Up.", GetStartupLogName());
         // LOAD CONFIG FILE
         try
@@ -360,6 +364,7 @@ internal partial class Startup
             container.Release(server);
             server = null;
 
+            shutdownMRE.Set();
             Environment.Exit((int)startupStep);
         }
 
@@ -377,10 +382,27 @@ internal partial class Startup
         shutdownMRE.Set();  // Lets OnApplicationExit complete -- helps ensure there isn't premature shutdown
     }
 
-    static void OnApplicationExit(IAutoEncodeServer autoEncodeServerManager, ILogger logger, ManualResetEvent shutdownMRE)
+    static void OnApplicationExit(IAutoEncodeServer autoEncodeServer, ILogger logger, ManualResetEvent shutdownMRE)
     {
         logger?.LogInfo("AutoEncodeServer Shutdown Initiated.", "SHUTDOWN");
-        autoEncodeServerManager?.Shutdown();
+        autoEncodeServer?.Shutdown();
         shutdownMRE.WaitOne(TimeSpan.FromMinutes(1));  // Hold here to allow for the server to completely shutdown -- if this exits, the app will exit
+    }
+
+    static void OnUnhandledException(UnhandledExceptionEventArgs e, IAutoEncodeServer server, ILogger logger)
+    {
+        if (e.ExceptionObject is Exception ex)
+        {
+            logger?.LogException(ex, "UNHANDLED EXCEPTION", "UNHANDLED EXCEPTION", new { e.IsTerminating });
+        }
+
+        // If terminating, try to clean up as best as possible
+        if (e.IsTerminating)
+        {
+            server?.Shutdown();
+            logger?.Stop();
+
+            NetMQConfig.Cleanup();
+        }
     }
 }

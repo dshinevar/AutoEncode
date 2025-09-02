@@ -40,7 +40,7 @@ public partial class Logger : ILogger
 
     #region Private Log Functions
     private void AddLog(Severity severity, IEnumerable<string> messages, string moduleName = "", string callingMemberName = "", object details = null, Exception exception = null)
-        => _logs.TryAdd(new(severity, messages, moduleName, callingMemberName, details, exception));
+        => _logs.TryAdd(new(severity, messages ?? [], moduleName, callingMemberName, details, exception));
 
     private void Log(LogData log)
     {

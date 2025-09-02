@@ -169,9 +169,9 @@ public partial class SourceFileProcessor : ISourceFileProcessor
             // Validate the stream data
             // Error: No video, no audio, (No subtitles is ok)
             if (videoStreamData is null)
-                throw new Exception("No video stream found.");
+                throw new InvalidDataException("No video stream found.");
             if ((audioStreams?.Count ?? 0) < 1)
-                throw new Exception("No audio streams found.");
+                throw new InvalidDataException("No audio streams found.");
 
             // Handle Frame data -- usually for HDR
             // Attempt to grab the first one -- can have multiple video ones but tend to have duplicate info for what we care about
@@ -204,39 +204,52 @@ public partial class SourceFileProcessor : ISourceFileProcessor
                         SideData contentLightLevelMetadata = videoFrame.SideData
                                                                         .SingleOrDefault(sd => sd.SideDataType.Equals("Content light level metadata", StringComparison.OrdinalIgnoreCase));
 
-                        HDRData hdrData = new()
+                        HDRData hdrData = null;
+                        try
                         {
-                            HDRFlags = HDRFlags.HDR10,
-                            Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.BlueX) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.BlueX.Split("/")[0],
-                            Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.BlueY) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.BlueY.Split("/")[0],
-                            Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.GreenX) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.GreenX.Split("/")[0],
-                            Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.GreenY) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.GreenY.Split("/")[0],
-                            Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.RedX) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.RedX.Split("/")[0],
-                            Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.RedY) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.RedY.Split("/")[0],
-                            WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.WhitePointX) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.WhitePointX.Split("/")[0],
-                            WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.WhitePointY) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.WhitePointY.Split("/")[0],
-                            MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.MaxLuminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.MaxLuminance.Split("/")[0],
-                            MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.MinLuminance) ? throw new Exception("Invalid HDR Data") : masteringDisplayMetadata.MinLuminance.Split("/")[0],
-                            MaxCLL = $"{contentLightLevelMetadata?.MaxContent ?? 0},{contentLightLevelMetadata?.MaxAverage ?? 0}"
-                        };
-
-                        // Check for HDR10+ and DolbyVision
-                        if (videoFrame.SideData.Any(sd => sd.SideDataType.Contains("Dolby Vision", StringComparison.OrdinalIgnoreCase)))
+                            hdrData = new()
+                            {
+                                HDRFlags = HDRFlags.HDR10,
+                                Blue_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.BlueX) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.BlueX.Split("/")[0],
+                                Blue_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.BlueY) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.BlueY.Split("/")[0],
+                                Green_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.GreenX) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.GreenX.Split("/")[0],
+                                Green_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.GreenY) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.GreenY.Split("/")[0],
+                                Red_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.RedX) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.RedX.Split("/")[0],
+                                Red_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.RedY) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.RedY.Split("/")[0],
+                                WhitePoint_X = string.IsNullOrWhiteSpace(masteringDisplayMetadata.WhitePointX) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.WhitePointX.Split("/")[0],
+                                WhitePoint_Y = string.IsNullOrWhiteSpace(masteringDisplayMetadata.WhitePointY) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.WhitePointY.Split("/")[0],
+                                MaxLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.MaxLuminance) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.MaxLuminance.Split("/")[0],
+                                MinLuminance = string.IsNullOrWhiteSpace(masteringDisplayMetadata.MinLuminance) ? throw new InvalidDataException("Invalid HDR Data") : masteringDisplayMetadata.MinLuminance.Split("/")[0],
+                                MaxCLL = $"{contentLightLevelMetadata?.MaxContent ?? 0},{contentLightLevelMetadata?.MaxAverage ?? 0}"
+                            };
+                        }
+                        catch (InvalidDataException)
                         {
-                            hdrData.HDRFlags |= HDRFlags.DOLBY_VISION;
-                            // If we found DV info previously, tack it on here
-                            if (dolbyVisionInfo is not null)
-                                hdrData.DolbyVisionInfo = dolbyVisionInfo;
+                            // Most likely invalid HDR data, try to move on without hdr
+                            Logger.LogWarning("File probe detected 'Mastering display metadata' but had invalid HDR Data. Proceeding without HDR data.", nameof(SourceFileProcessor), new { sourceFileFullPath, probeData });
+                            hdrData = null;
                         }
 
-                        if (videoFrame.SideData.Any(sd => sd.SideDataType.Contains("HDR Dynamic Metadata", StringComparison.OrdinalIgnoreCase) ||
-                                                            sd.SideDataType.Contains("HDR10+", StringComparison.OrdinalIgnoreCase)))
-                            hdrData.HDRFlags |= HDRFlags.HDR10PLUS;
+                        if (hdrData is not null)
+                        {
+                            // Check for HDR10+ and DolbyVision
+                            if (videoFrame.SideData.Any(sd => sd.SideDataType.Contains("Dolby Vision", StringComparison.OrdinalIgnoreCase)))
+                            {
+                                hdrData.HDRFlags |= HDRFlags.DOLBY_VISION;
+                                // If we found DV info previously, tack it on here
+                                if (dolbyVisionInfo is not null)
+                                    hdrData.DolbyVisionInfo = dolbyVisionInfo;
+                            }
 
-                        if (hdrData.IsDynamic)
-                            hdrData.DynamicMetadataFullPaths = [];
+                            if (videoFrame.SideData.Any(sd => sd.SideDataType.Contains("HDR Dynamic Metadata", StringComparison.OrdinalIgnoreCase) ||
+                                                                sd.SideDataType.Contains("HDR10+", StringComparison.OrdinalIgnoreCase)))
+                                hdrData.HDRFlags |= HDRFlags.HDR10PLUS;
 
-                        videoStreamData.HDRData = hdrData;
+                            if (hdrData.IsDynamic)
+                                hdrData.DynamicMetadataFullPaths = [];
+
+                            videoStreamData.HDRData = hdrData;
+                        }
                     }
                 }
             }
@@ -245,7 +258,7 @@ public partial class SourceFileProcessor : ISourceFileProcessor
             string sourceFileTitle = probeData.Format.Tags?.Title;
 
             SourceStreamData sourceStreamData = new(durationInSeconds, numberOfFrames, videoStreamData, audioStreams, subtitleStreams);
-            return new ProcessResult<SourceFileProbeResultData>(new SourceFileProbeResultData()
+            return new ProcessResult<SourceFileProbeResultData>(new()
             {
                 TitleOfSourceFile = sourceFileTitle,
                 SourceStreamData = sourceStreamData,
@@ -265,10 +278,11 @@ public partial class SourceFileProcessor : ISourceFileProcessor
     {
         ProbeData probeData = null;
         string message = null;
+
+        string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFileFullPath}\"";
+
         try
         {
-            string ffprobeArgs = $"-v quiet -read_intervals \"%+#2\" -print_format json -show_format -show_streams -show_entries frame \"{sourceFileFullPath}\"";
-
             ProcessResult<string> ffprobeResult = ProcessExecutor.Execute(new()
             {
                 FileName = Path.Combine(State.Ffmpeg.FfprobeDirectory, Lookups.FFprobeExecutable),
@@ -295,12 +309,12 @@ public partial class SourceFileProcessor : ISourceFileProcessor
         catch (JsonException jsonEx)
         {
             message = "JsonException thrown when deserializing ffprobe output.";
-            Logger.LogException(jsonEx, message, details: new { sourceFileFullPath });
+            Logger.LogException(jsonEx, message, details: new { sourceFileFullPath, ffprobeArgs });
         }
         catch (Exception ex)
         {
             message = "Exception thrown while attempting to probe source file.";
-            Logger.LogException(ex, message, details: new { sourceFileFullPath, State.Ffmpeg.FfprobeDirectory });
+            Logger.LogException(ex, message, details: new { sourceFileFullPath, State.Ffmpeg.FfprobeDirectory, ffprobeArgs });
         }
 
         return (probeData, message ?? "ffprobe success");

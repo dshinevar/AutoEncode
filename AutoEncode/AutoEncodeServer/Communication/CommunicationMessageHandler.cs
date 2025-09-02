@@ -55,7 +55,7 @@ public class CommunicationMessageHandler : ICommunicationMessageHandler
             throw;
         }
 
-        Logger.LogInfo($"{nameof(CommunicationMessageHandler)} binded to {ConnectionString} -- Listening for messages.", nameof(CommunicationMessageHandler));
+        Logger.LogInfo($"{nameof(CommunicationMessageHandler)} bound to {ConnectionString} -- Listening for messages.", nameof(CommunicationMessageHandler));
     }
 
     public void Stop()

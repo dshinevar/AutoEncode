@@ -64,11 +64,31 @@ public partial class Logger : ILogger
 
         return Task.Run(() =>
         {
+            const int MaxLogFails = 5;
+            int logFailCount = 0;
             try
             {
                 foreach (LogData log in _logs.GetConsumingEnumerable(_shutdownCancellationTokenSource.Token))
                 {
-                    Log(log);
+                    try
+                    {
+                        Log(log);
+                    }
+                    catch (Exception e)
+                    {
+                        if (logFailCount < MaxLogFails)
+                        {
+                            // Attempt to add a log to figure out what broke
+                            LogException(e, "Error occurred while logging.", nameof(Logger), new { log });
+                            logFailCount++;
+                        }
+                        else
+                        {
+                            // After a few failures, something is really wrong
+                            // What to do?
+                        }
+
+                    } 
                 }
             }
             catch (OperationCanceledException) { }
