@@ -24,7 +24,7 @@ internal partial class Startup
         Startup = 0,
         ContainerLoad = -1,
         ConfigLoad = -2,
-        LoggerInitialize = -3,
+        LoggerRun = -3,
         FfmpegCheck = -4,
         Hdr10PlusCheck = -5,
         DolbyVisionCheck = -6,
@@ -59,7 +59,8 @@ internal partial class Startup
             AppDomain.CurrentDomain.UnhandledException += (sender, e) => OnUnhandledException(e, server, logger);
 
         HelperMethods.DebugLog("AutoEncodeServer Starting Up.", GetStartupLogName());
-        // LOAD CONFIG FILE
+
+        #region Config File Load
         try
         {
             startupStep = StartupStep.ConfigLoad;
@@ -75,11 +76,12 @@ internal partial class Startup
             HelperMethods.DebugLog($"Error loading config from {Lookups.ConfigFileLocation}{Environment.NewLine}{ex.Message}", GetStartupLogName());
             Environment.Exit((int)startupStep);
         }
+        #endregion Config File Load
 
         HelperMethods.DebugLog("Config file loaded.", GetStartupLogName());
 
-        // LOGGER STARTUP
-        startupStep = StartupStep.LoggerInitialize;
+        #region Logger Startup
+        startupStep = StartupStep.LoggerRun;
         logger = container.Resolve<ILogger>();
 
         string logFileDirectory = State.LoggerSettings.LogFileDirectory;
@@ -95,7 +97,11 @@ internal partial class Startup
 
         loggerTask = logger.Run();
 
-        // CHECK FOR FFMPEG/FFPROBE
+        #endregion Logger Startup
+
+        HelperMethods.DebugLog("Logger Started.", GetStartupLogName());
+
+        #region Ffmpeg / Ffprobe / Features Check
         startupStep = StartupStep.FfmpegCheck;
         int ffmpegAndFfprobeIndent = "FFmpeg: ".Length;
         List<string> ffmpegMessages = [];
@@ -152,7 +158,27 @@ internal partial class Startup
             Environment.Exit((int)startupStep);
         }
 
-        // HDR10PLUS CHECK
+        if (State.Ffmpeg.NnediEnabled is true)
+        {
+            if (string.IsNullOrWhiteSpace(State.Ffmpeg.NnediDirectory) is false)
+            {
+                if (File.Exists(Path.Combine(State.Ffmpeg.NnediDirectory, "nnedi3_weights.bin")) is false)
+                {
+                    // If we can't find the file, disable nnedi
+                    State.Ffmpeg.NnediEnabled = false;
+                }
+            }
+            else
+            {
+                // No directory given, disable nnedi
+                State.Ffmpeg.NnediEnabled = false;
+            }
+        }
+        #endregion Ffmpeg / Ffprobe / Features Check
+
+        HelperMethods.DebugLog("ffmpeg/ffprobe check completed.", GetStartupLogName());
+
+        #region HDR10+ Check
         // If disabled by config, don't do anything else
         startupStep = StartupStep.Hdr10PlusCheck;
         List<string> hdr10PlusMessages = [];
@@ -189,9 +215,11 @@ internal partial class Startup
         }
         else
             hdr10PlusMessages.Add("HDR10+: Disabled");
+        #endregion HDR10+ Check
 
+        HelperMethods.DebugLog("HDR10+ check completed.", GetStartupLogName());
 
-        // DOLBY VISION CHECK: CHECK FOR dovi_tool, mkvmerge, AND x265
+        #region DolbyVision / dovi_tool / mkvmerge / x265 Check
         startupStep = StartupStep.DolbyVisionCheck;
         int dolbyVisionIndent = "DolbyVision: ".Length;
         int dolbyVisionSecondaryIndent = dolbyVisionIndent + 6;
@@ -299,6 +327,9 @@ internal partial class Startup
             dolbyVisionMessages.AddRange(x265Messages);
         if (mkvMergeMessages.Count != 0)
             dolbyVisionMessages.AddRange(mkvMergeMessages);
+        #endregion DolbyVision / dovi_tool / mkvmerge / x265 Check
+
+        HelperMethods.DebugLog("DolbyVision check completed.", GetStartupLogName());
 
         // GET AND LOG STARTUP AND VERSION
         List<string> startupLog = [];

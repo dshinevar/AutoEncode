@@ -268,7 +268,7 @@ public partial class EncodingJobModel :
             {
                 VideoEncoder = streamData.VideoStream.ResoultionInt >= Lookups.MinX265ResolutionInt ? VideoEncoder.LIBX265 : VideoEncoder.LIBX264,
                 BFrames = 8,
-                Deinterlace = !streamData.VideoStream.ScanType.Equals(VideoScanType.PROGRESSIVE),
+                Deinterlace = streamData.VideoStream.IsInterlaced,
                 Crop = true
             };
 
@@ -322,21 +322,39 @@ public partial class EncodingJobModel :
                 AudioStreamData bestQualityAudioStream = audioData.Where(ad => ad.Commentary is false).MaxBy(ad => Lookups.AudioCodecPriority.IndexOf(ad.CodecName.ToLower()));
                 IEnumerable<AudioStreamData> commentaryAudioStreams = audioData.Where(ad => ad.Commentary is true);
 
-                if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) ||
-                    bestQualityAudioStream.CodecName.Equals("aac", StringComparison.OrdinalIgnoreCase))
+                // Best quality stream can be null in certain instances.
+                // Example: Audio track is one language but have a commentary track in another
+                // chi - audio track
+                // eng - commentary track
+                // eng in this case would have no "best quality" track
+                if (bestQualityAudioStream is not null)
                 {
-                    // If ac3 and mono, go ahead and convert to AAC
-                    if (bestQualityAudioStream.Channels < 2)
+                    if (bestQualityAudioStream.CodecName.Equals("ac3", StringComparison.OrdinalIgnoreCase) ||
+                        bestQualityAudioStream.CodecName.Equals("aac", StringComparison.OrdinalIgnoreCase))
                     {
-                        audioInstructions.Add(new()
+                        // If ac3 and mono, go ahead and convert to AAC
+                        if (bestQualityAudioStream.Channels < 2)
                         {
-                            SourceIndex = bestQualityAudioStream.AudioIndex,
-                            AudioCodec = AudioCodec.AAC,
-                            Language = bestQualityAudioStream.Language,
-                            Title = bestQualityAudioStream.Title
-                        });
+                            audioInstructions.Add(new()
+                            {
+                                SourceIndex = bestQualityAudioStream.AudioIndex,
+                                AudioCodec = AudioCodec.AAC,
+                                Language = bestQualityAudioStream.Language,
+                                Title = bestQualityAudioStream.Title
+                            });
+                        }
+                        // Otherwise just copy -- low enough quality not worth having multiple audio
+                        else
+                        {
+                            audioInstructions.Add(new()
+                            {
+                                SourceIndex = bestQualityAudioStream.AudioIndex,
+                                AudioCodec = AudioCodec.COPY,
+                                Language = bestQualityAudioStream.Language,
+                                Title = bestQualityAudioStream.Title
+                            });
+                        }
                     }
-                    // Otherwise just copy -- low enough quality not worth having multiple audio
                     else
                     {
                         audioInstructions.Add(new()
@@ -346,25 +364,15 @@ public partial class EncodingJobModel :
                             Language = bestQualityAudioStream.Language,
                             Title = bestQualityAudioStream.Title
                         });
-                    }
-                }
-                else
-                {
-                    audioInstructions.Add(new()
-                    {
-                        SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.COPY,
-                        Language = bestQualityAudioStream.Language,
-                        Title = bestQualityAudioStream.Title
-                    });
 
-                    audioInstructions.Add(new()
-                    {
-                        SourceIndex = bestQualityAudioStream.AudioIndex,
-                        AudioCodec = AudioCodec.AAC,
-                        Language = bestQualityAudioStream.Language,
-                        Title = bestQualityAudioStream.Title
-                    });
+                        audioInstructions.Add(new()
+                        {
+                            SourceIndex = bestQualityAudioStream.AudioIndex,
+                            AudioCodec = AudioCodec.AAC,
+                            Language = bestQualityAudioStream.Language,
+                            Title = bestQualityAudioStream.Title
+                        });
+                    }
                 }
 
                 foreach (AudioStreamData commentaryStream in commentaryAudioStreams)

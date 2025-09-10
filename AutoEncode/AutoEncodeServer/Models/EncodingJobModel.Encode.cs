@@ -104,7 +104,7 @@ public partial class EncodingJobModel :
                         {
                             if (string.IsNullOrWhiteSpace(e.Data) is false)
                             {
-                                progress = HandleEncodingOutput(e.Data);
+                                progress = HandleEncodingOutput(e.Data, SourceStreamData.VideoStream.IsInterlaced);
                             }
                         }
 
@@ -532,9 +532,9 @@ public partial class EncodingJobModel :
             tokenRegistration.Unregister();
         }
 
-        (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) HandleEncodingOutput(string data, double adjustment = 1.0)
+        (byte? encodingProgress, int? estimatedSecondsRemaining, double? currentFps) HandleEncodingOutput(string data, bool isInterlaced)
         {
-            int numberOfFrames = SourceStreamData.NumberOfFrames;
+            int numberOfFrames = isInterlaced ? SourceStreamData.NumberOfFrames * 2 : SourceStreamData.NumberOfFrames;
 
             byte? encodingProgress = null;
             int? estimatedSecondsRemaining = null;
@@ -547,7 +547,7 @@ public partial class EncodingJobModel :
                 string frameString = data.Substring(data.IndexOf("frame="), length);
                 if (int.TryParse(frameString.Split('=')[1].Trim(), out int currentFrame))
                 {
-                    encodingProgress = (byte)((double)currentFrame / (double)numberOfFrames * 100 * adjustment);
+                    encodingProgress = (byte)((double)currentFrame / (double)numberOfFrames * 100);
                     framesRemaining = numberOfFrames - currentFrame;
                 }
             }
