@@ -127,6 +127,24 @@ internal partial class Startup
             Environment.Exit((int)startupStep);
         }
 
+        if (State.Ffmpeg.NnediEnabled is true)
+        {
+            if (string.IsNullOrWhiteSpace(State.Ffmpeg.NnediDirectory) is false)
+            {
+                if (File.Exists(Path.Combine(State.Ffmpeg.NnediDirectory, "nnedi3_weights.bin")) is false)
+                {
+                    // If we can't find the file, disable nnedi
+                    State.Ffmpeg.NnediEnabled = false;
+                }
+            }
+            else
+            {
+                // No directory given, disable nnedi
+                State.Ffmpeg.NnediEnabled = false;
+            }
+        }
+        ffmpegMessages.Add($"nnedi Enabled: {State.Ffmpeg.NnediEnabled}".Indent(ffmpegAndFfprobeIndent));
+
         List<string> ffprobeMessages = [];
         try
         {
@@ -156,23 +174,6 @@ internal partial class Startup
             HelperMethods.DebugLog($"FATAL: ffprobe not found/failed to call. Exiting. Exception: {ex.Message}", GetStartupLogName());
             logger.LogException(ex, "ffprobe not found/failed to call. Exiting.", GetStartupLogName(), details: new { State.Ffmpeg.FfprobeDirectory, State.Ffmpeg.FfmpegDirectory });
             Environment.Exit((int)startupStep);
-        }
-
-        if (State.Ffmpeg.NnediEnabled is true)
-        {
-            if (string.IsNullOrWhiteSpace(State.Ffmpeg.NnediDirectory) is false)
-            {
-                if (File.Exists(Path.Combine(State.Ffmpeg.NnediDirectory, "nnedi3_weights.bin")) is false)
-                {
-                    // If we can't find the file, disable nnedi
-                    State.Ffmpeg.NnediEnabled = false;
-                }
-            }
-            else
-            {
-                // No directory given, disable nnedi
-                State.Ffmpeg.NnediEnabled = false;
-            }
         }
         #endregion Ffmpeg / Ffprobe / Features Check
 
