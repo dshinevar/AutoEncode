@@ -32,7 +32,7 @@
     <PackageReference Include="Castle.Windsor" Version="6.0.0" />
     <PackageReference Include="MahApps.Metro.IconPacks.MaterialDesign" Version="6.1.0" />
     <PackageReference Include="NetMQ" Version="4.0.2.1" />
-    <PackageReference Include="System.Text.Json" Version="9.0.8" />
+    <PackageReference Include="System.Text.Json" Version="9.0.9" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 

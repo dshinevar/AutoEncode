@@ -30,79 +30,84 @@ public partial class EncodingJobManager : IEncodingJobManager
     {
         while (ShutdownCancellationTokenSource.IsCancellationRequested is false)
         {
-            if (_encodingJobQueue.Count > 0)
+            try
             {
-                // Check if task is done (or null -- first time setup)
-                if (EncodingJobBuilderTask?.IsCompletedSuccessfully ?? true)
+                if (_encodingJobQueue.Count > 0)
                 {
-                    IEncodingJobModel jobToBuild = GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
-                    if (jobToBuild is not null)
+                    // Check if task is done (or null -- first time setup)
+                    if (EncodingJobBuilderTask?.IsCompletedSuccessfully ?? true)
                     {
-                        EncodingJobBuilderCancellationToken = new CancellationTokenSource();
-
-                        EncodingJobBuilderTask = Task.Run(async () =>
+                        IEncodingJobModel jobToBuild = GetNextEncodingJobWithStatus(EncodingJobStatus.NEW);
+                        if (jobToBuild is not null)
                         {
-                            await jobToBuild.Build(EncodingJobBuilderCancellationToken);
-                            jobToBuild.CleanupJob();
-                            //_processMRE.Set();
+                            EncodingJobBuilderCancellationToken = new CancellationTokenSource();
 
-                        }, EncodingJobBuilderCancellationToken.Token);
+                            EncodingJobBuilderTask = Task.Run(async () =>
+                            {
+                                await jobToBuild.Build(EncodingJobBuilderCancellationToken);
+                                jobToBuild.CleanupJob();
 
-                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
-                        _ = EncodingJobBuilderTask.ContinueWith(t => _processMRE.Set());
+                            }, EncodingJobBuilderCancellationToken.Token);
+
+                            // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                            _ = EncodingJobBuilderTask.ContinueWith(t => _processMRE.Set());
+                        }
                     }
-                }
 
-                if (EncodingTask?.IsCompletedSuccessfully ?? true)
+                    if (EncodingTask?.IsCompletedSuccessfully ?? true)
+                    {
+                        IEncodingJobModel jobToEncode = GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
+                        if (jobToEncode is not null)
+                        {
+                            EncodingCancellationToken = new CancellationTokenSource();
+
+                            EncodingTask = Task.Run(() =>
+                            {
+                                jobToEncode.Encode(EncodingCancellationToken);
+                                jobToEncode.CleanupJob();
+
+                            }, EncodingCancellationToken.Token);
+
+                            // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                            _ = EncodingTask.ContinueWith(t => _processMRE.Set());
+                        }
+                    }
+
+                    if (EncodingJobPostProcessingTask?.IsCompletedSuccessfully ?? true)
+                    {
+                        IEncodingJobModel jobToPostProcess = GetNextEncodingJobForPostProcessing();
+                        if (jobToPostProcess is not null)
+                        {
+                            EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
+
+                            EncodingJobPostProcessingTask = Task.Run(() =>
+                            {
+                                jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken);
+                                jobToPostProcess.CleanupJob();
+
+                            }, EncodingJobPostProcessingCancellationToken.Token);
+
+                            // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
+                            _ = EncodingJobPostProcessingTask.ContinueWith(t => _processMRE.Set());
+                        }
+                    }
+
+                    JobRemovalTimer ??= new((e) => ClearCompletedAndErroredJobs(), null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+
+                    await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);
+                    _processMRE.Reset();
+                }
+                else
                 {
-                    IEncodingJobModel jobToEncode = GetNextEncodingJobWithStatus(EncodingJobStatus.BUILT);
-                    if (jobToEncode is not null)
-                    {
-                        EncodingCancellationToken = new CancellationTokenSource();
-
-                        EncodingTask = Task.Run(() =>
-                        {
-                            jobToEncode.Encode(EncodingCancellationToken);
-                            jobToEncode.CleanupJob();
-                            //_processMRE.Set();
-
-                        }, EncodingCancellationToken.Token);
-
-                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
-                        _ = EncodingTask.ContinueWith(t => _processMRE.Set());
-                    }
+                    JobRemovalTimer?.Dispose();
+                    JobRemovalTimer = null;
+                    await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);   // Wait until signalled -- either for shutdown or job added to queue
                 }
-
-                if (EncodingJobPostProcessingTask?.IsCompletedSuccessfully ?? true)
-                {
-                    IEncodingJobModel jobToPostProcess = GetNextEncodingJobForPostProcessing();
-                    if (jobToPostProcess is not null)
-                    {
-                        EncodingJobPostProcessingCancellationToken = new CancellationTokenSource();
-
-                        EncodingJobPostProcessingTask = Task.Run(() =>
-                        {
-                            jobToPostProcess.PostProcess(EncodingJobPostProcessingCancellationToken);
-                            jobToPostProcess.CleanupJob();
-                            //_processMRE.Set();
-
-                        }, EncodingJobPostProcessingCancellationToken.Token);
-
-                        // throwaway task to set the MRE AFTER the original task is completed -- helps avoid race conditions
-                        _ = EncodingJobPostProcessingTask.ContinueWith(t => _processMRE.Set());
-                    }
-                }
-
-                JobRemovalTimer ??= new((e) => ClearCompletedAndErroredJobs(), null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
-
-                await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);
-                _processMRE.Reset();
             }
-            else
+            catch (OperationCanceledException) { }  // Don't do anything if canclled
+            catch (Exception ex)
             {
-                JobRemovalTimer?.Dispose();
-                JobRemovalTimer = null;
-                await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);   // Wait until signalled -- either for shutdown or job added to queue
+                Logger.LogException(ex, "Exception during processing.", nameof(EncodingJobManager));
             }
         }
 

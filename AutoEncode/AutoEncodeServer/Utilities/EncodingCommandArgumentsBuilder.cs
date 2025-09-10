@@ -44,7 +44,7 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
         }
 
         // Video Section
-        string deinterlace = videoInstructions.Deinterlace is true ? $"yadif=1:{(int)streamData.VideoStream.ScanType}:0" : string.Empty;
+        string deinterlace = videoInstructions.Deinterlace is true ? BuildDeinterlaceArgument(streamData.VideoStream.ScanType) : string.Empty;
         string crop = videoInstructions.Crop is true ? $"crop={streamData.VideoStream.Crop}" : string.Empty;
         string videoFilter = string.Empty;
 
@@ -243,5 +243,21 @@ public class EncodingCommandArgumentsBuilder : IEncodingCommandArgumentsBuilder
     private static void BuildSubtitleStreamArguments(StringBuilder sbSubtitle, int index, SubtitleStreamEncodingInstructions subtitleInstructions)
     {
         sbSubtitle.AppendFormat(format, $"-c:s:{index} copy");
+    }
+
+    private static string BuildDeinterlaceArgument(VideoScanType scanType)
+    {
+        if (State.Ffmpeg.NnediEnabled is true)
+        {
+            string nnediArg = $"nnedi=weights='{Path.Combine(State.Ffmpeg.NnediDirectory, "nnedi3_weights.bin")}'";
+            if (State.IsWindowsEnvironment)
+                return nnediArg.Replace("\\", $"\\\\").Replace(":", "\\:");
+            else
+                return nnediArg.Replace("/", "//");
+        }
+        else
+        {
+            return $"yadif=1:{(int)scanType}:0";
+        }
     }
 }

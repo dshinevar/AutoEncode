@@ -8,6 +8,12 @@ public class FfmpegSettings
 
     /// <summary>The directory ffprobe should be located in.</summary>
     public string FfprobeDirectory { get; set; } = string.Empty;
+
+    /// <summary>Enables the usage of nnedi deinterlacing filter.</summary>
+    public bool NnediEnabled { get; set; } = false;
+
+    /// <summary>The directory where the required for nnedi nnedi3_weights.bin file is located</summary>
+    public string NnediDirectory { get; set; } = string.Empty;
 }
 
 /// <summary>Settings and info related to HDR10+ encoding. </summary>

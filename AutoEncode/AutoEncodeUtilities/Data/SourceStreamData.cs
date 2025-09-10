@@ -40,6 +40,8 @@ public class VideoStreamData :
     public string FrameRate { get; set; }
     public double CalculatedFrameRate { get; set; }
     public VideoScanType ScanType { get; set; } = VideoScanType.UNDETERMINED;
+    public bool IsInterlaced => ScanType.Equals(VideoScanType.INTERLACED_TFF) || ScanType.Equals(VideoScanType.INTERLACED_BFF);
+    public bool IsProgressive => ScanType.Equals(VideoScanType.PROGRESSIVE);
     public ChromaLocation? ChromaLocation { get; set; } = null;
 }
 

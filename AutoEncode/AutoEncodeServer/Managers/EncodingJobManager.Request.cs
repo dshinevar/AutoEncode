@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace AutoEncodeServer.Managers;
 
@@ -70,19 +71,28 @@ public partial class EncodingJobManager : IEncodingJobManager
         const int attempts = 5;
 
         FileInfo fileInfo = new(filePath);
+        long initialFileSize = fileInfo.Length;
         bool ready = true;
 
         for (int i = 0; i < attempts; i++)
         {
             try
             {
-                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+                using FileStream stream = fileInfo.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             }
             catch (IOException)
             {
                 ready = false;
                 break;
             }
+        }
+
+        if (ready is true)
+        {
+            // Double check file size to make sure it isn't changing
+            Thread.Sleep(500);
+            fileInfo = new(filePath);
+            ready = initialFileSize == fileInfo.Length;
         }
 
         return ready;
