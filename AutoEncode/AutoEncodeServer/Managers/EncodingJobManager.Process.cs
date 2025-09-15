@@ -104,7 +104,7 @@ public partial class EncodingJobManager : IEncodingJobManager
                     await _processMRE.WaitAsync(ShutdownCancellationTokenSource.Token);   // Wait until signalled -- either for shutdown or job added to queue
                 }
             }
-            catch (OperationCanceledException) { }  // Don't do anything if canclled
+            catch (OperationCanceledException) { }  // Don't do anything if cancelled
             catch (Exception ex)
             {
                 Logger.LogException(ex, "Exception during processing.", nameof(EncodingJobManager));

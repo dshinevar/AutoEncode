@@ -190,7 +190,7 @@ public class ProcessExecutor : IProcessExecutor
                 if (processExecutionData.ReturnStandardOutput is true && processExecutionData.ReturnStandardError is false)
                     process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
-                await process.WaitForExitAsync(cancellationToken);
+                await process.WaitForExitAsync(CancellationToken.None); // Let registration kill the process which will end the wait
             }
         }
         catch (Exception ex)
