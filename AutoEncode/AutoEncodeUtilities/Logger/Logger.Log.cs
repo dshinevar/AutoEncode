@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -44,7 +43,7 @@ public partial class Logger : ILogger
 
     private void Log(LogData log)
     {
-        List<string> messages = log.Messages.ToList();
+        List<string> messages = [.. log.Messages];
         // Exception handling
         if (log.Exception is not null)
         {
@@ -117,6 +116,9 @@ public partial class Logger : ILogger
     private static List<string> GenerateDetailsMessages(string name, object details, int padding = 0)
     {
         List<string> detailsMessages = [];
+
+        if (details is Type)
+            return detailsMessages;
 
         StringBuilder sbDetailMessage = new();
         Type type = details?.GetType();

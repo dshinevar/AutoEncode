@@ -79,7 +79,7 @@ public partial class Logger : ILogger
                         if (logFailCount < MaxLogFails)
                         {
                             // Attempt to add a log to figure out what broke
-                            LogException(e, "Error occurred while logging.", nameof(Logger), new { log });
+                            LogException(e, "Error occurred while logging.", nameof(Logger), new { LogFailCount = logFailCount, log.Severity, log.ModuleName, log.CallingMemberName, IsExceptionLog = log.Exception is not null });
                             logFailCount++;
                         }
                         else
